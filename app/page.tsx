@@ -45,8 +45,12 @@ export type CaseFile = {
   isTest: boolean;
   assignReason?: string;
 }
+// Türkçe etiketler için güvenli başlıklandırma
+const ht = (v?: "YONLENDIRME" | "DESTEK" | "IKISI") =>
+  v === "YONLENDIRME" ? "Yönlendirme" : v === "DESTEK" ? "Destek" : v === "IKISI" ? "İkisi" : "-";
+
 function caseDesc(c: CaseFile) {
-  let s = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+  let s = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
   if (c.isTest) s += " • Test";
   if (c.assignReason) s += ` • Neden: ${c.assignReason}`;
   return s;
@@ -348,12 +352,56 @@ const [hydrated, setHydrated] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [fbName, setFbName] = useState("");
   const [fbEmail, setFbEmail] = useState("");
+  const [fbTypeCode, setFbTypeCode] = useState<"oneri"|"sikayet">("oneri");
   const [fbType, setFbType] = useState<"öneri" | "şikayet">("öneri");
   const [fbMessage, setFbMessage] = useState("");
   const [fbLoading, setFbLoading] = useState(false);
 
   async function sendFeedback(e?: React.FormEvent) {
     e?.preventDefault?.();
+    // Yeni: opsiyonel ad/eposta, sadece mesaj uzunluğu ve varsa eposta formatı kontrol edilir
+    {
+      const msg2 = fbMessage.trim();
+      const name2 = fbName.trim();
+      const email2 = fbEmail.trim();
+      if (msg2.length < 10) {
+        toast("Lütfen en az 10 karakter yazın.");
+        return;
+      }
+      if (email2 && !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2))) {
+        toast("Geçerli bir e-posta adresi girin.");
+        return;
+      }
+      setFbLoading(true);
+      try {
+        const res = await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name2,
+            email: email2,
+            type: fbTypeCode,
+            message: msg2,
+          }),
+        });
+        if (res.ok) {
+          toast("Teşekkürler! Geri bildiriminiz gönderildi.");
+          setFeedbackOpen(false);
+          setFbName("");
+          setFbEmail("");
+          setFbTypeCode("oneri");
+          setFbMessage("");
+        } else {
+          const j: any = await res.json().catch(() => ({}));
+          toast(j?.error || "Gönderim başarısız oldu.");
+        }
+      } catch {
+        toast("Gönderim sırasında bir hata oluştu.");
+      } finally {
+        setFbLoading(false);
+      }
+      return;
+    }
     const msg = fbMessage.trim();
     const name = fbName.trim();
     const email = fbEmail.trim();
@@ -382,7 +430,7 @@ const [hydrated, setHydrated] = useState(false);
         body: JSON.stringify({
           name,
           email,
-          type: fbType,
+          type: fbTypeCode,
           message: msg,
         }),
       });
@@ -391,7 +439,7 @@ const [hydrated, setHydrated] = useState(false);
         setFeedbackOpen(false);
         setFbName("");
         setFbEmail("");
-        setFbType("öneri");
+        setFbTypeCode("oneri");
         setFbMessage("");
       } else {
         const j: any = await res.json().catch(() => ({}));
@@ -630,7 +678,7 @@ useEffect(() => {
     return n;
   }
   // Günlük atama sınırı: bir öğretmene bir günde verilebilecek maksimum dosya
-  const MAX_DAILY_CASES = 4;
+  // Günlük sınır ayarlardan gelir (settings.dailyLimit)
   // Bugün en son kime atama yapıldı? (liste en yeni başta olduğundan ilk uygun kaydı alır)
   function lastAssignedTeacherToday(): string | undefined {
     const today = ymdLocal(new Date());
@@ -641,12 +689,12 @@ useEffect(() => {
   // ---- Puanlama
   function calcScore() {
     // Test dosyaları sabit 7 puan
-    if (isTestCase) return 7;
+    if (isTestCase) return settings.scoreTest;
     let score = 0;
-    if (type === "YONLENDIRME") score += 1;
-    if (type === "DESTEK") score += 2;
-    if (type === "IKISI") score += 3;
-    if (isNew) score += 1;
+    if (type === "YONLENDIRME") score += settings.scoreTypeY;
+    if (type === "DESTEK") score += settings.scoreTypeD;
+    if (type === "IKISI") score += settings.scoreTypeI;
+    if (isNew) score += settings.scoreNewBonus;
     if (diagCount > 0) score += Math.min(6, Math.max(0, diagCount));
     return score;
   }
@@ -656,7 +704,7 @@ useEffect(() => {
     // Test dosyasıysa: sadece testörler ve bugün test almamış olanlar
     if (newCase.isTest) {
       const testers = teachers.filter(
-        (t) => t.isTester && !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < MAX_DAILY_CASES
+        (t) => t.isTester && !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < settings.dailyLimit
       );
       if (!testers.length) return null; // uygun testör yoksa atama yok
 
@@ -938,7 +986,7 @@ useEffect(() => {
       alert("Bu dosyada atanmış öğretmenin Pushover anahtarı yok.");
       return;
     }
-    const desc = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+    const desc = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
     try {
       const res = await fetch("/api/notify", {
         method: "POST",
@@ -947,7 +995,7 @@ useEffect(() => {
           userKey: t.pushoverKey,
           title: "ACİL: Öğrenci Bekliyor",
           message: `${t.name}, ${c.student} bekliyor. Lütfen hemen gelin. (${desc})`,
-          priority: 0, // non-emergency: tekrar yok
+          priority: 2, // emergency: tekrar eden uyarı (retry/expire)
         }),
       });
       if (!res.ok) {
@@ -968,7 +1016,7 @@ useEffect(() => {
     const rows = data.map((c) => [
       c.id,
       c.student,
-      humanType(c.type),
+      ht(c.type),
       c.isNew ? "Evet" : "Hayır",
       c.diagCount ?? 0,
       c.score,
@@ -1085,7 +1133,7 @@ async function testNotifyTeacher(t: Teacher) {
 // === Otomatik atamada/yeniden atamada haber ver ===
 async function notifyAssigned(t: Teacher, c: CaseFile) {
   if (!t?.pushoverKey) return; // key yoksa sessizce çık
-  const desc = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+  const desc = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
   try {
     await fetch("/api/notify", {
       method: "POST",
@@ -1152,7 +1200,7 @@ function AssignedArchiveSingleDay() {
     reasons.push("UYGUNLUK FİLTRELERİ: AKTİF, DEVAMSIZ DEİL, BUGÜN TEST ALMAMI, GÜNLÜK SINIRI AMAMI.");
     reasons.push("SIRALAMA: ÖNCE YILLIK YÜK AZ, EİTSE BUGÜNKÜ DOSYA SAYISI AZ, SONRA RASTGELE.");
     reasons.push("ART ARDA AYNI ÖRETMENE ATAMA YAPMAMAK İÇİN MÜMKÜNSE FARKLI ÖRETMEN TERCİH EDİLDİ.");
-    reasons.push(`GÜNLÜK ÜST SINIR: ÖRETMEN BAINA EN FAZLA ${MAX_DAILY_CASES} DOSYA.`);
+    reasons.push(`GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${settings.dailyLimit} DOSYA.`);
     reasons.push(`SEÇİM SONUCU: '${t.name}' BU KRİTERLERE GÖRE EN UYGUN ADAYDI.`);
     return reasons.join(" ");
   }
@@ -1253,7 +1301,7 @@ function AssignedArchiveSingleDay() {
                                 'UYGUNLUK: AKTİF, DEVAMSIZ DEİL, BUGÜN TEST ALMAMI, GÜNLÜK SINIRI AMAMI.',
                                 'SIRALAMA: ÖNCE YILLIK YÜK AZ → DAHA SONRA BUGÜN ALINAN DOSYA SAYISI AZ → RASTGELE.',
                                 'ARDIIK AYNI ÖRETMENE ATAMA YAPILMAZSA TERCİH EDİLİR.',
-                                `GÜNLÜK ÜST SINIR: ÖRETMEN BAINA EN FAZLA ${MAX_DAILY_CASES} DOSYA.`,
+                                `GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${settings.dailyLimit} DOSYA.`,
                               ];
                               const res = await fetch('/api/explain', {
                                 method: 'POST',
@@ -1843,7 +1891,7 @@ function AssignedArchiveSingleDay() {
                         </Button>
                       ) : null}
                     </td>
-                    <td className="p-2">{c.isTest ? "Evet (+5)" : "Hayır"}</td>
+                    <td className="p-2">{c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</td>
                     <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
                     <td className="p-2 text-right">
                       <Button size="icon" variant="ghost" onClick={() => removeCase(c.id)} title="Sil">
@@ -1875,7 +1923,7 @@ function AssignedArchiveSingleDay() {
                 <div className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-muted-foreground">Atanan:</span> {teacherName(c.assignedTo)}</div>
-                  <div><span className="text-muted-foreground">Test:</span> {c.isTest ? "Evet (+5)" : "Hayır"}</div>
+                  <div><span className="text-muted-foreground">Test:</span> {c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</div>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{caseDesc(c)}</div>
                 <div className="flex items-center justify-end gap-2 mt-2">
@@ -1952,7 +2000,7 @@ function AssignedArchiveSingleDay() {
                   <Input type="number" value={settings.scoreTypeD} onChange={e => setSettings({ ...settings, scoreTypeD: Number(e.target.value) || 0 })} />
                 </div>
                 <div className="col-span-2">
-                  <Label>kisi</Label>
+                  <Label>İkisi</Label>
                   <Input type="number" value={settings.scoreTypeI} onChange={e => setSettings({ ...settings, scoreTypeI: Number(e.target.value) || 0 })} />
                 </div>
               </div>
@@ -1999,7 +2047,7 @@ function AssignedArchiveSingleDay() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>Ad Soyad (opsiyonel)</Label>
-              <Input value={fbName} onChange={(e) => setFbName(e.target.value)} placeholder="Adnz" />
+              <Input value={fbName} onChange={(e) => setFbName(e.target.value)} placeholder="Adınız" />
             </div>
             <div>
               <Label>Eposta (opsiyonel)</Label>
@@ -2007,9 +2055,9 @@ function AssignedArchiveSingleDay() {
             </div>
           </div>
           <div>
-            <Label>Tr</Label>
-            <Select value={fbType} onValueChange={(v) => setFbType(v as any)}>
-              <SelectTrigger><SelectValue placeholder="Tr sein" /></SelectTrigger>
+            <Label>Tür</Label>
+            <Select value={fbTypeCode} onValueChange={(v) => setFbTypeCode(v as any)}>
+              <SelectTrigger><SelectValue placeholder="Tür seçin" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="oneri">öneri</SelectItem>
                 <SelectItem value="sikayet">şikayet</SelectItem>
@@ -2027,7 +2075,7 @@ function AssignedArchiveSingleDay() {
             />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={() => !fbLoading && setFeedbackOpen(false)}>ptal</Button>
+            <Button type="button" variant="outline" onClick={() => !fbLoading && setFeedbackOpen(false)}>İptal</Button>
             <Button type="submit" disabled={fbLoading}>{fbLoading ? "Gönderiliyor..." : "Gönder"}</Button>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -2050,14 +2098,3 @@ function AssignedArchiveSingleDay() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
