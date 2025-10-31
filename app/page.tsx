@@ -141,14 +141,13 @@ const DEFAULT_SETTINGS: Settings = {
 
 export default function DosyaAtamaApp() {
   // ---- Öğretmenler
-  const [teachers, setTeachers] = useState<Teacher[]>([
-    { id: uid(), name: "ANIL DENİZ ÖZGÜL", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-    { id: uid(), name: "ARMAN GÖKDAĞ",    isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-    { id: uid(), name: "AYTEN DİNÇEL",     isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-    { id: uid(), name: "AYGÜN ÇELİK",      isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-    { id: uid(), name: "NESLİHAN ŞAHİNER", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-    { id: uid(), name: "NURAY KIZILGÜNEŞ", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
-  ])
+  const [teachers, setTeachers] = useState<Teacher[]>([])
+  
+  
+  
+  
+  
+  
 
   // ---- Dosyalar (BUGÜN)
   const [cases, setCases] = useState<CaseFile[]>([]);
@@ -475,6 +474,9 @@ const [hydrated, setHydrated] = useState(false);
           isTester: !!t.isTester, // <-- migration
           pushoverKey: t.pushoverKey, // <-- Pushover anahtarını geri yükle
         })));
+      } else {
+        // Hiç kayıt yoksa başlangıç listesi boş kalsın (admin kendisi ekler)
+        setTeachers([]);
       }
       if (cRaw) setCases(JSON.parse(cRaw));
       if (hRaw) setHistory(JSON.parse(hRaw));
@@ -1474,7 +1476,7 @@ function AssignedArchiveSingleDay() {
       )}
 
       {/* Admin alanı */}
-      <div className={`flex flex-col gap-4 lg:flex-row ${isAdmin ? "" : "hidden"}`}>
+      <div className={`flex flex-col gap-4 lg:flex-row ${(isAdmin && hydrated) ? "" : "hidden"}`}>
         {/* Sol: Dosya ekle */}
         <Card className="flex-1">
           <CardHeader><CardTitle>Yeni Dosya Ekle</CardTitle></CardHeader>
@@ -1562,7 +1564,7 @@ function AssignedArchiveSingleDay() {
                   <SelectTrigger className="w-full"><SelectValue placeholder="Öğretmen seçin" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">— Manuel atama yok —</SelectItem>
-                    {teachers.filter(t => t.active).map(t => (
+                    {(isAdmin ? teachers.filter(t => t.active) : []).map(t => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1707,9 +1709,12 @@ function AssignedArchiveSingleDay() {
                 />
               </div>
               <Button onClick={addTeacher}>Ekle</Button>
+              {isAdmin && (
+                <Button variant="destructive" onClick={() => setTeachers([])}>Tümünü Temizle</Button>
+              )}
             </div>
 
-            {teachers.map((t) => {
+            {(isAdmin ? teachers : []).map((t) => {
               const locked = hasTestToday(t.id);
               return (
                 <div key={t.id} className="flex items-center justify-between rounded-lg border p-3">
@@ -1947,9 +1952,9 @@ function AssignedArchiveSingleDay() {
         </CardContent>
       </Card>
 
-      {reportMode === "monthly" && <MonthlyReport teachers={teachers} />}
+      {reportMode === "monthly" && <MonthlyReport teachers={isAdmin ? teachers : []} />}
       {reportMode === "daily" && (
-        <DailyReport teachers={teachers} cases={cases} history={history} />
+        <DailyReport teachers={isAdmin ? teachers : []} cases={cases} history={history} />
       )}
       {reportMode === "archive" && (
         isAdmin ? (
@@ -1965,7 +1970,7 @@ function AssignedArchiveSingleDay() {
             cases={cases}
             teacherName={teacherName}
             caseDesc={caseDesc}
-            teachers={teachers}
+            teachers={isAdmin ? teachers : []}
           />
         )
       )}
@@ -2059,18 +2064,19 @@ function AssignedArchiveSingleDay() {
             <Select value={fbTypeCode} onValueChange={(v) => setFbTypeCode(v as any)}>
               <SelectTrigger><SelectValue placeholder="Tür seçin" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="oneri">öneri</SelectItem>
-                <SelectItem value="sikayet">şikayet</SelectItem>
+                <SelectItem value="oneri">Öneri</SelectItem>
+                <SelectItem value="sikayet">Şikayet</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          <div>
           <div>
             <Label>Mesaj</Label>
             <textarea
               value={fbMessage}
               onChange={(e) => setFbMessage(e.target.value)}
               rows={6}
-              placeholder="Mesajnz yazn (min. 10 karakter)"
+              placeholder="Mesajınızı yazın (min. 10 karakter)"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200"
             />
           </div>
@@ -2079,8 +2085,9 @@ function AssignedArchiveSingleDay() {
             <Button type="submit" disabled={fbLoading}>{fbLoading ? "Gönderiliyor..." : "Gönder"}</Button>
           </div>
           <div className="text-xs text-muted-foreground">
-            Gönderimler ilgili eposta adresine iletilir. letişim için eposta yazmanz önerilir.
+            Gönderimler ilgili eposta adresine iletilir. İletişim için eposta yazmanız önerilir.
           </div>
+        </div>
         </form>
       </CardContent>
     </Card>
@@ -2098,3 +2105,4 @@ function AssignedArchiveSingleDay() {
     </div>
   );
 }
+
