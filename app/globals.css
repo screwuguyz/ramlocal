@@ -10,6 +10,21 @@
 
 html, body { height: 100%; }
 
+/* Watermark background (place your image at public/watermark.png) */
+body { position: relative; }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: url('/watermark.png') no-repeat center 35%;
+  background-size: min(50vw, 50vh);
+  opacity: 0.22;            /* daha belirgin */
+  filter: blur(1px);         /* netlik dengesi */
+  pointer-events: none;      /* tıklamaları engelleme */
+  z-index: 0;                /* içerik üstte kalsın */
+}
+
 /* Yardımcı (şart değil ama hoş): kart ve tablo stilleri */
 .card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm; }
 .card-header { @apply px-4 py-3 border-b border-slate-100 font-semibold; }
@@ -22,4 +37,3 @@ html, body { height: 100%; }
 /* Kaydırma çubuklarını gizle (sadece gerektiği yerde kullanacağız) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-

@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900 antialiased">
-        {children}
+        <div className="relative z-10">{children}</div>
       </body>
     </html>
   );
