@@ -342,13 +342,14 @@ const [hydrated, setHydrated] = useState(false);
 
   // ---- Rapor & filtre
   const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive">("none");
+
+  const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
+  // Admin oturum durumu
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
   // Non-admin başlangıç görünümü: Atanan Dosyalar
   useEffect(() => {
     if (!isAdmin && reportMode === "none") setReportMode("archive");
-  }, [isAdmin, reportMode]);
-  const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
-  // Admin oturum durumu
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  }, [isAdmin, reportMode]);;
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
