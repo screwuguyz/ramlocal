@@ -426,7 +426,7 @@ const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/state", { cache: "no-store" });
+        const res = await fetch(`/api/state?ts=${Date.now()}` as any, { cache: "no-store" });
         if (!res.ok) return;
         const s = await res.json();
         setTeachers(s.teachers ?? []);
@@ -489,12 +489,12 @@ useEffect(() => {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
     channelRef.current = null;
   };
-}, [clientId, isAdmin, teachers, cases, history, hydrated]);
+}, [clientId, isAdmin, teachers, cases, history, hydrated, centralLoaded]);
 
 // === Admin değiştirince herkese yayınla ===
 useEffect(() => {
   if (!isAdmin) return;
-  if (!hydrated) return; // LS yüklenmeden yayınlama
+  if (!hydrated) return; // LS yüklenmeden yayınlama\r\n  if (!centralLoaded) return; // Merkez yüklenmeden yayınlama
   const ch = channelRef.current;
   if (!ch) return;
   ch.send({
@@ -502,12 +502,11 @@ useEffect(() => {
     event: "state",
     payload: { sender: clientId, teachers, cases, history },
   });
-}, [teachers, cases, history, isAdmin, clientId, hydrated]);
+}, [teachers, cases, history, isAdmin, clientId, hydrated, centralLoaded]);
 // === Admin değiştirince merkezi state'e de yaz (kalıcılık)
 useEffect(() => {
   if (!isAdmin) return;
-  if (!hydrated) return;
-  const ctrl = new AbortController();
+  if (!hydrated) return;\r\n  if (!centralLoaded) return;\r\n  const ctrl = new AbortController();
   const payload = {
     teachers,
     cases,
@@ -526,7 +525,7 @@ useEffect(() => {
     }).catch(() => {});
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
-}, [teachers, cases, history, lastRollover, announcements, settings, isAdmin, hydrated]);
+}, [teachers, cases, history, lastRollover, announcements, settings, isAdmin, hydrated, centralLoaded]);
 
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();
