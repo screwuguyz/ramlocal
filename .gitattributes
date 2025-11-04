@@ -1,3 +1,20 @@
-* text=auto 
-*.sh text eol=lf 
-*.yml text eol=lf 
+* text=auto
+*.sh text eol=lf
+*.yml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+
+# If supported by your Git version, keep sources in UTF-8
+# (ignored by older Git; harmless)
+*.ts working-tree-encoding=UTF-8
+*.tsx working-tree-encoding=UTF-8
+*.js working-tree-encoding=UTF-8
+*.mjs working-tree-encoding=UTF-8
+*.json working-tree-encoding=UTF-8
+*.css working-tree-encoding=UTF-8
+*.md working-tree-encoding=UTF-8

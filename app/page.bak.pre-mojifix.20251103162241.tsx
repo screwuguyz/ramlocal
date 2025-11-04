@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -1878,7 +1878,6 @@ function AssignedArchiveSingleDay() {
     </div>
   );
 }
-
 
 
 

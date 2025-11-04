@@ -45,12 +45,8 @@ export type CaseFile = {
   isTest: boolean;
   assignReason?: string;
 }
-// Türkçe etiketler için güvenli başlıklandırma
-const ht = (v?: "YONLENDIRME" | "DESTEK" | "IKISI") =>
-  v === "YONLENDIRME" ? "Yönlendirme" : v === "DESTEK" ? "Destek" : v === "IKISI" ? "İkisi" : "-";
-
 function caseDesc(c: CaseFile) {
-  let s = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+  let s = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
   if (c.isTest) s += " • Test";
   if (c.assignReason) s += ` • Neden: ${c.assignReason}`;
   return s;
@@ -141,18 +137,19 @@ const DEFAULT_SETTINGS: Settings = {
 
 export default function DosyaAtamaApp() {
   // ---- Öğretmenler
-  const [teachers, setTeachers] = useState<Teacher[]>([])
-  
-  
-  
-  
-  
-  
+  const [teachers, setTeachers] = useState<Teacher[]>([
+    { id: uid(), name: "ANIL DENİZ ÖZGÜL", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+    { id: uid(), name: "ARMAN GÖKDAĞ",    isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+    { id: uid(), name: "AYTEN DİNÇEL",     isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+    { id: uid(), name: "AYGÜN ÇELİK",      isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+    { id: uid(), name: "NESLİHAN ŞAHİNER", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+    { id: uid(), name: "NURAY KIZILGÜNEŞ", isAbsent: false, yearlyLoad: 0, monthly: {}, active: true, isTester: false },
+  ])
 
   // ---- Dosyalar (BUGÜN)
   const [cases, setCases] = useState<CaseFile[]>([]);
 
-  // ---- ARİV (günlük)
+  // ---- ARŞİV (günlük)
   const [history, setHistory] = useState<Record<string, CaseFile[]>>({});
   const [lastRollover, setLastRollover] = useState<string>("");
   // --- Canlı yayın (Supabase)
@@ -346,110 +343,8 @@ const [hydrated, setHydrated] = useState(false);
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
   // Admin oturum durumu
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [sessionLoaded, setSessionLoaded] = useState<boolean>(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  // --- öneri/şikayet form durumu (herkes kullanabilir)
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [fbName, setFbName] = useState("");
-  const [fbEmail, setFbEmail] = useState("");
-  const [fbTypeCode, setFbTypeCode] = useState<"oneri"|"sikayet">("oneri");
-  const [fbType, setFbType] = useState<"öneri" | "şikayet">("öneri");
-  const [fbMessage, setFbMessage] = useState("");
-  const [fbLoading, setFbLoading] = useState(false);
-
-  async function sendFeedback(e?: React.FormEvent) {
-    e?.preventDefault?.();
-    // Yeni: opsiyonel ad/eposta, sadece mesaj uzunluğu ve varsa eposta formatı kontrol edilir
-    {
-      const msg2 = fbMessage.trim();
-      const name2 = fbName.trim();
-      const email2 = fbEmail.trim();
-      if (msg2.length < 10) {
-        toast("Lütfen en az 10 karakter yazın.");
-        return;
-      }
-      if (email2 && !(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2))) {
-        toast("Geçerli bir e-posta adresi girin.");
-        return;
-      }
-      setFbLoading(true);
-      try {
-        const res = await fetch("/api/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: name2,
-            email: email2,
-            type: fbTypeCode,
-            message: msg2,
-          }),
-        });
-        if (res.ok) {
-          toast("Teşekkürler! Geri bildiriminiz gönderildi.");
-          setFeedbackOpen(false);
-          setFbName("");
-          setFbEmail("");
-          setFbTypeCode("oneri");
-          setFbMessage("");
-        } else {
-          const j: any = await res.json().catch(() => ({}));
-          toast(j?.error || "Gönderim başarısız oldu.");
-        }
-      } catch {
-        toast("Gönderim sırasında bir hata oluştu.");
-      } finally {
-        setFbLoading(false);
-      }
-      return;
-    }
-    const msg = fbMessage.trim();
-    const name = fbName.trim();
-    const email = fbEmail.trim();
-    if (!name) {
-      toast("Lütfen ad soyad girin.");
-      return;
-    }
-    if (!email) {
-      toast("Lütfen e-posta adresi girin.");
-      return;
-    }
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!emailOk) {
-      toast("Geçerli bir e-posta adresi girin.");
-      return;
-    }
-    if (msg.length < 10) {
-      toast("Ltfen en az 10 karakter yazn.");
-      return;
-    }
-    setFbLoading(true);
-    try {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          type: fbTypeCode,
-          message: msg,
-        }),
-      });
-      if (res.ok) {
-        toast("Teşekkürler! Geri bildiriminiz gönderildi.");
-        setFeedbackOpen(false);
-        setFbName("");
-        setFbEmail("");
-        setFbTypeCode("oneri");
-        setFbMessage("");
-      } else {
-        const j: any = await res.json().catch(() => ({}));
-        toast(j?.error || "Gönderim başarısız oldu.");
-      }
-    } catch {
-      toast("Gönderim sırasında bir hata oluştu.");
-    } finally {
-      setFbLoading(false);
-    }
-  }
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
@@ -474,9 +369,6 @@ const [hydrated, setHydrated] = useState(false);
           isTester: !!t.isTester, // <-- migration
           pushoverKey: t.pushoverKey, // <-- Pushover anahtarını geri yükle
         })));
-      } else {
-        // Hiç kayıt yoksa başlangıç listesi boş kalsın (admin kendisi ekler)
-        setTeachers([]);
       }
       if (cRaw) setCases(JSON.parse(cRaw));
       if (hRaw) setHistory(JSON.parse(hRaw));
@@ -516,72 +408,46 @@ const [hydrated, setHydrated] = useState(false);
     try { localStorage.setItem(LS_LAST_ROLLOVER, lastRollover); } catch {}
   }, [lastRollover, hydrated]);
 
-  // Oturum bilgisini sunucudan çek
-  const [sessionReady, setSessionReady] = useState(false);
+  // ---- Merkezi durum: açılışta Supabase'den oku (varsa LS'yi override eder)
   useEffect(() => {
-    fetch("/api/session").then(r => r.ok ? r.json() : { isAdmin: false })
-      .then((d: any) => setIsAdmin(!!d.isAdmin))
-      .catch(() => {})
-      .finally(() => setSessionReady(true));
-  }, []);
-
-  // ---- Sunucu durumunu yükle (çoklu cihaz/sekme için kalıcı ortak durum)
-  useEffect(() => {
-    if (!sessionReady) return; // Admin bilgisini bekle
-    let cancelled = false;
     (async () => {
       try {
         const res = await fetch("/api/state", { cache: "no-store" });
         if (!res.ok) return;
         const s = await res.json();
-        if (cancelled) return;
-        // Sunucudan dolu bir şey geldiyse ve admin değilsek uygula.
-        const hasRemoteData = !!(s && (
-          (Array.isArray(s.teachers) && s.teachers.length) ||
-          (Array.isArray(s.cases) && s.cases.length) ||
-          (s.history && typeof s.history === "object" && Object.keys(s.history).length) ||
-          (typeof s.lastRollover === "string" && s.lastRollover) ||
-          (Array.isArray(s.announcements) && s.announcements.length) ||
-          (s.settings && typeof s.settings === "object")
-        ));
-        if (hasRemoteData && !isAdmin) {
-          if (Array.isArray(s.teachers)) setTeachers(s.teachers);
-          if (Array.isArray(s.cases)) setCases(s.cases);
-          if (s.history && typeof s.history === "object") setHistory(s.history);
-          if (typeof s.lastRollover === "string") setLastRollover(s.lastRollover);
-          if (Array.isArray(s.announcements)) setAnnouncements(s.announcements);
-          if (s.settings && typeof s.settings === "object") setSettings({ ...DEFAULT_SETTINGS, ...s.settings });
+        const hasCentral =
+          (Array.isArray(s?.teachers) && s.teachers.length > 0) ||
+          (Array.isArray(s?.cases) && s.cases.length > 0) ||
+          (s?.history && Object.keys(s.history || {}).length > 0) ||
+          (typeof s?.lastRollover === "string" && s.lastRollover.length > 0);
+        if (!hasCentral) return;
+        setTeachers(s.teachers ?? []);
+        setCases(s.cases ?? []);
+        setHistory(s.history ?? {});
+        setLastRollover(s.lastRollover ?? "");
+        if (Array.isArray(s.announcements)) {
+          const today = ymdLocal(new Date());
+          setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0,10) === today));
         }
+        if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
       } catch {}
     })();
-    return () => { cancelled = true; };
-  }, [sessionReady, isAdmin]);
+  }, []);
 
-  // ---- Admin değişikliklerini sunucuya yaz (debounce)
-  const persistTimerRef = React.useRef<number | null>(null);
+  // Oturum bilgisini sunucudan çek
   useEffect(() => {
-    if (!isAdmin || !hydrated) return;
-    if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
-    persistTimerRef.current = window.setTimeout(() => {
-      const payload = {
-        teachers,
-        cases,
-        history,
-        lastRollover,
-        announcements,
-        settings,
-        updatedAt: new Date().toISOString(),
-      };
-      fetch("/api/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).catch(() => {});
-    }, 400);
-    return () => {
-      if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
-    };
-  }, [teachers, cases, history, lastRollover, announcements, settings, isAdmin, hydrated]);
+    fetch("/api/session")
+      .then(r => r.ok ? r.json() : { isAdmin: false })
+      .then((d: any) => setIsAdmin(!!d.isAdmin))
+      .catch(() => {})
+      .finally(() => setSessionLoaded(true));
+  }, []);
+
+  // Non-admin açılış varsayılanı: Atanan Dosyalar görünümü
+  useEffect(() => {
+    if (!sessionLoaded) return;
+    if (!isAdmin) setReportMode("archive");
+  }, [sessionLoaded, isAdmin]);
 // === Realtime abonelik: canlı güncelleme + ilk açılışta snapshot ===
 useEffect(() => {
   const ch = supabase.channel("dosya-atama");
@@ -591,8 +457,6 @@ useEffect(() => {
   ch.on("broadcast", { event: "state" }, (e) => {
     const p = e.payload as any;
     if (!p || p.sender === clientId) return; // kendi yayınımı alma
-    // Admin isek uzak snapshot ile yereli ezme
-    if (isAdmin) return;
     setTeachers(p.teachers ?? []);
     setCases(p.cases ?? []);
     if (p.history) setHistory(p.history);
@@ -640,6 +504,31 @@ useEffect(() => {
   });
 }, [teachers, cases, history, isAdmin, clientId, hydrated]);
 
+// === Admin değiştirince merkezi state'e de yaz (kalıcılık)
+useEffect(() => {
+  if (!isAdmin) return;
+  if (!hydrated) return;
+  const ctrl = new AbortController();
+  const payload = {
+    teachers,
+    cases,
+    history,
+    lastRollover,
+    announcements,
+    settings,
+    updatedAt: new Date().toISOString(),
+  };
+  const t = window.setTimeout(() => {
+    fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    }).catch(() => {});
+  }, 300);
+  return () => { window.clearTimeout(t); ctrl.abort(); };
+}, [teachers, cases, history, lastRollover, announcements, settings, isAdmin, hydrated]);
+
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();
     try {
@@ -680,7 +569,7 @@ useEffect(() => {
     return n;
   }
   // Günlük atama sınırı: bir öğretmene bir günde verilebilecek maksimum dosya
-  // Günlük sınır ayarlardan gelir (settings.dailyLimit)
+  const MAX_DAILY_CASES = 4;
   // Bugün en son kime atama yapıldı? (liste en yeni başta olduğundan ilk uygun kaydı alır)
   function lastAssignedTeacherToday(): string | undefined {
     const today = ymdLocal(new Date());
@@ -691,12 +580,12 @@ useEffect(() => {
   // ---- Puanlama
   function calcScore() {
     // Test dosyaları sabit 7 puan
-    if (isTestCase) return settings.scoreTest;
+    if (isTestCase) return 7;
     let score = 0;
-    if (type === "YONLENDIRME") score += settings.scoreTypeY;
-    if (type === "DESTEK") score += settings.scoreTypeD;
-    if (type === "IKISI") score += settings.scoreTypeI;
-    if (isNew) score += settings.scoreNewBonus;
+    if (type === "YONLENDIRME") score += 1;
+    if (type === "DESTEK") score += 2;
+    if (type === "IKISI") score += 3;
+    if (isNew) score += 1;
     if (diagCount > 0) score += Math.min(6, Math.max(0, diagCount));
     return score;
   }
@@ -706,7 +595,7 @@ useEffect(() => {
     // Test dosyasıysa: sadece testörler ve bugün test almamış olanlar
     if (newCase.isTest) {
       const testers = teachers.filter(
-        (t) => t.isTester && !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < settings.dailyLimit
+        (t) => t.isTester && !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < MAX_DAILY_CASES
       );
       if (!testers.length) return null; // uygun testör yoksa atama yok
 
@@ -988,7 +877,7 @@ useEffect(() => {
       alert("Bu dosyada atanmış öğretmenin Pushover anahtarı yok.");
       return;
     }
-    const desc = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+    const desc = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
     try {
       const res = await fetch("/api/notify", {
         method: "POST",
@@ -997,7 +886,7 @@ useEffect(() => {
           userKey: t.pushoverKey,
           title: "ACİL: Öğrenci Bekliyor",
           message: `${t.name}, ${c.student} bekliyor. Lütfen hemen gelin. (${desc})`,
-          priority: 2, // emergency: tekrar eden uyarı (retry/expire)
+          priority: 0, // non-emergency: tekrar yok
         }),
       });
       if (!res.ok) {
@@ -1018,7 +907,7 @@ useEffect(() => {
     const rows = data.map((c) => [
       c.id,
       c.student,
-      ht(c.type),
+      humanType(c.type),
       c.isNew ? "Evet" : "Hayır",
       c.diagCount ?? 0,
       c.score,
@@ -1135,7 +1024,7 @@ async function testNotifyTeacher(t: Teacher) {
 // === Otomatik atamada/yeniden atamada haber ver ===
 async function notifyAssigned(t: Teacher, c: CaseFile) {
   if (!t?.pushoverKey) return; // key yoksa sessizce çık
-  const desc = `Tür: ${ht(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
+  const desc = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
   try {
     await fetch("/api/notify", {
       method: "POST",
@@ -1191,18 +1080,18 @@ function AssignedArchiveSingleDay() {
 
   function explainWhy(c: CaseFile): string {
     const t = teacherById(c.assignedTo);
-    if (!t) return "ATANAN ÖRETMEN BULUNAMADI.";
+    if (!t) return "ATANAN ÖĞRETMEN BULUNAMADI.";
     if (c.assignReason) {
-      return `BU DOSYA YÖNETİCİ TARAFINDAN MANUEL OLARAK '${t.name}' ÖRETMENİNE ATANMITIR. NEDEN: ${c.assignReason}.`;
+      return `BU DOSYA YÖNETİCİ TARAFINDAN MANUEL OLARAK '${t.name}' ÖĞRETMENİNE ATANMIŞTIR. NEDEN: ${c.assignReason}.`;
     }
     const reasons: string[] = [];
     if (c.isTest) {
-      reasons.push("DOSYA TEST OLDUU İÇİN SADECE TESTÖR ÖRETMENLER DEERLENDİRİLDİ.");
+      reasons.push("DOSYA TEST OLDUĞU İÇİN SADECE TESTÖR ÖĞRETMENLER DEĞERLENDİRİLDİ.");
     }
-    reasons.push("UYGUNLUK FİLTRELERİ: AKTİF, DEVAMSIZ DEİL, BUGÜN TEST ALMAMI, GÜNLÜK SINIRI AMAMI.");
-    reasons.push("SIRALAMA: ÖNCE YILLIK YÜK AZ, EİTSE BUGÜNKÜ DOSYA SAYISI AZ, SONRA RASTGELE.");
-    reasons.push("ART ARDA AYNI ÖRETMENE ATAMA YAPMAMAK İÇİN MÜMKÜNSE FARKLI ÖRETMEN TERCİH EDİLDİ.");
-    reasons.push(`GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${settings.dailyLimit} DOSYA.`);
+    reasons.push("UYGUNLUK FİLTRELERİ: AKTİF, DEVAMSIZ DEĞİL, BUGÜN TEST ALMAMIŞ, GÜNLÜK SINIRI AŞMAMIŞ.");
+    reasons.push("SIRALAMA: ÖNCE YILLIK YÜK AZ, EŞİTSE BUGÜNKÜ DOSYA SAYISI AZ, SONRA RASTGELE.");
+    reasons.push("ART ARDA AYNI ÖĞRETMENE ATAMA YAPMAMAK İÇİN MÜMKÜNSE FARKLI ÖĞRETMEN TERCİH EDİLDİ.");
+    reasons.push(`GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${MAX_DAILY_CASES} DOSYA.`);
     reasons.push(`SEÇİM SONUCU: '${t.name}' BU KRİTERLERE GÖRE EN UYGUN ADAYDI.`);
     return reasons.join(" ");
   }
@@ -1299,11 +1188,11 @@ function AssignedArchiveSingleDay() {
                             setAiLoading(true);
                             try {
                               const rules = [
-                                'ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖRETMENLERE ATANIR.',
-                                'UYGUNLUK: AKTİF, DEVAMSIZ DEİL, BUGÜN TEST ALMAMI, GÜNLÜK SINIRI AMAMI.',
+                                'ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖĞRETMENLERE ATANIR.',
+                                'UYGUNLUK: AKTİF, DEVAMSIZ DEĞİL, BUGÜN TEST ALMAMIŞ, GÜNLÜK SINIRI AŞMAMIŞ.',
                                 'SIRALAMA: ÖNCE YILLIK YÜK AZ → DAHA SONRA BUGÜN ALINAN DOSYA SAYISI AZ → RASTGELE.',
-                                'ARDIIK AYNI ÖRETMENE ATAMA YAPILMAZSA TERCİH EDİLİR.',
-                                `GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${settings.dailyLimit} DOSYA.`,
+                                'ARDIŞIK AYNI ÖĞRETMENE ATAMA YAPILMAZSA TERCİH EDİLİR.',
+                                `GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA ${MAX_DAILY_CASES} DOSYA.`,
                               ];
                               const res = await fetch('/api/explain', {
                                 method: 'POST',
@@ -1350,7 +1239,7 @@ function AssignedArchiveSingleDay() {
   );
 }
 
-  // ---------- TEK RETURN: BİLEEN ÇIKII ----------
+  // ---------- TEK RETURN: BİLEŞEN ÇIKIŞI ----------
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Üst araç çubuğu: rapor ve giriş */}
@@ -1411,9 +1300,6 @@ function AssignedArchiveSingleDay() {
         <span className="inline-block size-1.5 rounded-full bg-current animate-pulse" />
         Canlı: {live}
       </span>
-      
-      {/* öneri/şikayet */}
-      <Button size="sm" variant="outline" className="min-h-9" onClick={() => setFeedbackOpen(true)}>öneri/şikayet</Button>
 
       {isAdmin ? (
   <>
@@ -1450,14 +1336,14 @@ function AssignedArchiveSingleDay() {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal marker:text-red-600 pl-5 space-y-2 text-sm md:text-base font-semibold text-slate-800">
-              <li>ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖRETMENLERE ATANIR.</li>
-              <li>UYGUNLUK: AKTİF OLMALI, DEVAMSIZ OLMAMALI, BUGÜN TEST ALMAMI OLMALI, GÜNLÜK SINIRI AMAMI OLMALI.</li>
+              <li>ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖĞRETMENLERE ATANIR.</li>
+              <li>UYGUNLUK: AKTİF OLMALI, DEVAMSIZ OLMAMALI, BUGÜN TEST ALMAMIŞ OLMALI, GÜNLÜK SINIRI AŞMAMIŞ OLMALI.</li>
               <li>SIRALAMA: ÖNCE YILLIK YÜK AZ → DAHA SONRA BUGÜN ALINAN DOSYA SAYISI AZ → RASTGELE.</li>
-              <li>ART ARDA AYNI ÖRETMENE ATAMA YAPILMAZ; MÜMKÜNSE ARAYA EN AZ 1 ÖRETMEN GİRER.</li>
-              <li>GÜNLÜK ÜST SINIR: ÖRETMEN BAINA GÜNDE EN FAZLA {settings.dailyLimit} DOSYA.</li>
+              <li>ART ARDA AYNI ÖĞRETMENE ATAMA YAPILMAZ; MÜMKÜNSE ARAYA EN AZ 1 ÖĞRETMEN GİRER.</li>
+              <li>GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA GÜNDE EN FAZLA {settings.dailyLimit} DOSYA.</li>
               <li>MANUEL ATAMA YAPILIRSA SİSTEMİN OTOMATİK ATAMASI GEÇERSİZ OLUR.</li>
               <li>PUANLAMA: TEST = {settings.scoreTest}; YÖNLENDİRME = {settings.scoreTypeY}, DESTEK = {settings.scoreTypeD}, İKİSİ = {settings.scoreTypeI}; YENİ = +{settings.scoreNewBonus}; TANI = 0–6 (ÜST SINIR 6).</li>
-              <li>ATAMA SONRASI ÖRETMENE BİLDİRİM GÖNDERİLİR.</li>
+              <li>ATAMA SONRASI ÖĞRETMENE BİLDİRİM GÖNDERİLİR.</li>
             </ol>
           </CardContent>
         </Card>
@@ -1476,7 +1362,7 @@ function AssignedArchiveSingleDay() {
       )}
 
       {/* Admin alanı */}
-      <div className={`flex flex-col gap-4 lg:flex-row ${(isAdmin && hydrated) ? "" : "hidden"}`}>
+      <div className={`flex flex-col gap-4 lg:flex-row ${isAdmin ? "" : "hidden"}`}>
         {/* Sol: Dosya ekle */}
         <Card className="flex-1">
           <CardHeader><CardTitle>Yeni Dosya Ekle</CardTitle></CardHeader>
@@ -1564,7 +1450,7 @@ function AssignedArchiveSingleDay() {
                   <SelectTrigger className="w-full"><SelectValue placeholder="Öğretmen seçin" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">— Manuel atama yok —</SelectItem>
-                    {(isAdmin ? teachers.filter(t => t.active) : []).map(t => (
+                    {teachers.filter(t => t.active).map(t => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1709,12 +1595,9 @@ function AssignedArchiveSingleDay() {
                 />
               </div>
               <Button onClick={addTeacher}>Ekle</Button>
-              {isAdmin && (
-                <Button variant="destructive" onClick={() => setTeachers([])}>Tümünü Temizle</Button>
-              )}
             </div>
 
-            {(isAdmin ? teachers : []).map((t) => {
+            {teachers.map((t) => {
               const locked = hasTestToday(t.id);
               return (
                 <div key={t.id} className="flex items-center justify-between rounded-lg border p-3">
@@ -1896,7 +1779,7 @@ function AssignedArchiveSingleDay() {
                         </Button>
                       ) : null}
                     </td>
-                    <td className="p-2">{c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</td>
+                    <td className="p-2">{c.isTest ? "Evet (+5)" : "Hayır"}</td>
                     <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
                     <td className="p-2 text-right">
                       <Button size="icon" variant="ghost" onClick={() => removeCase(c.id)} title="Sil">
@@ -1928,7 +1811,7 @@ function AssignedArchiveSingleDay() {
                 <div className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</div>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-muted-foreground">Atanan:</span> {teacherName(c.assignedTo)}</div>
-                  <div><span className="text-muted-foreground">Test:</span> {c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</div>
+                  <div><span className="text-muted-foreground">Test:</span> {c.isTest ? "Evet (+5)" : "Hayır"}</div>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{caseDesc(c)}</div>
                 <div className="flex items-center justify-end gap-2 mt-2">
@@ -1952,9 +1835,9 @@ function AssignedArchiveSingleDay() {
         </CardContent>
       </Card>
 
-      {reportMode === "monthly" && <MonthlyReport teachers={isAdmin ? teachers : []} />}
+      {reportMode === "monthly" && <MonthlyReport teachers={teachers} />}
       {reportMode === "daily" && (
-        <DailyReport teachers={isAdmin ? teachers : []} cases={cases} history={history} />
+        <DailyReport teachers={teachers} cases={cases} history={history} />
       )}
       {reportMode === "archive" && (
         isAdmin ? (
@@ -1970,7 +1853,7 @@ function AssignedArchiveSingleDay() {
             cases={cases}
             teacherName={teacherName}
             caseDesc={caseDesc}
-            teachers={isAdmin ? teachers : []}
+            teachers={teachers}
           />
         )
       )}
@@ -2005,7 +1888,7 @@ function AssignedArchiveSingleDay() {
                   <Input type="number" value={settings.scoreTypeD} onChange={e => setSettings({ ...settings, scoreTypeD: Number(e.target.value) || 0 })} />
                 </div>
                 <div className="col-span-2">
-                  <Label>İkisi</Label>
+                  <Label>kisi</Label>
                   <Input type="number" value={settings.scoreTypeI} onChange={e => setSettings({ ...settings, scoreTypeI: Number(e.target.value) || 0 })} />
                 </div>
               </div>
@@ -2042,57 +1925,7 @@ function AssignedArchiveSingleDay() {
           </Card>
         </div>
       )}
-      {/* öneri / şikayet Modal (public) */}
-      {feedbackOpen && (
-  <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => !fbLoading && setFeedbackOpen(false)}>
-    <Card className="w-[520px] max-w-[95vw]" onClick={(e) => e.stopPropagation()}>
-      <CardHeader><CardTitle>öneri / şikayet</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-3" onSubmit={sendFeedback}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label>Ad Soyad (opsiyonel)</Label>
-              <Input value={fbName} onChange={(e) => setFbName(e.target.value)} placeholder="Adınız" />
-            </div>
-            <div>
-              <Label>Eposta (opsiyonel)</Label>
-              <Input type="email" value={fbEmail} onChange={(e) => setFbEmail(e.target.value)} placeholder="ornek@eposta.com" />
-            </div>
-          </div>
-          <div>
-            <Label>Tür</Label>
-            <Select value={fbTypeCode} onValueChange={(v) => setFbTypeCode(v as any)}>
-              <SelectTrigger><SelectValue placeholder="Tür seçin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="oneri">Öneri</SelectItem>
-                <SelectItem value="sikayet">Şikayet</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-          <div>
-            <Label>Mesaj</Label>
-            <textarea
-              value={fbMessage}
-              onChange={(e) => setFbMessage(e.target.value)}
-              rows={6}
-              placeholder="Mesajınızı yazın (min. 10 karakter)"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={() => !fbLoading && setFeedbackOpen(false)}>İptal</Button>
-            <Button type="submit" disabled={fbLoading}>{fbLoading ? "Gönderiliyor..." : "Gönder"}</Button>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Gönderimler ilgili eposta adresine iletilir. İletişim için eposta yazmanız önerilir.
-          </div>
-        </div>
-        </form>
-      </CardContent>
-    </Card>
-  </div>
-)}{/* Toast Container */}
+      {/* Toast Container */}
       {toasts.length > 0 && (
         <div className="fixed top-3 right-3 z-[100] space-y-2">
           {toasts.map(t => (
@@ -2105,4 +1938,10 @@ function AssignedArchiveSingleDay() {
     </div>
   );
 }
+
+
+
+
+
+
 
