@@ -936,6 +936,52 @@ useEffect(() => {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  // ---- CSV dışa aktar (ayrıştırılmış sütunlar)
+  function exportCSV2() {
+    const headers = [
+      "DosyaID","DosyaNo","Öğrenci","Tür","Yeni","Yeni(1/0)",
+      "Tanı","Puan","Tarih","Saat","Gün","Ay","Yıl","ISO",
+      "Test","Test(1/0)","Atanan Öğretmen","Neden"
+    ];
+    const data = getCasesForMonth(filterYM);
+    const rows = data.map((c) => {
+      const d = new Date(c.createdAt);
+      const tarih = d.toLocaleDateString('tr-TR');
+      const saat = d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      const gun = String(d.getDate()).padStart(2,'0');
+      const ay  = String(d.getMonth()+1).padStart(2,'0');
+      const yil = String(d.getFullYear());
+      return [
+        c.id,
+        c.fileNo || '',
+        c.student,
+        humanType(c.type),
+        c.isNew ? 'Evet' : 'Hayır',
+        c.isNew ? 1 : 0,
+        c.diagCount ?? 0,
+        c.score,
+        tarih,
+        saat,
+        gun,
+        ay,
+        yil,
+        c.createdAt,
+        c.isTest ? 'Evet' : 'Hayır',
+        c.isTest ? 1 : 0,
+        teacherName(c.assignedTo),
+        c.assignReason || ''
+      ];
+    });
+    const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dosyalar_${filterYM}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   function handleImportJSON(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1258,17 +1304,17 @@ function AssignedArchiveSingleDay() {
         </SelectContent>
       </Select>
 
-      <Button variant="outline" size="sm" className="min-h-9" onClick={() => setReportMode("monthly")}>
+      <Button variant={reportMode === "monthly" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "monthly"} onClick={() => setReportMode("monthly")}>
         <BarChart2 className="h-4 w-4 mr-2" /> Aylık Rapor
       </Button>
-      <Button variant="outline" size="sm" className="min-h-9" onClick={() => setReportMode("daily")}>
+      <Button variant={reportMode === "daily" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "daily"} onClick={() => setReportMode("daily")}>
         <BarChart2 className="h-4 w-4 mr-2" /> Günlük Rapor
       </Button>
-      <Button variant="outline" size="sm" className="min-h-9" onClick={() => setReportMode("archive")}>
+      <Button variant={reportMode === "archive" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "archive"} onClick={() => setReportMode("archive")}>
         <BarChart2 className="h-4 w-4 mr-2" /> Atanan Dosyalar
       </Button>
 
-      <Button variant="outline" size="sm" className="min-h-9" onClick={exportCSV}>
+      <Button variant="outline" size="sm" className="min-h-9" onClick={exportCSV2}>
         <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
       </Button>
       <Button variant="outline" size="sm" className="min-h-9" onClick={exportJSON}>
@@ -1740,8 +1786,8 @@ function AssignedArchiveSingleDay() {
             <Button variant="outline" onClick={testSound}>Ses Test</Button>
             <Button variant="outline" onClick={() => setReportMode("monthly")}><BarChart2 className="h-4 w-4 mr-2"/>Aylık Rapor</Button>
             <Button variant="outline" onClick={() => setReportMode("daily")}><BarChart2 className="h-4 w-4 mr-2"/>Günlük Rapor</Button>
-            <Button variant="outline" onClick={() => setReportMode("archive")}><BarChart2 className="h-4 w-4 mr-2"/>Atanan Dosyalar</Button>
-            <Button variant="outline" onClick={exportCSV}><FileSpreadsheet className="h-4 w-4 mr-2"/>CSV</Button>
+            <Button variant={reportMode === "archive" ? "default" : "outline"} aria-pressed={reportMode === "archive"} onClick={() => setReportMode("archive")}><BarChart2 className="h-4 w-4 mr-2"/>Atanan Dosyalar</Button>
+            <Button variant="outline" onClick={exportCSV2}><FileSpreadsheet className="h-4 w-4 mr-2"/>CSV</Button>
           </div>
         </CardHeader>
         <CardContent>
