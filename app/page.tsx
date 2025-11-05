@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,7 @@ export default function DosyaAtamaApp() {
   // --- Canlı yayın (Supabase)
   const clientId = React.useMemo(() => uid(), []);
   const channelRef = React.useRef<RealtimeChannel | null>(null);
+  const lastAppliedAtRef = React.useRef<string>("")
   const [live, setLive] = useState<"connecting" | "online" | "offline">("connecting");
   const studentRef = React.useRef<HTMLInputElement | null>(null);
   // ---- Öneri/Şikayet modal durumu
@@ -352,7 +353,8 @@ const [hydrated, setHydrated] = useState(false);
 
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
   // Admin oturum durumu
-  const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [centralLoaded, setCentralLoaded] = useState(false)
   // Non-admin başlangıç görünümü: Atanan Dosyalar
   useEffect(() => {
     if (!isAdmin && reportMode === "none") setReportMode("archive");
@@ -426,9 +428,13 @@ const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/state?ts=${Date.now()}` as any, { cache: "no-store" });
+        const res = await fetch(`/api/state?ts=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) return;
         const s = await res.json();
+        const inc = Date.parse(String(s.updatedAt || 0));
+        const cur = Date.parse(String(lastAppliedAtRef.current || 0));
+        if (!isNaN(inc) && inc <= cur) { /* older snapshot; ignore */ } else {
+        lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
         setTeachers(s.teachers ?? []);
         setCases(s.cases ?? []);
         setHistory(s.history ?? {});
@@ -438,6 +444,7 @@ const [hydrated, setHydrated] = useState(false);
           setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0,10) === today));
         }
         if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
+        }
       } catch {}
     })();
   }, []);
@@ -457,6 +464,10 @@ useEffect(() => {
   ch.on("broadcast", { event: "state" }, (e) => {
     const p = e.payload as any;
     if (!p || p.sender === clientId) return; // kendi yayınımı alma
+    const inc = Date.parse(String(p.updatedAt || 0));
+    const cur = Date.parse(String(lastAppliedAtRef.current || 0));
+    if (!isNaN(inc) && inc <= cur) return;
+    lastAppliedAtRef.current = p.updatedAt || new Date().toISOString();
     setTeachers(p.teachers ?? []);
     setCases(p.cases ?? []);
     if (p.history) setHistory(p.history);
@@ -471,7 +482,7 @@ useEffect(() => {
     ch.send({
       type: "broadcast",
       event: "state",
-      payload: { sender: clientId, teachers, cases, history },
+      payload: { sender: clientId, teachers, cases, history, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
     });
   });
 
@@ -494,19 +505,24 @@ useEffect(() => {
 // === Admin değiştirince herkese yayınla ===
 useEffect(() => {
   if (!isAdmin) return;
-  if (!hydrated) return; // LS yüklenmeden yayınlama\r\n  if (!centralLoaded) return; // Merkez yüklenmeden yayınlama
+  if (!hydrated) return; // LS yüklenmeden yayınlama
+  if (!centralLoaded) return; // Merkez yüklenmeden yayınlama
   const ch = channelRef.current;
   if (!ch) return;
   ch.send({
     type: "broadcast",
     event: "state",
-    payload: { sender: clientId, teachers, cases, history },
+    payload: { sender: clientId, teachers, cases, history, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
   });
 }, [teachers, cases, history, isAdmin, clientId, hydrated, centralLoaded]);
 // === Admin değiştirince merkezi state'e de yaz (kalıcılık)
 useEffect(() => {
   if (!isAdmin) return;
-  if (!hydrated) return;\r\n  if (!centralLoaded) return;\r\n  const ctrl = new AbortController();
+  if (!hydrated) return;
+  if (!centralLoaded) return;
+  const ctrl = new AbortController();
+  const nowTs = new Date().toISOString();
+  lastAppliedAtRef.current = nowTs;
   const payload = {
     teachers,
     cases,
@@ -514,7 +530,7 @@ useEffect(() => {
     lastRollover,
     announcements,
     settings,
-    updatedAt: new Date().toISOString(),
+    updatedAt: nowTs,
   };
   const t = window.setTimeout(() => {
     fetch("/api/state", {
@@ -898,7 +914,7 @@ useEffect(() => {
 
   // ---- CSV dışa aktar (arşiv + bugün, seçili ay)
   function exportCSV() {
-    const headers = ["DosyaID","Öğrenci","Tür","Yeni","Tanı","Puan","Tarih","Ay","Test","Atanan Öğretmen"];
+    const headers = ['DosyaID','Öğrenci','Tür','Yeni','Tanı','Puan','Tarih','Ay','Test','Atanan Öğretmen'];
     const fmt = (iso: string) => new Date(iso).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" });
 
     const data = getCasesForMonth(filterYM);
@@ -906,18 +922,19 @@ useEffect(() => {
       c.id,
       c.student,
       humanType(c.type),
-      c.isNew ? "Evet" : "Hayır",
+      c.isNew ? 'Evet' : 'Hayır',
       c.diagCount ?? 0,
       c.score,
       fmt(c.createdAt),
       ymOf(c.createdAt),
-      c.isTest ? "Evet" : "Hayır",
+      c.isTest ? 'Evet' : 'Hayır',
       teacherName(c.assignedTo),
     ]);
-    const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\r\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n');
+    const bom = '\ufeff';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
     a.download = `dosyalar_${filterYM}.csv`;
     a.click();
@@ -973,8 +990,9 @@ useEffect(() => {
         c.assignReason || ''
       ];
     });
-    const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n');
+    const bom = '\ufeff';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
