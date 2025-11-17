@@ -439,6 +439,9 @@ const [hydrated, setHydrated] = useState(false);
         if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
         }
       } catch {}
+      finally {
+        setCentralLoaded(true);
+      }
     })();
   }, []);
   // Oturum bilgisini sunucudan çek
