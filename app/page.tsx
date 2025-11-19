@@ -512,6 +512,7 @@ const [hydrated, setHydrated] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLanding, setShowLanding] = useState(true);
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -1503,6 +1504,31 @@ function AssignedArchiveSingleDay() {
     </Card>
   );
 }
+
+  if (showLanding) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-emerald-100 via-white to-emerald-200 relative text-slate-800 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-60 blur-3xl">
+          <img src="/logo.png" alt="Karşıyaka RAM Logo" className="w-[70vw] max-w-4xl opacity-30" />
+        </div>
+        <div className="relative z-10 max-w-3xl w-full px-8 py-14 text-center space-y-7 bg-white/90 backdrop-blur rounded-[40px] shadow-2xl border border-emerald-100">
+          <div className="text-sm md:text-base uppercase tracking-[0.6em] text-emerald-600 font-semibold">
+            Karşıyaka Rehberlik ve Araştırma Merkezi
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-emerald-900">
+            Özel Eğitim Bölümü Paneli
+          </h1>
+          <p className="text-lg md:text-2xl text-slate-600 leading-relaxed">
+            Hoş geldiniz. Panelde günlük randevu listelerini yükleyebilir, dosya atamalarını yönetebilir ve öğretmen
+            bildirimlerini takip edebilirsiniz.
+          </p>
+          <Button size="lg" className="px-12 py-6 text-xl" onClick={() => setShowLanding(false)}>
+            Panele Giriş Yap
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   // ---------- TEK RETURN: BİLEŞEN ÇIKIŞI ----------
   return (
