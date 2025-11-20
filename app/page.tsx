@@ -174,7 +174,7 @@ function DailyAppointmentsCard({
   pdfLoading: boolean;
   pdfEntries: PdfAppointment[];
   selectedPdfEntryId: string | null;
-  onShowDetails: () => void;
+  onShowDetails: (date?: Date) => void;
   isAdmin?: boolean;
   onApplyEntry?: (entry: PdfAppointment) => void;
   onRemoveEntry?: (id: string) => void;
@@ -215,7 +215,7 @@ function DailyAppointmentsCard({
               Yazdır
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={onShowDetails}>
+          <Button size="sm" variant="outline" onClick={() => onShowDetails()}>
             Detaylı Gör
           </Button>
         </div>
