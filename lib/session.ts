@@ -1,4 +1,4 @@
-import type { IronSessionOptions } from "iron-session";
+import type { SessionOptions } from "iron-session";
 
 // Oturumda saklanacak verinin tipini burada tanımlıyoruz.
 export type SessionData = {
@@ -6,7 +6,7 @@ export type SessionData = {
 };
 
 // iron-session için yapılandırma ayarları.
-export const sessionOptions: IronSessionOptions = {
+export const sessionOptions: SessionOptions = {
   // Bu şifre en az 32 karakter olmalı ve bir ortam değişkeninde saklanmalıdır.
   // Örnek: openssl rand -base64 32 komutuyla bir şifre üretebilirsiniz.
   password: process.env.SECRET_COOKIE_PASSWORD as string,
@@ -16,4 +16,3 @@ export const sessionOptions: IronSessionOptions = {
     secure: process.env.NODE_ENV === "production",
   },
 };
-
