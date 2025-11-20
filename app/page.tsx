@@ -6,16 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import MonthlyReport from "@/components/reports/MonthlyReport";
 import DailyReport from "@/components/reports/DailyReport";
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
-import { Trash2, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X } from "lucide-react";
+import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer } from "lucide-react";
 
 
 
@@ -164,6 +167,7 @@ function DailyAppointmentsCard({
   isAdmin,
   onApplyEntry,
   onRemoveEntry,
+  onPrint,
   onClearAll,
 }: {
   pdfDate: string | null;
@@ -174,6 +178,7 @@ function DailyAppointmentsCard({
   isAdmin?: boolean;
   onApplyEntry?: (entry: PdfAppointment) => void;
   onRemoveEntry?: (id: string) => void;
+  onPrint?: () => void;
   onClearAll?: () => void;
 }) {
   return (
@@ -183,11 +188,31 @@ function DailyAppointmentsCard({
           Günlük RAM Randevuları
           {pdfDate && <span className="ml-2 text-sm text-emerald-700 font-normal">({pdfDate})</span>}
         </CardTitle>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className="w-[240px] justify-start text-left font-normal"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {pdfDate ? pdfDate : <span>Tarih seç</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" onSelect={(date) => onShowDetails(date)} initialFocus />
+          </PopoverContent>
+        </Popover>
         <div className="flex items-center gap-2">
           {onClearAll && (
             <Button size="sm" variant="destructive" onClick={onClearAll} disabled={pdfEntries.length === 0}>
               <Trash2 className="h-4 w-4 mr-1.5" />
               PDF'yi Temizle
+            </Button>
+          )}
+          {onPrint && (
+            <Button size="sm" variant="outline" onClick={onPrint} disabled={pdfEntries.length === 0}>
+              <Printer className="h-4 w-4 mr-1.5" />
+              Yazdır
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={onShowDetails}>
@@ -302,6 +327,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   const [pdfDateIso, setPdfDateIso] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const activePdfEntry = useMemo(() => pdfEntries.find(e => e.id === selectedPdfEntryId) || null, [pdfEntries, selectedPdfEntryId]);
+  const [isDragging, setIsDragging] = useState(false); // Sürükle-bırak durumu
 // Persist hydration guard: LS'den ilk y�kleme bitene kadar yazma yapma
 const [hydrated, setHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -463,15 +489,21 @@ const [hydrated, setHydrated] = useState(false);
     setAnnouncements(prev => prev.filter(a => a.id !== id));
   }
 
-  const fetchPdfEntriesFromServer = React.useCallback(async () => {
+  const fetchPdfEntriesFromServer = React.useCallback(async (date?: Date) => {
     setPdfLoading(true);
     try {
-      const res = await fetch("/api/pdf-import", { cache: "no-store" });
+      let url = "/api/pdf-import";
+      if (date) {
+        const dateIso = format(date, "yyyy-MM-dd");
+        url += `?date=${dateIso}`;
+      }
+      const res = await fetch(url, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setPdfEntries([]);
         setPdfDate(null);
         setPdfDateIso(null);
+        if (date) toast("Seçilen tarih için randevu listesi bulunamadı.");
         return;
       }
       setPdfEntries(Array.isArray(json.entries) ? json.entries : []);
@@ -601,6 +633,11 @@ const [hydrated, setHydrated] = useState(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function handlePrintPdfList() {
+    document.body.classList.add("print-pdf-list");
+    window.print();
+  }
+
   function clearActivePdfEntry() {
     setSelectedPdfEntryId(null);
     setStudent("");
@@ -620,7 +657,7 @@ const [hydrated, setHydrated] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
   const [loginRemember, setLoginRemember] = useState(true); // Beni hatırla
   const [showLanding, setShowLanding] = useState(true);
-  const [showPdfPanel, setShowPdfPanel] = useState(false);
+  const [showPdfPanel, setShowPdfPanel] = useState<boolean | Date>(false);
   const [showRules, setShowRules] = useState(false);
 
   // ---- LS'den yükleme (migration alanları)
@@ -1839,7 +1876,8 @@ function AssignedArchiveSingleDay() {
             pdfLoading={pdfLoading}
             pdfEntries={pdfEntries}
             selectedPdfEntryId={selectedPdfEntryId}
-            onShowDetails={() => setShowPdfPanel(true)}
+            onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
+            onPrint={handlePrintPdfList}
             onClearAll={() => clearPdfEntries(true, true)}
           />
         </>
@@ -1881,8 +1919,9 @@ function AssignedArchiveSingleDay() {
             isAdmin={isAdmin}
             onApplyEntry={applyPdfEntry}
             onRemoveEntry={removePdfEntry}
+            onPrint={handlePrintPdfList}
             onClearAll={() => clearPdfEntries()}
-              onShowDetails={() => setShowPdfPanel(true)}
+              onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
             />
             {activePdfEntry && (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
@@ -2514,12 +2553,30 @@ function AssignedArchiveSingleDay() {
           ))}
         </div>
       )}
+      {/* Yazdırma için özel stil */}
+      <style jsx global>{`
+        @media print {
+          body.print-pdf-list .printable-pdf-list {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          body.print-pdf-list > div > *:not(.printable-pdf-list) {
+            display: none !important;
+          }
+          body.print-pdf-list .printable-pdf-list .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
     {(showPdfPanel || showRules) && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-emerald-100 p-6 space-y-5">
             <button
-              className="absolute top-4 right-4 text-slate-600 hover:text-slate-900"
+              className="absolute top-4 right-4 text-slate-600 hover:text-slate-900 z-10"
               onClick={() => { setShowPdfPanel(false); setShowRules(false); }}
               title="Kapat"
             >
@@ -2533,17 +2590,45 @@ function AssignedArchiveSingleDay() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <label className="sm:flex-1">
+                      <label
+                        className={`sm:flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                          isDragging
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-emerald-300 hover:bg-emerald-50/50"
+                        }`}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+                            setIsDragging(true);
+                          }
+                        }}
+                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            const file = e.dataTransfer.files[0];
+                            if (file.type === "application/pdf") {
+                              handlePdfFileChange(file);
+                            } else {
+                              toast("Lütfen sadece PDF dosyası sürükleyin.");
+                            }
+                          }
+                        }}
+                      >
                         <input
                           type="file"
                           accept="application/pdf"
                           ref={pdfInputRef}
                           onChange={(e) => handlePdfFileChange(e.target.files?.[0] || null)}
                           className="hidden"
-                        />
-                        <Button type="button" variant="outline" className="w-full" onClick={() => pdfInputRef.current?.click()}>
-                          {pdfFile ? pdfFile.name : "Dosya Seç"}
-                        </Button>
+                        />                        
+                        <div className="text-center text-slate-600">
+                          {pdfFile ? <span className="font-semibold text-emerald-800">{pdfFile.name}</span> : "PDF dosyasını buraya sürükleyin veya tıklayıp seçin"}
+                        </div>
                       </label>
                       <Button onClick={uploadPdfFromFile} disabled={pdfUploading || !pdfFile}>
                         {pdfUploading ? "Yükleniyor..." : "PDF Ekle"}

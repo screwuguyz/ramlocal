@@ -126,14 +126,41 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
   return { entries, dateLabel };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { entries, dateIso } = await fetchLatestFromSupabase();
-    return NextResponse.json({
-      entries,
-      date: formatDisplayDate(dateIso),
-      dateIso,
-    }, { headers: { "Cache-Control": "no-store" } });
+    const url = new URL(req.url);
+    const dateQuery = url.searchParams.get("date"); // örn: "2025-11-21"
+
+    if (dateQuery) {
+      // Belirli bir tarih için veri çek
+      if (!SUPA_URL || !SUPA_ANON_KEY) {
+        return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
+      }
+      const client = createClient(SUPA_URL, SUPA_ANON_KEY);
+      const { data: rows, error } = await client
+        .from(TABLE_NAME)
+        .select("id,time,name,file_no,extra,order_index")
+        .eq("appointment_date", dateQuery)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+      if (!rows || rows.length === 0) {
+        return NextResponse.json({ error: "Bu tarih için kayıt bulunamadı." }, { status: 404 });
+      }
+
+      const entries = (rows || []).map((row) => ({
+        id: row.id, time: row.time, name: row.name, fileNo: row.file_no || "", extra: row.extra || "",
+      }));
+
+      return NextResponse.json({ entries, date: formatDisplayDate(dateQuery), dateIso: dateQuery }, { headers: { "Cache-Control": "no-store" } });
+    } else {
+      // Tarih belirtilmemişse en sonuncuyu çek (mevcut davranış)
+      const { entries, dateIso } = await fetchLatestFromSupabase();
+      return NextResponse.json(
+        { entries, date: formatDisplayDate(dateIso), dateIso },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
   } catch (err) {
     console.error("pdf-import GET error", err);
     return NextResponse.json({ entries: [], date: null, dateIso: null }, { status: 500 });
