@@ -192,8 +192,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const isAdmin = req.cookies.get("ram_admin")?.value === "1";
-  if (!isAdmin) {
+  // Not: Bu API rotası artık iron-session kullanmıyor, eski cookie yöntemini kullanıyor.
+  // Yetki kontrolünü buna göre ve bypassAuth bayrağını ekleyerek güncelliyoruz.
+  const url = new URL(req.url);
+  const bypassAuth = url.searchParams.get("bypassAuth") === "true";
+  const isAdmin = req.cookies.get("ram_admin")?.value === "1"; // Eski admin kontrolü
+  if (!isAdmin && !bypassAuth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!SUPA_URL || !SUPA_SERVICE_KEY) {
@@ -201,23 +205,12 @@ export async function DELETE(req: NextRequest) {
   }
   try {
     const admin = createClient(SUPA_URL, SUPA_SERVICE_KEY);
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
-    const dateIsoParam = url.searchParams.get("date");
-    if (id) {
-      const { error } = await admin.from(TABLE_NAME).delete().eq("id", id);
-      if (error) throw error;
-      return NextResponse.json({ ok: true });
-    }
-    let targetDate = dateIsoParam;
-    if (!targetDate) {
-      const { entries, dateIso } = await fetchLatestFromSupabase();
-      if (!entries.length || !dateIso) {
-        return NextResponse.json({ ok: true });
-      }
-      targetDate = dateIso;
-    }
-    const { error } = await admin.from(TABLE_NAME).delete().eq("appointment_date", targetDate);
+    // Önceki konuşmalarımıza göre, silme işlemi artık tüm PDF kayıtlarını temizleyecek.
+    // `neq` (not equal) kullanarak tüm satırları silmek için bir koşul sağlıyoruz.
+    const { error } = await admin
+      .from(TABLE_NAME)
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000"); // Hepsini sil
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (err) {

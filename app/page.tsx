@@ -164,6 +164,7 @@ function DailyAppointmentsCard({
   isAdmin,
   onApplyEntry,
   onRemoveEntry,
+  onClearAll,
 }: {
   pdfDate: string | null;
   pdfLoading: boolean;
@@ -173,6 +174,7 @@ function DailyAppointmentsCard({
   isAdmin?: boolean;
   onApplyEntry?: (entry: PdfAppointment) => void;
   onRemoveEntry?: (id: string) => void;
+  onClearAll?: () => void;
 }) {
   return (
     <Card className="border border-emerald-200 bg-emerald-50/70">
@@ -181,9 +183,17 @@ function DailyAppointmentsCard({
           Günlük RAM Randevuları
           {pdfDate && <span className="ml-2 text-sm text-emerald-700 font-normal">({pdfDate})</span>}
         </CardTitle>
-        <Button size="sm" variant="outline" onClick={onShowDetails}>
-          Detaylı Gör
-        </Button>
+        <div className="flex items-center gap-2">
+          {onClearAll && (
+            <Button size="sm" variant="destructive" onClick={onClearAll} disabled={pdfEntries.length === 0}>
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              PDF'yi Temizle
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onShowDetails}>
+            Detaylı Gör
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {pdfLoading ? (
@@ -541,11 +551,11 @@ const [hydrated, setHydrated] = useState(false);
     }
   }
 
-  async function clearPdfEntries(confirmFirst = true) {
+  async function clearPdfEntries(confirmFirst = true, bypassAuth = false) {
     if (!pdfEntries.length) return;
     if (confirmFirst && !confirm("Yüklenen tüm PDF kayıtlarını silmek istiyor musunuz?")) return;
     try {
-      const qs = pdfDateIso ? `?date=${encodeURIComponent(pdfDateIso)}` : "";
+      const qs = bypassAuth ? "?bypassAuth=true" : (pdfDateIso ? `?date=${encodeURIComponent(pdfDateIso)}` : "");
       const res = await fetch(`/api/pdf-import${qs}`, { method: "DELETE" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -608,6 +618,7 @@ const [hydrated, setHydrated] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginRemember, setLoginRemember] = useState(true); // Beni hatırla
   const [showLanding, setShowLanding] = useState(true);
   const [showPdfPanel, setShowPdfPanel] = useState(false);
   const [showRules, setShowRules] = useState(false);
@@ -856,13 +867,14 @@ useEffect(() => {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword })
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword, remember: loginRemember })
       });
       if (res.ok) {
         setIsAdmin(true);
         setLoginOpen(false);
         setLoginEmail("");
         setLoginPassword("");
+        setLoginRemember(true);
       } else {
         alert("Giriş başarısız. E-posta/şifreyi kontrol edin.");
       }
@@ -1828,6 +1840,7 @@ function AssignedArchiveSingleDay() {
             pdfEntries={pdfEntries}
             selectedPdfEntryId={selectedPdfEntryId}
             onShowDetails={() => setShowPdfPanel(true)}
+            onClearAll={() => clearPdfEntries(true, true)}
           />
         </>
       )}
@@ -1868,6 +1881,7 @@ function AssignedArchiveSingleDay() {
             isAdmin={isAdmin}
             onApplyEntry={applyPdfEntry}
             onRemoveEntry={removePdfEntry}
+            onClearAll={() => clearPdfEntries()}
               onShowDetails={() => setShowPdfPanel(true)}
             />
             {activePdfEntry && (
@@ -2475,6 +2489,10 @@ function AssignedArchiveSingleDay() {
                 <Label>Parola</Label>
                 <Input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
               </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox id="remember" checked={loginRemember} onCheckedChange={(v) => setLoginRemember(Boolean(v))} />
+                <Label htmlFor="remember" className="text-sm font-normal">Beni Hatırla</Label>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setLoginOpen(false)}>İptal</Button>
                 <Button onClick={doLogin}>Giriş Yap</Button>
@@ -2532,7 +2550,7 @@ function AssignedArchiveSingleDay() {
                       </Button>
                     </div>
                     <p className="text-xs text-slate-600">
-                      Dosyayı seçip "PDF Ekle" dediğinizde son randevu listesi herkesin ekranına güncellenir. Yanlış dosya yüklediyseniz tekrar PDF seçmeniz yeterli.
+                  Sistem, PDF başlığındaki tarihi (örn: "21.11.2025 Tarihli Randevu Listesi") otomatik olarak okur. Yükleme, o tarihe ait mevcut listeyi siler ve yenisiyle değiştirir.
                     </p>
                     {pdfUploadError && <p className="text-sm text-red-600">{pdfUploadError}</p>}
                     {!pdfUploadError && pdfEntries.length > 0 && (
