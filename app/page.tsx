@@ -556,8 +556,16 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   const fetchCentralState = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/state?ts=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("[fetchCentralState] HTTP error:", res.status);
+        return;
+      }
       const s = await res.json();
+      // Supabase hatası varsa logla
+      if (s._error) {
+        console.error("[fetchCentralState] Supabase error:", s._error);
+        toast(`Supabase bağlantı hatası: ${s._error}`);
+      }
       const incomingTs = Date.parse(String(s.updatedAt || 0));
       const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
       if (!isNaN(incomingTs) && incomingTs <= currentTs) return;
@@ -572,8 +580,9 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
       if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
+      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0);
     } catch (err) {
-      console.warn("state fetch failed", err);
+      console.error("[fetchCentralState] Network error:", err);
     } finally {
       setCentralLoaded(true);
     }
@@ -941,7 +950,19 @@ useEffect(() => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal: ctrl.signal,
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          console.error("[state POST] Error:", json);
+          toast(`Supabase kayıt hatası: ${json?.error || res.status}`);
+        }
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("[state POST] Network error:", err);
+        }
+      });
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
 }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, isAdmin, hydrated, centralLoaded]);

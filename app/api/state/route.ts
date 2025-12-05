@@ -73,7 +73,8 @@ export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
   if (!url || !anon) {
-    return NextResponse.json(DEFAULT_STATE, { headers: { "Cache-Control": "no-store" } });
+    console.error("[api/state][GET] Missing env vars: URL=", !!url, "ANON=", !!anon);
+    return NextResponse.json({ ...DEFAULT_STATE, _error: "Missing Supabase env vars" }, { headers: { "Cache-Control": "no-store" } });
   }
   try {
     const client = createClient(url, anon);
@@ -82,12 +83,16 @@ export async function GET() {
       .select("state")
       .eq("id", "global")
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      console.error("[api/state][GET] Supabase error:", error);
+      throw error;
+    }
     const s = (data?.state as StateShape) || DEFAULT_STATE;
+    console.log("[api/state][GET] Success, teachers count:", s.teachers?.length || 0);
     return NextResponse.json(s, { headers: { "Cache-Control": "no-store" } });
   } catch (err: any) {
     console.error("[api/state][GET]", err?.message || err);
-    return NextResponse.json(DEFAULT_STATE, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ ...DEFAULT_STATE, _error: err?.message }, { headers: { "Cache-Control": "no-store" } });
   }
 }
 
@@ -116,7 +121,8 @@ export async function POST(req: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
   if (!url || !service) {
-    return NextResponse.json({ ok: false, error: "Missing Supabase envs" }, { status: 500 });
+    console.error("[api/state][POST] Missing env vars: URL=", !!url, "SERVICE_KEY=", !!service);
+    return NextResponse.json({ ok: false, error: "Missing Supabase envs (URL or SERVICE_ROLE_KEY)" }, { status: 500 });
   }
   try {
     const admin = createClient(url, service);
@@ -124,7 +130,11 @@ export async function POST(req: NextRequest) {
       .from("app_state")
       .upsert({ id: "global", state: s, updated_at: new Date().toISOString() })
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error("[api/state][POST] Supabase error:", error);
+      throw error;
+    }
+    console.log("[api/state][POST] Success, teachers count:", s.teachers?.length || 0);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("[api/state][POST]", err?.message || err);
