@@ -1089,16 +1089,13 @@ useEffect(() => {
         testers = testers.filter(t => t.id !== lastTid);
       }
 
-      // Sıralama: 1) Bugün en az dosya alan, 2) Yıllık yük en az, 3) İsim (deterministik)
+      // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
       testers.sort((a, b) => {
-        // Önce bugün alınan dosya sayısına bak (günlük adalet)
-        const byCount = countCasesToday(a.id) - countCasesToday(b.id);
-        if (byCount !== 0) return byCount;
-        // Sonra yıllık yüke bak
         const byLoad = a.yearlyLoad - b.yearlyLoad;
         if (byLoad !== 0) return byLoad;
-        // Eşitlik durumunda isim sırasına göre (rastgele değil, deterministik)
-        return a.name.localeCompare(b.name, 'tr');
+        const byCount = countCasesToday(a.id) - countCasesToday(b.id);
+        if (byCount !== 0) return byCount;
+        return Math.random() - 0.5;
       });
       
       const chosen = testers[0];
@@ -1132,16 +1129,13 @@ useEffect(() => {
       available = available.filter(t => t.id !== lastTid);
     }
 
-    // Sıralama: 1) Bugün en az dosya alan, 2) Yıllık yük en az, 3) İsim (deterministik)
+    // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
     available.sort((a, b) => {
-      // Önce bugün alınan dosya sayısına bak (günlük adalet)
-      const byCount = countCasesToday(a.id) - countCasesToday(b.id);
-      if (byCount !== 0) return byCount;
-      // Sonra yıllık yüke bak
       const byLoad = a.yearlyLoad - b.yearlyLoad;
       if (byLoad !== 0) return byLoad;
-      // Eşitlik durumunda isim sırasına göre (rastgele değil, deterministik)
-      return a.name.localeCompare(b.name, 'tr');
+      const byCount = countCasesToday(a.id) - countCasesToday(b.id);
+      if (byCount !== 0) return byCount;
+      return Math.random() - 0.5;
     });
     
     const chosen = available[0];
