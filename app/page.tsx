@@ -179,8 +179,8 @@ type Settings = {
 };
 
 const DEFAULT_SETTINGS: Settings = {
-  dailyLimit: 4,
-  scoreTest: 7,
+  dailyLimit: 5,
+  scoreTest: 10,
   scoreNewBonus: 1,
   scoreTypeY: 1,
   scoreTypeD: 2,
