@@ -78,6 +78,11 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
   const footerMatch = text.match(/(\d{2}\.\d{2}\.\d{4})\s+\d{2}:\d{2}:\d{2}/);
   const dateLabel = dateMatch?.[1] || footerMatch?.[1] || null;
 
+  // DEBUG: Tüm satırları logla
+  console.log("=== PDF SATIRLARI ===");
+  normalizedLines.forEach((line, i) => console.log(`[${i}] ${line}`));
+  console.log("=== PDF SATIRLARI SONU ===");
+
   const blocks: Array<string[]> = [];
   let current: string[] = [];
   for (const line of normalizedLines) {
@@ -90,29 +95,94 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
     }
   }
   if (current.length) blocks.push(current);
+  
+  // DEBUG: Blokları logla
+  console.log(`=== ${blocks.length} BLOK BULUNDU ===`);
+  blocks.forEach((b, i) => console.log(`Blok ${i}: ${JSON.stringify(b)}`));
 
   const isUpper = (line: string) => /^[A-ZÇĞİÖŞÜ\s']+$/.test(line.replace(/[^A-ZÇĞİÖŞÜ\s']/gi, ""));
+  
+  // Bilinen engel türleri (birleşik satırları ayırmak için)
+  const engelTurleri = [
+    "Bedensel Yetersizlik",
+    "Hafif Düzeyde Otizm",
+    "Hafif Düzeyde Zihinsel",
+    "Orta Düzeyde Zihinsel",
+    "Özel Öğrenme",
+    "Özel Yetenekli",
+    "Dil ve Konuşma",
+    "İşitme Yetersizliği",
+    "Görme Yetersizliği",
+    "Normal"
+  ];
 
   const entries = blocks
     .map((lines) => {
       const head = lines[0] || "";
       const headMatch = head.match(/^(\d{11})(.*)$/);
       if (!headMatch) return null;
-      const rest = headMatch[2] ?? "";
+      let rest = headMatch[2] ?? "";
       const nameParts: string[] = [];
-      if (rest.trim()) nameParts.push(rest.trim());
       let time = "";
       let fileNo = "";
       const extraParts: string[] = [];
+      
+      // Birleşik satırı parse et (örn: "URAZ DİNÇBedensel Yetersizlik752589810:00")
+      if (rest.trim()) {
+        // Önce saat bul (XX:XX formatında, satırın herhangi bir yerinde)
+        const timeInRest = rest.match(/(\d{1,2}:\d{2})/);
+        if (timeInRest) {
+          time = timeInRest[1];
+          rest = rest.replace(timeInRest[1], " ");
+        }
+        
+        // Engel türünü bul ve ayır
+        let foundEngel = "";
+        for (const engel of engelTurleri) {
+          if (rest.includes(engel)) {
+            foundEngel = engel;
+            rest = rest.replace(engel, " ");
+            break;
+          }
+        }
+        if (foundEngel) extraParts.push(foundEngel);
+        
+        // Kayıt numarasını bul (7 haneli sayı)
+        const kayitMatch = rest.match(/(\d{7})/);
+        if (kayitMatch) {
+          rest = rest.replace(kayitMatch[1], " ");
+        }
+        
+        // Geri kalan büyük harfli kısım isim
+        const nameMatch = rest.match(/([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ\s']+)/);
+        if (nameMatch) {
+          nameParts.push(nameMatch[1].trim());
+        }
+      }
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        const timeMatch = line.match(/(\d{1,2}:\d{2})$/);
-        if (timeMatch) {
+        
+        // Satırda saat var mı (birleşik olabilir: "406554109:30")
+        const timeMatch = line.match(/(\d{1,2}:\d{2})/);
+        if (timeMatch && !time) {
           time = timeMatch[1];
+          // Saatin öncesinde kayıt no olabilir
           continue;
         }
+        
+        // Saat satır sonunda (örn: "Normal09:30")
+        const timeEndMatch = line.match(/(\d{1,2}:\d{2})$/);
+        if (timeEndMatch && !time) {
+          time = timeEndMatch[1];
+          const beforeTime = line.slice(0, -5).trim();
+          if (beforeTime && !beforeTime.match(/^\d+$/)) {
+            extraParts.push(beforeTime);
+          }
+          continue;
+        }
+        
         if (!time && isUpper(line)) {
           nameParts.push(line.replace(/^\d{5,}\s+/, "").trim());
           continue;
@@ -120,6 +190,11 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
         // Dosya numarası: "***" veya 2-7 haneli numara (opsiyonel 1-2 harf prefix)
         if (/^[A-ZÇĞİÖŞÜ\s]*\*{3}$/.test(line) || /^[A-ZÇĞİÖŞÜ]{0,2}\s?\d{2,7}$/.test(line)) {
           fileNo = line.replace(/\s+/g, " ").trim();
+          continue;
+        }
+        // Sadece sayı (dosya no olabilir)
+        if (/^\d{2,7}$/.test(line) && !fileNo) {
+          fileNo = line;
           continue;
         }
         extraParts.push(line);
