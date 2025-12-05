@@ -2177,9 +2177,9 @@ function AssignedArchiveSingleDay() {
       )}
 
       {/* Admin alanı */}
-      <div className={`flex flex-col gap-4 lg:flex-row ${isAdmin ? "" : "hidden"}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${isAdmin ? "" : "hidden"}`}>
         {/* Sol: Dosya ekle */}
-        <Card className="flex-1">
+        <Card className="min-w-0">
           <CardHeader><CardTitle>Yeni Dosya Ekle</CardTitle></CardHeader>
           <CardContent
             className="space-y-4"
@@ -2376,7 +2376,7 @@ function AssignedArchiveSingleDay() {
         </Card>
 
         {/* Sağ: Öğretmenler */}
-        <Card className="flex-1">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader><CardTitle>Öğretmenler</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {/* Öğretmen Ekle */}
