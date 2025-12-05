@@ -570,27 +570,12 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       
       // Supabase'den gelen öğretmen sayısını kaydet (koruma için)
       const supabaseTeacherCount = s.teachers?.length || 0;
-      const localTeacherCount = teachersRef.current?.length || 0;
-      
-      // KORUMA: Supabase boş ama local'de veri varsa, Supabase verisini REDDET
-      if (supabaseTeacherCount === 0 && localTeacherCount > 0) {
-        console.warn("[fetchCentralState] BLOCKED: Supabase has 0 teachers but local has", localTeacherCount, ". Keeping local data.");
-        supabaseTeacherCountRef.current = localTeacherCount; // Local sayıyı koru
-        setCentralLoaded(true);
-        return;
-      }
-      
       supabaseTeacherCountRef.current = supabaseTeacherCount;
-      console.log("[fetchCentralState] Supabase teacher count:", supabaseTeacherCount, "Local:", localTeacherCount);
+      console.log("[fetchCentralState] Supabase teacher count:", supabaseTeacherCount);
       
       const incomingTs = Date.parse(String(s.updatedAt || 0));
       const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
-      if (!isNaN(incomingTs) && incomingTs <= currentTs) {
-        console.log("[fetchCentralState] Skipped: incoming timestamp older or equal");
-        setCentralLoaded(true);
-        return;
-      }
-      
+      if (!isNaN(incomingTs) && incomingTs <= currentTs) return;
       lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
       setTeachers(s.teachers ?? []);
       setCases(s.cases ?? []);
@@ -602,7 +587,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
       if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
-      console.log("[fetchCentralState] Applied, teachers:", s.teachers?.length || 0);
+      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0);
     } catch (err) {
       console.error("[fetchCentralState] Network error:", err);
     } finally {
@@ -899,21 +884,11 @@ useEffect(() => {
     const inc = Date.parse(String(p.updatedAt || 0));
     const cur = Date.parse(String(lastAppliedAtRef.current || 0));
     if (!isNaN(inc) && inc <= cur) return;
-    
-    // KORUMA: Gelen veri boşsa ama bizde veri varsa, REDDET
-    const incomingTeacherCount = p.teachers?.length || 0;
-    const currentTeacherCount = teachersRef.current?.length || 0;
-    if (incomingTeacherCount === 0 && currentTeacherCount > 0) {
-      console.warn("[broadcast] BLOCKED: Incoming has 0 teachers but we have", currentTeacherCount, ". Refusing empty broadcast.");
-      return;
-    }
-    
     lastAppliedAtRef.current = p.updatedAt || new Date().toISOString();
     setTeachers(p.teachers ?? []);
     setCases(p.cases ?? []);
     if (p.history) setHistory(p.history);
     if (typeof p.lastAbsencePenalty === "string") setLastAbsencePenalty(p.lastAbsencePenalty);
-    console.log("[broadcast] Applied state from", p.sender, "teachers:", incomingTeacherCount);
   });
 
   // 2) İzleyici "hello" derse admin state göndersin
@@ -950,13 +925,6 @@ useEffect(() => {
   if (!isAdmin) return;
   if (!hydrated) return; // LS yüklenmeden yayınlama
   if (!centralLoaded) return; // Merkez yüklenmeden yayınlama
-  
-  // KORUMA: Boş öğretmen listesi yayınlama!
-  if (teachers.length === 0 && supabaseTeacherCountRef.current > 0) {
-    console.warn("[broadcast OUT] BLOCKED: Not broadcasting empty teachers list");
-    return;
-  }
-  
   const ch = channelRef.current;
   if (!ch) return;
   ch.send({
@@ -964,7 +932,6 @@ useEffect(() => {
     event: "state",
     payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
   });
-  console.log("[broadcast OUT] Sent state, teachers:", teachers.length);
 }, [teachers, cases, history, lastAbsencePenalty, isAdmin, clientId, hydrated, centralLoaded]);
 
 // === Admin değiştirince merkezi state'e de yaz (kalıcılık)
@@ -2063,24 +2030,61 @@ function AssignedArchiveSingleDay() {
 
   if (showLanding) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-emerald-100 via-white to-emerald-200 relative text-slate-800 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-60 blur-3xl">
-          <img src="/logo.png" alt="Karşıyaka RAM Logo" className="w-[70vw] max-w-4xl opacity-30" />
+      <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-50 via-white to-orange-50 relative text-slate-800 overflow-hidden">
+        {/* Animasyonlu arka plan deseni */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-40 left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
         </div>
-        <div className="relative z-10 max-w-3xl w-full px-8 py-14 text-center space-y-7 bg-white/90 backdrop-blur rounded-[40px] shadow-2xl border border-emerald-100">
-          <div className="text-sm md:text-base uppercase tracking-[0.6em] text-emerald-600 font-semibold">
+        
+        <div className="relative z-10 max-w-3xl w-full mx-4 px-8 py-14 text-center space-y-8 bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/50">
+          {/* Logo/İkon */}
+          <div className="flex justify-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl transform hover:rotate-6 transition-transform">
+              <span className="text-4xl">📚</span>
+            </div>
+          </div>
+          
+          <div className="text-sm md:text-base uppercase tracking-[0.5em] text-teal-600 font-semibold">
             Karşıyaka Rehberlik ve Araştırma Merkezi
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-emerald-900">
+          
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-orange-500 bg-clip-text text-transparent">
             Özel Eğitim Bölümü Paneli
           </h1>
-          <p className="text-lg md:text-2xl text-slate-600 leading-relaxed">
-            👋 Hoş geldiniz! Panelde günlük randevu listelerini yükleyebilir, dosya atamalarını yönetebilir ve öğretmen
-            bildirimlerini takip edebilirsiniz.
+          
+          <p className="text-lg md:text-xl text-slate-600 leading-relaxed max-w-xl mx-auto">
+            👋 Hoş geldiniz! Günlük randevu listelerini yükleyin, dosya atamalarını yönetin ve öğretmen bildirimlerini takip edin.
           </p>
-          <Button size="lg" className="px-12 py-6 text-xl" onClick={() => setShowLanding(false)}>
+          
+          {/* Özellik kartları */}
+          <div className="grid grid-cols-3 gap-4 py-4">
+            <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
+              <div className="text-2xl mb-1">📁</div>
+              <div className="text-xs text-teal-700 font-medium">Dosya Atama</div>
+            </div>
+            <div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
+              <div className="text-2xl mb-1">👨‍🏫</div>
+              <div className="text-xs text-orange-700 font-medium">Öğretmen Takibi</div>
+            </div>
+            <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
+              <div className="text-2xl mb-1">📊</div>
+              <div className="text-xs text-purple-700 font-medium">Raporlama</div>
+            </div>
+          </div>
+          
+          <Button 
+            size="lg" 
+            className="px-12 py-6 text-xl bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all" 
+            onClick={() => setShowLanding(false)}
+          >
             🚀 Panele Giriş Yap
           </Button>
+          
+          <div className="text-xs text-slate-400">
+            v2.0 • Son güncelleme: {new Date().toLocaleDateString('tr-TR')}
+          </div>
         </div>
       </main>
     );
@@ -2208,6 +2212,26 @@ function AssignedArchiveSingleDay() {
 
   </div>
 </div>
+
+      {/* 📊 DASHBOARD ÖZET KARTLARI */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="text-3xl font-bold">{teachers.filter(t => t.active && !t.isAbsent).length}</div>
+          <div className="text-sm opacity-90">👨‍🏫 Aktif Öğretmen</div>
+        </div>
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="text-3xl font-bold">{cases.filter(c => !c.absencePenalty).length}</div>
+          <div className="text-sm opacity-90">📁 Bugün Atanan</div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="text-3xl font-bold">{pdfEntries.length}</div>
+          <div className="text-sm opacity-90">📋 Bekleyen Randevu</div>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="text-3xl font-bold">{Object.keys(history).length}</div>
+          <div className="text-sm opacity-90">📅 Arşivli Gün</div>
+        </div>
+      </div>
       
       {/* Admin olmayan kullanıcılar için randevu listesi ve duyurular */}
       {!isAdmin && (
@@ -2856,14 +2880,26 @@ function AssignedArchiveSingleDay() {
           </Card>
         </div>
       )}
-      {/* Toast Container */}
+      {/* Toast Container - Renkli */}
       {toasts.length > 0 && (
         <div className="fixed top-3 right-3 z-[100] space-y-2">
-          {toasts.map(t => (
-            <div key={t.id} className="rounded-md bg-slate-900 text-white text-sm px-3 py-2 shadow-lg">
-              {t.text}
-            </div>
-          ))}
+          {toasts.map(t => {
+            const isError = t.text.toLowerCase().includes('hata') || t.text.toLowerCase().includes('error');
+            const isSuccess = t.text.toLowerCase().includes('başarı') || t.text.toLowerCase().includes('eklendi') || t.text.toLowerCase().includes('silindi');
+            return (
+              <div 
+                key={t.id} 
+                className={`rounded-xl text-white text-sm px-4 py-3 shadow-xl flex items-center gap-2 animate-slide-in-right ${
+                  isError ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                  isSuccess ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                  'bg-gradient-to-r from-slate-700 to-slate-800'
+                }`}
+              >
+                <span>{isError ? '❌' : isSuccess ? '✅' : '💬'}</span>
+                <span>{t.text}</span>
+              </div>
+            );
+          })}
         </div>
       )}
       {/* Yazdırma için özel stil */}

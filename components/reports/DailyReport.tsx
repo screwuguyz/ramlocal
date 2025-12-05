@@ -81,7 +81,7 @@ export default function DailyReportView({
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Günlük Rapor (Puan · Adet)</CardTitle>
+        <CardTitle>📅 Günlük Rapor (Puan · Adet)</CardTitle>
         <div className="flex items-center gap-2">
           <Label>Yıl</Label>
           <Input

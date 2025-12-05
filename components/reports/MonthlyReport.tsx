@@ -26,7 +26,7 @@ export default function MonthlyReport({ teachers }: { teachers: Teacher[] }) {
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Aylık Yük Raporu</CardTitle>
+        <CardTitle>📊 Aylık Yük Raporu</CardTitle>
         <div className="flex items-center gap-2">
           <Label className="whitespace-nowrap">Yıl</Label>
           <Input
