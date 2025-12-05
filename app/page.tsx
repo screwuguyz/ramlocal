@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ export type Teacher = {
   active: boolean;
   pushoverKey?: string;
   isTester: boolean; // <-- YENİ: Testör
+  backupDay?: string;
 };
 type Announcement = { id: string; text: string; createdAt: string };
 type PdfAppointment = {
@@ -54,6 +55,7 @@ export type CaseFile = {
   diagCount: number;
   isTest: boolean;
   assignReason?: string;
+  absencePenalty?: boolean;
 }
 
 // E-Arşiv için tip
@@ -65,6 +67,9 @@ export type EArchiveEntry = {
   createdAt: string; // ISO
 };
 function caseDesc(c: CaseFile) {
+  if (c.absencePenalty) {
+    return c.assignReason || "Devamsızlık sonrası denge puanı (otomatik)";
+  }
   let s = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
   if (c.isTest) s += " • Test";
   if (c.assignReason) s += ` • Neden: ${c.assignReason}`;
@@ -104,6 +109,7 @@ const LS_PDF_ENTRIES = "dosya_atama_pdf_entries_v1";
 const LS_PDF_DATE = "dosya_atama_pdf_date_v1";
 const LS_PDF_DATE_ISO = "dosya_atama_pdf_date_iso_v1";
 const LS_E_ARCHIVE = "dosya_atama_e_archive_v1"; // YENİ E-ARŞİV
+const LS_LAST_ABSENCE_PENALTY = "dosya_atama_last_absence_penalty";
 // ---- Tarih yardımcıları
 function daysInMonth(year: number, month: number) { // month: 1-12
   return new Date(year, month, 0).getDate();
@@ -281,6 +287,7 @@ export default function DosyaAtamaApp() {
   // ---- ARŞİV (günlük)
   const [history, setHistory] = useState<Record<string, CaseFile[]>>({});
   const [lastRollover, setLastRollover] = useState<string>("");
+  const [lastAbsencePenalty, setLastAbsencePenalty] = useState<string>("");
   // ---- E-ARŞİV (sürekli)
   const [eArchive, setEArchive] = useState<EArchiveEntry[]>([]);
 
@@ -288,6 +295,9 @@ export default function DosyaAtamaApp() {
   const clientId = React.useMemo(() => uid(), []);
   const channelRef = React.useRef<RealtimeChannel | null>(null);
   const lastAppliedAtRef = React.useRef<string>("")
+  const teachersRef = React.useRef<Teacher[]>([]);
+  const casesRef = React.useRef<CaseFile[]>([]);
+  const lastAbsencePenaltyRef = React.useRef<string>("");
   const [live, setLive] = useState<"connecting" | "online" | "offline">("connecting");
   const studentRef = React.useRef<HTMLInputElement | null>(null);
   // ---- Öneri/Şikayet modal durumu
@@ -328,8 +338,8 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const activePdfEntry = useMemo(() => pdfEntries.find(e => e.id === selectedPdfEntryId) || null, [pdfEntries, selectedPdfEntryId]);
   const [isDragging, setIsDragging] = useState(false); // Sürükle-bırak durumu
-// Persist hydration guard: LS'den ilk y�kleme bitene kadar yazma yapma
-const [hydrated, setHydrated] = useState(false);
+  // Persist hydration guard: LS'den ilk yükleme bitene kadar yazma yapma
+  const [hydrated, setHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Ayarlar (persist)
   const [settings, setSettings] = useState<Settings>(() => {
@@ -532,6 +542,7 @@ const [hydrated, setHydrated] = useState(false);
       setCases(s.cases ?? []);
       setHistory(s.history ?? {});
       setLastRollover(s.lastRollover ?? "");
+      setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
       if (Array.isArray(s.announcements)) {
         const today = ymdLocal(new Date());
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
@@ -667,6 +678,7 @@ const [hydrated, setHydrated] = useState(false);
       const cRaw = localStorage.getItem(LS_CASES);
       const hRaw = localStorage.getItem(LS_HISTORY);
       const lrRaw = localStorage.getItem(LS_LAST_ROLLOVER);
+      const lapRaw = localStorage.getItem(LS_LAST_ABSENCE_PENALTY);
       const aRaw = localStorage.getItem(LS_ANNOUNCEMENTS);
       const pRaw = localStorage.getItem(LS_PDF_ENTRIES);
       const pdRaw = localStorage.getItem(LS_PDF_DATE);
@@ -684,11 +696,13 @@ const [hydrated, setHydrated] = useState(false);
           active: t.active ?? true,
           isTester: !!t.isTester, // <-- migration
           pushoverKey: t.pushoverKey, // <-- Pushover anahtarını geri yükle
+          backupDay: t.backupDay,
         })));
       }
       if (cRaw) setCases(JSON.parse(cRaw));
       if (hRaw) setHistory(JSON.parse(hRaw));
       if (lrRaw) setLastRollover(lrRaw);
+      if (lapRaw) setLastAbsencePenalty(lapRaw);
       // Duyurular: sadece bugüne ait olanları yükle
       if (aRaw) {
         const arr = JSON.parse(aRaw) as Announcement[];
@@ -713,6 +727,10 @@ const [hydrated, setHydrated] = useState(false);
     fetchPdfEntriesFromServer();
   }, [fetchPdfEntriesFromServer]);
 
+  useEffect(() => { teachersRef.current = teachers; }, [teachers]);
+  useEffect(() => { casesRef.current = cases; }, [cases]);
+  useEffect(() => { lastAbsencePenaltyRef.current = lastAbsencePenalty; }, [lastAbsencePenalty]);
+
   // Duyuruları LS'ye yaz
   useEffect(() => {
     if (!hydrated) return;
@@ -736,6 +754,10 @@ const [hydrated, setHydrated] = useState(false);
     if (!hydrated) return;
     try { localStorage.setItem(LS_LAST_ROLLOVER, lastRollover); } catch {}
   }, [lastRollover, hydrated]);
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(LS_LAST_ABSENCE_PENALTY, lastAbsencePenalty); } catch {}
+  }, [lastAbsencePenalty, hydrated]);
   useEffect(() => {
     if (!hydrated) return;
     try { localStorage.setItem(LS_PDF_ENTRIES, JSON.stringify(pdfEntries)); } catch {}
@@ -826,6 +848,7 @@ useEffect(() => {
     setTeachers(p.teachers ?? []);
     setCases(p.cases ?? []);
     if (p.history) setHistory(p.history);
+    if (typeof p.lastAbsencePenalty === "string") setLastAbsencePenalty(p.lastAbsencePenalty);
   });
 
   // 2) İzleyici "hello" derse admin state göndersin
@@ -837,7 +860,7 @@ useEffect(() => {
     ch.send({
       type: "broadcast",
       event: "state",
-      payload: { sender: clientId, teachers, cases, history, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
+      payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
     });
   });
 
@@ -867,9 +890,9 @@ useEffect(() => {
   ch.send({
     type: "broadcast",
     event: "state",
-    payload: { sender: clientId, teachers, cases, history, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
+    payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
   });
-}, [teachers, cases, history, isAdmin, clientId, hydrated, centralLoaded]);
+}, [teachers, cases, history, lastAbsencePenalty, isAdmin, clientId, hydrated, centralLoaded]);
 // === Admin değiştirince merkezi state'e de yaz (kalıcılık)
 useEffect(() => {
   if (!isAdmin) return;
@@ -883,6 +906,7 @@ useEffect(() => {
     cases,
     history,
     lastRollover,
+    lastAbsencePenalty,
     announcements,
     settings,
     updatedAt: nowTs,
@@ -896,7 +920,7 @@ useEffect(() => {
     }).catch(() => {});
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
-}, [teachers, cases, history, lastRollover, announcements, settings, isAdmin, hydrated, centralLoaded]);
+}, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, isAdmin, hydrated, centralLoaded]);
 
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();
@@ -927,13 +951,14 @@ useEffect(() => {
   // ---- Bugün test alıp almadı kontrolü (kilit)
   function hasTestToday(tid: string) {
     const today = ymdLocal(new Date());
-    return cases.some(c => c.isTest && c.assignedTo === tid && c.createdAt.slice(0,10) === today);
+    return cases.some(c => c.isTest && !c.absencePenalty && c.assignedTo === tid && c.createdAt.slice(0,10) === today);
   }
   // Bugün bu öğretmene kaç dosya atanmış (test/normal ayrımı gözetmeksizin)
   function countCasesToday(tid: string) {
     const today = ymdLocal(new Date());
     let n = 0;
     for (const c of cases) {
+      if (c.absencePenalty) continue;
       if (c.assignedTo === tid && c.createdAt.slice(0,10) === today) n++;
     }
     return n;
@@ -943,19 +968,19 @@ useEffect(() => {
   // Bugün en son kime atama yapıldı? (liste en yeni başta olduğundan ilk uygun kaydı alır)
   function lastAssignedTeacherToday(): string | undefined {
     const today = ymdLocal(new Date());
-    const recent = cases.find(c => c.createdAt.slice(0,10) === today && !!c.assignedTo);
+    const recent = cases.find(c => !c.absencePenalty && c.createdAt.slice(0,10) === today && !!c.assignedTo);
     return recent?.assignedTo;
   }
 
   // ---- Puanlama
   function calcScore() {
-    // Test dosyaları sabit 7 puan
-    if (isTestCase) return 7;
+    // Test dosyaları ayarlardaki puanı kullanır
+    if (isTestCase) return settings.scoreTest;
     let score = 0;
-    if (type === "YONLENDIRME") score += 1;
-    if (type === "DESTEK") score += 2;
-    if (type === "IKISI") score += 3;
-    if (isNew) score += 1;
+    if (type === "YONLENDIRME") score += settings.scoreTypeY;
+    if (type === "DESTEK") score += settings.scoreTypeD;
+    if (type === "IKISI") score += settings.scoreTypeI;
+    if (isNew) score += settings.scoreNewBonus;
     if (diagCount > 0) score += Math.min(6, Math.max(0, diagCount));
     return score;
   }
@@ -963,9 +988,10 @@ useEffect(() => {
   // ---- Otomatik atama (test/normal ayrımı ve kilit)
   function autoAssign(newCase: CaseFile): Teacher | null {
     // Test dosyasıysa: sadece testörler ve bugün test almamış olanlar
+    const todayYmd = ymdLocal(new Date());
     if (newCase.isTest) {
       const testers = teachers.filter(
-        (t) => t.isTester && !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < MAX_DAILY_CASES
+        (t) => t.isTester && !t.isAbsent && t.active && t.backupDay !== todayYmd && !hasTestToday(t.id) && countCasesToday(t.id) < MAX_DAILY_CASES
       );
       if (!testers.length) return null; // uygun testör yoksa atama yok
 
@@ -1000,9 +1026,9 @@ useEffect(() => {
       return chosen;
     }
 
-    // Normal dosyada: bugün test almış (kilitli) olanları dışla
+    // Normal dosyada: bugün test almış olsa da normal dosya verilebilir; sadece aktif/uygun, yedek olmayan ve sınır altında olsun
     const available = teachers.filter(
-      (t) => !t.isAbsent && t.active && !hasTestToday(t.id) && countCasesToday(t.id) < settings.dailyLimit
+      (t) => !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit
     );
     if (!available.length) return null;
 
@@ -1165,6 +1191,14 @@ useEffect(() => {
   function toggleTester(tid: string) {
     setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, isTester: !t.isTester } : t)));
   }
+  function toggleBackupToday(tid: string) {
+    const today = ymdLocal(new Date());
+    setTeachers(prev => prev.map(t => {
+      if (t.id !== tid) return t;
+      const nextBackup = t.backupDay === today ? undefined : today;
+      return { ...t, backupDay: nextBackup };
+    }));
+  }
   function deleteTeacher(tid: string) {
     const t = teachers.find(x => x.id === tid);
     if (!t) return;
@@ -1180,14 +1214,167 @@ useEffect(() => {
     setCases(prev => prev.map(c => (c.assignedTo === tid ? { ...c, assignedTo: undefined } : c)));
   }
 
-  // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
-  function doRollover() {
-    if (!cases.length) {
-      setLastRollover(ymdLocal(new Date()));
+  // ---- Devamsızlar için dengeleme puanı (gün sonu, rollover öncesi)
+  const applyAbsencePenaltyForDay = React.useCallback((day: string) => {
+    if (!isAdmin) return;
+    if (!centralLoaded) return;
+    if (!hydrated) return;
+    if (lastAbsencePenaltyRef.current === day) return;
+
+    const workingTeachers = teachersRef.current.filter((t) => t.active && !t.isAbsent);
+    const workingIds = new Set(workingTeachers.map((t) => t.id));
+    const dayWorkingCases = casesRef.current.filter(
+      (c) =>
+        !c.absencePenalty &&
+        c.assignedTo &&
+        c.createdAt.slice(0, 10) === day &&
+        workingIds.has(c.assignedTo)
+    );
+
+    const pointsByTeacher = new Map<string, number>();
+    workingTeachers.forEach((t) => pointsByTeacher.set(t.id, 0));
+    for (const c of dayWorkingCases) {
+      const tid = c.assignedTo as string;
+      pointsByTeacher.set(tid, (pointsByTeacher.get(tid) || 0) + c.score);
+    }
+
+    const minScore = pointsByTeacher.size ? Math.min(...pointsByTeacher.values()) : 0;
+    const penaltyScore = Math.max(0, minScore - 3);
+
+    const absentTeachers = teachersRef.current.filter((t) => t.active && t.isAbsent);
+    const absentIds = new Set(absentTeachers.map((t) => t.id));
+
+    if (!absentTeachers.length) {
+      setLastAbsencePenalty(day);
+      lastAbsencePenaltyRef.current = day;
       return;
     }
+
+    const existingPenaltyCases = casesRef.current.filter(
+      (c) => c.absencePenalty && c.createdAt.slice(0, 10) === day
+    );
+    const keepNonPenalty = casesRef.current.filter(
+      (c) => !(c.absencePenalty && c.createdAt.slice(0, 10) === day)
+    );
+
+    const loadDelta = new Map<string, number>();
+    const newPenaltyCases: CaseFile[] = [];
+    const reasonText = `Devamsızlık sonrası dengeleme puanı: en düşük ${minScore} - 3`;
+
+    for (const t of absentTeachers) {
+      const existing = existingPenaltyCases.find((c) => c.assignedTo === t.id);
+      const prevScore = existing?.score ?? 0;
+      const score = penaltyScore;
+      const createdAt = existing?.createdAt ?? `${day}T23:59:00.000Z`;
+      const id = existing?.id ?? uid();
+      newPenaltyCases.push({
+        id,
+        student: `${t.name} - Devamsız`,
+        score,
+        createdAt,
+        assignedTo: t.id,
+        type: "DESTEK",
+        isNew: false,
+        diagCount: 0,
+        isTest: false,
+        assignReason: reasonText,
+        absencePenalty: true,
+      });
+      const delta = score - prevScore;
+      if (delta) loadDelta.set(t.id, (loadDelta.get(t.id) || 0) + delta);
+    }
+
+    for (const c of existingPenaltyCases) {
+      const tid = c.assignedTo;
+      if (!tid) continue;
+      if (!absentIds.has(tid)) {
+        const delta = -c.score;
+        if (delta) loadDelta.set(tid, (loadDelta.get(tid) || 0) + delta);
+      }
+    }
+
+    let changedCases = existingPenaltyCases.length !== newPenaltyCases.length;
+    if (!changedCases) {
+      for (const np of newPenaltyCases) {
+        const ex = existingPenaltyCases.find((c) => c.assignedTo === np.assignedTo);
+        if (!ex || ex.score !== np.score || ex.assignReason !== np.assignReason) {
+          changedCases = true;
+          break;
+        }
+      }
+    }
+
+    if (changedCases) {
+      const nextCases = [...newPenaltyCases, ...keepNonPenalty];
+      setCases(nextCases);
+      casesRef.current = nextCases;
+    }
+
+    if (loadDelta.size > 0) {
+      const ym = day.slice(0, 7);
+      setTeachers((prev) => {
+        const next = prev.map((t) => {
+          const delta = loadDelta.get(t.id) || 0;
+          if (!delta) return t;
+          const nextMonthly = { ...(t.monthly || {}) };
+          nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + delta);
+          return {
+            ...t,
+            yearlyLoad: Math.max(0, t.yearlyLoad + delta),
+            monthly: nextMonthly,
+          };
+        });
+        teachersRef.current = next;
+        return next;
+      });
+    }
+
+    setLastAbsencePenalty(day);
+    lastAbsencePenaltyRef.current = day;
+  }, [isAdmin, centralLoaded, hydrated, setCases, setTeachers, setLastAbsencePenalty]);
+
+  // ---- Başkan yedek: bugün dosya alma, yarın bonusla başlat
+  const applyBackupBonusForDay = React.useCallback((day: string) => {
+    const backups = teachersRef.current.filter((t) => t.active && t.backupDay === day);
+    if (!backups.length) return;
+
+    const dayCases = casesRef.current.filter(
+      (c) => !c.absencePenalty && c.assignedTo && c.createdAt.slice(0, 10) === day
+    );
+    const pointsByTeacher = new Map<string, number>();
+    for (const c of dayCases) {
+      const tid = c.assignedTo as string;
+      pointsByTeacher.set(tid, (pointsByTeacher.get(tid) || 0) + c.score);
+    }
+    const maxScore = pointsByTeacher.size ? Math.max(...pointsByTeacher.values()) : 0;
+    const bonus = maxScore + 3;
+    const ym = day.slice(0, 7);
+
+    setTeachers((prev) => {
+      const next = prev.map((t) => {
+        if (t.backupDay !== day) return t;
+        const nextMonthly = { ...(t.monthly || {}) };
+        nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + bonus);
+        return {
+          ...t,
+          backupDay: undefined,
+          yearlyLoad: Math.max(0, t.yearlyLoad + bonus),
+          monthly: nextMonthly,
+        };
+      });
+      teachersRef.current = next;
+      return next;
+    });
+  }, [setTeachers]);
+
+  // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
+  function doRollover() {
+    const dayOfCases = cases[0]?.createdAt.slice(0, 10) || ymdLocal(new Date());
+    applyAbsencePenaltyForDay(dayOfCases);
+    applyBackupBonusForDay(dayOfCases);
+    const sourceCases = casesRef.current.length ? casesRef.current : cases;
     const nextHistory: Record<string, CaseFile[]> = { ...history };
-    for (const c of cases) {
+    for (const c of sourceCases) {
       const day = c.createdAt.slice(0, 10); // ISO gün
       nextHistory[day] = [...(nextHistory[day] || []), c];
     }
@@ -1373,7 +1560,7 @@ useEffect(() => {
   }
   // ---- JSON yedek / içe aktar (arşiv dahil)
   function exportJSON() {
-    const data = { teachers, cases, history, lastRollover };
+    const data = { teachers, cases, history, lastRollover, lastAbsencePenalty };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1446,6 +1633,7 @@ useEffect(() => {
           active: z.boolean(),
           pushoverKey: z.string().optional(),
           isTester: z.boolean(),
+          backupDay: z.string().optional(),
         });
         const CaseFileSchema = z.object({
           id: z.string(),
@@ -1459,12 +1647,14 @@ useEffect(() => {
           diagCount: z.number(),
           isTest: z.boolean(),
           assignReason: z.string().optional(),
+          absencePenalty: z.boolean().optional(),
         });
         const BackupSchema = z.object({
           teachers: z.array(TeacherSchema),
           cases: z.array(CaseFileSchema),
           history: z.record(z.array(CaseFileSchema)).default({}),
           lastRollover: z.string().optional(),
+          lastAbsencePenalty: z.string().optional(),
         });
 
         const safe = BackupSchema.safeParse(parsed);
@@ -1478,6 +1668,7 @@ useEffect(() => {
         setCases(data.cases);
         setHistory(data.history || {});
         setLastRollover(data.lastRollover || ymdLocal(new Date()));
+        setLastAbsencePenalty(data.lastAbsencePenalty || "");
       } catch {
         alert("JSON okunamadı.");
       } finally {
@@ -1984,18 +2175,28 @@ function AssignedArchiveSingleDay() {
 
             <div className="space-y-2 pt-2">
               <Label className="text-base">Tanı sayısı (0-6) (+n)</Label>
-              <div className="flex items-center gap-3">
-                <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.max(0, n - 1))}><UserMinus className="h-5 w-5"/></Button>
-                <Input
-                  className="w-24 h-12 text-center text-xl font-bold"
-                  inputMode="numeric"
-                  value={diagCount}
-                  onChange={(e) => {
-                    const n = Number((e.target.value || "").replace(/[^\d]/g, ""));
-                    setDiagCount(Math.max(0, Math.min(6, Number.isFinite(n) ? n : 0)));
-                  }}
-                />
-                <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.min(6, n + 1))}><Plus className="h-5 w-5"/></Button>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.max(0, n - 1))}><UserMinus className="h-5 w-5"/></Button>
+                  <Input
+                    className="w-24 h-12 text-center text-xl font-bold"
+                    inputMode="numeric"
+                    value={diagCount}
+                    onChange={(e) => {
+                      const n = Number((e.target.value || "").replace(/[^\d]/g, ""));
+                      setDiagCount(Math.max(0, Math.min(6, Number.isFinite(n) ? n : 0)));
+                    }}
+                  />
+                  <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.min(6, n + 1))}><Plus className="h-5 w-5"/></Button>
+                </div>
+                <Button
+                  data-silent="true"
+                  onClick={addCase}
+                  disabled={!student.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
+                >
+                  DOSYA ATA
+                </Button>
               </div>
             </div>
 
@@ -2044,9 +2245,6 @@ function AssignedArchiveSingleDay() {
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="text-sm text-muted-foreground">Puan: <span className="font-semibold">{calcScore()}</span></div>
-                <Button data-silent="true" onClick={addCase} disabled={!student.trim()}>
-                  <Plus className="h-4 w-4 mr-1" /> Ekle
-                </Button>
               </div>
             </div>
 
@@ -2085,62 +2283,6 @@ function AssignedArchiveSingleDay() {
               )}
             </div>
 
-            {/* Bugün atanan dosyalar — admin sol kart içinde de göster */}
-            <div className="mt-6">
-              <Label className="font-medium">Dosyalar (Bugün)</Label>
-              {/* Table view for md+ */}
-              <div className="mt-2 overflow-auto max-h-[360px] border rounded-md hidden md:block">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-muted">
-                    <tr>
-                      <th className="p-2 text-left">Öğrenci</th>
-                      <th className="p-2 text-right">Puan</th>
-                      <th className="p-2 text-left">Tarih</th>
-                      <th className="p-2 text-left">Atanan</th>
-                      <th className="p-2 text-left">Test</th>
-                      <th className="p-2 text-left">Açıklama</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCases.map((c) => (
-                      <tr key={c.id} className="border-t odd:bg-muted/30">
-                        <td className="p-2">{c.student}</td>
-                        <td className="p-2 text-right">{c.score}</td>
-                        <td className="p-2">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                        <td className="p-2">{teacherName(c.assignedTo)}</td>
-                        <td className="p-2">{c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</td>
-                        <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
-                      </tr>
-                    ))}
-                    {filteredCases.length === 0 && (
-                      <tr>
-                        <td className="p-4 text-center text-muted-foreground" colSpan={6}>Bugün için kayıt yok.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {/* Card view for mobile */}
-              <div className="md:hidden mt-2 space-y-2">
-                {filteredCases.length === 0 && (
-                  <div className="text-center text-muted-foreground text-sm py-6 border rounded-md">Bugün için kayıt yok.</div>
-                )}
-                {filteredCases.map((c) => (
-                  <div key={c.id} className="border rounded-md p-3 bg-white">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{c.student}</div>
-                      <div className="text-sm">Puan: <span className="font-semibold">{c.score}</span></div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</div>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                      <div><span className="text-muted-foreground">Atanan:</span> {teacherName(c.assignedTo)}</div>
-                      <div><span className="text-muted-foreground">Test:</span> {c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">{caseDesc(c)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -2169,7 +2311,7 @@ function AssignedArchiveSingleDay() {
                   <div className="space-y-1">
                     <div className="font-medium">{t.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""}
+                      Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === ymdLocal(new Date()) ? " • Yedek" : ""}
                       {/* Pushover: opsiyonel giriş */}
                       {!t.pushoverKey && !editKeyOpen[t.id] ? (
                         <div className="mt-2">
@@ -2278,6 +2420,14 @@ function AssignedArchiveSingleDay() {
                     </Button>
                     <Button variant={t.isTester ? "default" : "outline"} onClick={() => toggleTester(t.id)} size="sm">
                       {t.isTester ? "Testör (Açık)" : "Testör Yap"}
+                    </Button>
+                    <Button
+                      variant={t.backupDay === ymdLocal(new Date()) ? "default" : "outline"}
+                      onClick={() => toggleBackupToday(t.id)}
+                      size="sm"
+                      title="Bugün yedek: dosya almaz. Yarın en yüksek günlük puan +3 ile başlar."
+                    >
+                      {t.backupDay === ymdLocal(new Date()) ? "Yedek İptal" : "Başkan Yedek"}
                     </Button>
                     <Button variant="outline" onClick={() => toggleActive(t.id)}>{t.active ? "Arşivle" : "Aktif Et"}</Button>
                     <Button variant="destructive" size="sm" title="Kalıcı Sil" onClick={() => deleteTeacher(t.id)}>Sil</Button>
@@ -2411,6 +2561,7 @@ function AssignedArchiveSingleDay() {
             cases={cases}
             teacherName={teacherName}
             caseDesc={caseDesc}
+            settings={settings}
           />
         ) : (
           <AssignedArchiveSingleDayView
@@ -2419,6 +2570,7 @@ function AssignedArchiveSingleDay() {
             teacherName={teacherName}
             caseDesc={caseDesc}
             teachers={teachers}
+            settings={settings}
           />
         )
       )}
@@ -2732,14 +2884,15 @@ function AssignedArchiveSingleDay() {
                 </CardHeader>
                 <CardContent>
                   <ol className="list-decimal marker:text-red-600 pl-5 space-y-3 text-sm md:text-base font-semibold text-slate-800">
-                    <li>ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖĞRETMENLERE ATANIR.</li>
-                    <li>UYGUNLUK: AKTİF OLMALI, DEVAMSIZ OLMAMALI, BUGÜN TEST ALMAMIŞ OLMALI, GÜNLÜK SINIRI AŞMAMIŞ OLMALI.</li>
-                    <li>SIRALAMA: ÖNCE YILLIK YÜK AZ → DAHA SONRA BUGÜN ALINAN DOSYA SAYISI AZ → RASTGELE.</li>
-                    <li>ART ARDA AYNI ÖĞRETMENE ATAMA YAPILMAZ; MÜMKÜNSE ARAYA EN AZ 1 ÖĞRETMEN GİRER.</li>
-                    <li>GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA GÜNDE EN FAZLA {settings.dailyLimit} DOSYA.</li>
-                    <li>MANUEL ATAMA YAPILIRSA SİSTEMİN OTOMATİK ATAMASI GEÇERSİZ OLUR.</li>
-                    <li className="text-xs md:text-sm">PUANLAMA: TEST = {settings.scoreTest}; YÖNLENDİRME = {settings.scoreTypeY}, DESTEK = {settings.scoreTypeD}, İKİSİ = {settings.scoreTypeI}; YENİ = +{settings.scoreNewBonus}; TANI = 0–6 (ÜST SINIR 6).</li>
-                    <li>ATAMA SONRASI ÖĞRETMENE BİLDİRİM GÖNDERİLİR.</li>
+                    <li>TEST DOSYALARI: Sadece testör öğretmenlere gider; aynı gün ikinci test verilmez.</li>
+                    <li>NORMAL DOSYA UYGUNLUK: Aktif olmalı, devamsız olmamalı, yedek değilse ve günlük sınır (<span className="font-semibold">{settings.dailyLimit}</span>) aşılmamış olmalı. Testörler test almış olsa da normal dosya alabilir.</li>
+                    <li>SIRALAMA: Yıllık yük az → Bugün aldığı dosya az → Rastgele; mümkünse son atanan öğretmene arka arkaya verilmez.</li>
+                    <li>GÜNLÜK SINIR: Öğretmen başına günde en fazla <span className="font-semibold">{settings.dailyLimit}</span> dosya.</li>
+                    <li>MANUEL ATAMA: Admin manuel öğretmen seçerse otomatik seçim devre dışı kalır.</li>
+                    <li>DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın 3 eksiği “denge puanı” eklenir.</li>
+                    <li>BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda diğerlerinin en yüksek günlük puanına +3 eklenerek ertesi güne başlar.</li>
+                    <li className="text-xs md:text-sm">PUANLAMA: TEST = {settings.scoreTest}; YÖNLENDİRME = {settings.scoreTypeY}; DESTEK = {settings.scoreTypeD}; İKİSİ = {settings.scoreTypeI}; YENİ = +{settings.scoreNewBonus}; TANI = 0–6 (üst sınır 6).</li>
+                    <li>BİLDİRİM: Atama sonrası öğretmene bildirim gönderilir.</li>
                   </ol>
                 </CardContent>
               </Card>

@@ -7,6 +7,7 @@ export type Teacher = {
   active: boolean;
   pushoverKey?: string;
   isTester: boolean;
+  backupDay?: string;
 };
 
 export type CaseFile = {
@@ -21,4 +22,5 @@ export type CaseFile = {
   diagCount: number;
   isTest: boolean;
   assignReason?: string;
+  absencePenalty?: boolean;
 };

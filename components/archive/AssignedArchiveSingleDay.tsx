@@ -3,8 +3,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { CaseFile, Teacher } from "@/app/page";
 import { Input } from "@/components/ui/input";
+import type { CaseFile, Teacher } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || ""; // e.g. https://ram-dosya-atama.vercel.app
 const USE_PROXY = !!API_BASE; // localde doluysa proxy, Vercel'de boş bırak
@@ -16,18 +16,29 @@ function ymdLocal(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
+type Settings = {
+  dailyLimit: number;
+  scoreTest: number;
+  scoreNewBonus: number;
+  scoreTypeY: number;
+  scoreTypeD: number;
+  scoreTypeI: number;
+};
+
 export default function AssignedArchiveSingleDay({
   history,
   cases,
   teacherName,
   caseDesc,
   teachers,
+  settings,
 }: {
   history: Record<string, CaseFile[]>;
   cases: CaseFile[];
   teacherName: (id?: string) => string;
   caseDesc: (c: CaseFile) => string;
   teachers: Teacher[];
+  settings: Settings;
 }) {
   const days = React.useMemo(() => {
     const set = new Set<string>(Object.keys(history));
@@ -65,13 +76,13 @@ export default function AssignedArchiveSingleDay({
 
   // Seçili gün için öğretmen özetlerini hazırla (günlük sayaç ve test almış mı)
   const teacherSummaries = React.useMemo(() => {
-    const dayCases = cases.filter((c) => c.createdAt.slice(0, 10) === day);
+    const dayCases = list.filter((c) => c.assignedTo && !c.absencePenalty);
     const countMap = new Map<string, number>();
     const hasTestMap = new Map<string, boolean>();
     for (const c of dayCases) {
-      if (!c.assignedTo) continue;
-      countMap.set(c.assignedTo, (countMap.get(c.assignedTo) || 0) + 1);
-      if (c.isTest) hasTestMap.set(c.assignedTo, true);
+      const tid = c.assignedTo as string;
+      countMap.set(tid, (countMap.get(tid) || 0) + 1);
+      if (c.isTest) hasTestMap.set(tid, true);
     }
     return teachers.map((t) => ({
       id: t.id,
@@ -83,7 +94,7 @@ export default function AssignedArchiveSingleDay({
       todayCount: countMap.get(t.id) || 0,
       hasTestToday: !!hasTestMap.get(t.id),
     }));
-  }, [teachers, cases, day]);
+  }, [teachers, list]);
 
   return (
     <Card className="mt-4">
@@ -128,7 +139,7 @@ export default function AssignedArchiveSingleDay({
                       {new Date(c.createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td className="p-2">{teacherName(c.assignedTo)}</td>
-                    <td className="p-2">{c.isTest ? "Evet (+7)" : "Hayır"}</td>
+                    <td className="p-2">{c.absencePenalty ? "Hayır (Denge)" : c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</td>
                     <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
                     <td className="p-2">
                       <Button
@@ -137,9 +148,8 @@ export default function AssignedArchiveSingleDay({
                           setAiOpenId(prev => {
                             const next = prev === c.id ? null : c.id;
                             if (next === c.id) {
-                              // Yeni bir satır için panel açılıyorsa sohbeti baştan başlat
                               setAiMessages([]);
-                              setAiInput('Neden bu dosyayı buraya atadın?');
+                              setAiInput("Neden bu dosyayı buraya atadın?");
                             }
                             return next;
                           });
@@ -152,12 +162,12 @@ export default function AssignedArchiveSingleDay({
                   {aiOpenId === c.id && (
                     <tr className="border-t bg-white">
                       <td className="p-3" colSpan={7}>
-                          <div className="border rounded-md p-3 space-y-3">
-                            <div className="font-medium">Yapay Zeka Açıklaması — Atanan: {teacherName(c.assignedTo) || '—'}</div>
+                        <div className="border rounded-md p-3 space-y-3">
+                          <div className="font-medium">Yapay Zeka Açıklaması — Atanan: {teacherName(c.assignedTo) || "—"}</div>
                           <div className="space-y-2 max-h-64 overflow-auto">
                             {aiMessages.map((m, idx) => (
-                              <div key={idx} className={m.role === 'user' ? 'text-slate-800' : 'text-emerald-800'}>
-                                <span className="text-xs uppercase font-semibold mr-2">{m.role === 'user' ? 'Siz' : 'Asistan'}</span>
+                              <div key={idx} className={m.role === "user" ? "text-slate-800" : "text-emerald-800"}>
+                                <span className="text-xs uppercase font-semibold mr-2">{m.role === "user" ? "Siz" : "Asistan"}</span>
                                 <span>{m.content}</span>
                               </div>
                             ))}
@@ -166,22 +176,25 @@ export default function AssignedArchiveSingleDay({
                             className="flex gap-2"
                             onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
                               e.preventDefault();
-                              const q = aiInput.trim() || 'Neden bu dosyayı buraya atadın?';
-                              setAiInput('');
+                              const q = aiInput.trim() || "Neden bu dosyayı buraya atadın?";
+                              setAiInput("");
                               setAiLoading(true);
                               try {
                                 const rules = [
-                                  'ÖNCE TEST DOSYALARI YALNIZCA TESTÖR ÖĞRETMENLERE ATANIR.',
-                                  'UYGUNLUK: AKTİF, DEVAMSIZ DEĞİL, BUGÜN TEST ALMAMIŞ, GÜNLÜK SINIRI AŞMAMIŞ.',
-                                  'SIRALAMA: ÖNCE YILLIK YÜK AZ → DAHA SONRA BUGÜN ALINAN DOSYA SAYISI AZ → RASTGELE.',
-                                  'ARDIŞIK AYNI ÖĞRETMENE ATAMA YAPILMAMASI TERCİH EDİLİR.',
-                                  'GÜNLÜK ÜST SINIR: ÖĞRETMEN BAŞINA EN FAZLA 4 DOSYA.',
-                                  'PUANLAMA: TEST=7; YÖNLENDİRME=1; DESTEK=2; İKİSİ=3; YENİ=+1; TANI=0–6 (üst sınır 6).',
+                                  "TEST DOSYALARI: Sadece testör öğretmenlere gider; aynı gün ikinci test verilmez.",
+                                  `NORMAL DOSYA UYGUNLUK: Aktif olmalı, devamsız ya da yedek olmamalı ve günlük sınır (${settings.dailyLimit}) aşılmamalı. Testörler test almış olsa da normal dosya alabilir.`,
+                                  "SIRALAMA: Yıllık yük az → Bugün aldığı dosya az → Rastgele; mümkünse son atanan öğretmene arka arkaya verilmez.",
+                                  `GÜNLÜK SINIR: Öğretmen başına en fazla ${settings.dailyLimit} dosya.`,
+                                  "MANUEL ATAMA: Admin manuel öğretmen seçerse otomatik seçim devre dışı kalır.",
+                                  "DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın 3 eksiği denge puanı eklenir.",
+                                  "BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda diğerlerinin en yüksek günlük puanına +3 eklenerek ertesi güne başlar.",
+                                  `PUANLAMA: TEST = ${settings.scoreTest}; YÖNLENDİRME = ${settings.scoreTypeY}; DESTEK = ${settings.scoreTypeD}; İKİSİ = ${settings.scoreTypeI}; YENİ = +${settings.scoreNewBonus}; TANI = 0–6 (üst sınır 6).`,
+                                  "BİLDİRİM: Atama sonrası öğretmene bildirim gönderilir.",
                                 ];
-                                const endpoint = USE_PROXY ? '/api/explain-proxy' : '/api/explain';
+                                const endpoint = USE_PROXY ? "/api/explain-proxy" : "/api/explain";
                                 const res = await fetch(endpoint, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({
                                     question: q,
                                     caseFile: {
@@ -199,20 +212,20 @@ export default function AssignedArchiveSingleDay({
                                     },
                                     selectedTeacher: { id: c.assignedTo, name: teacherName(c.assignedTo) },
                                     rules,
-                                    context: { today: day, dailyLimit: 4 },
+                                    context: { today: day, dailyLimit: settings.dailyLimit },
                                     otherTeachers: teacherSummaries,
                                     messages: aiMessages,
                                   }),
                                 });
-                                let text = '';
+                                let text = "";
                                 try { text = await res.text(); } catch {}
-                                let answer = '';
-                                let details = '';
+                                let answer = "";
+                                let details = "";
                                 if (text) {
                                   try {
                                     const json = JSON.parse(text);
                                     answer = json?.answer || json?.error || text;
-                                    details = json?.details ? `\nDetay: ${String(json.details)}` : '';
+                                    details = json?.details ? `\nDetay: ${String(json.details)}` : "";
                                   } catch {
                                     answer = text;
                                   }
@@ -220,19 +233,19 @@ export default function AssignedArchiveSingleDay({
                                 if (!res.ok) {
                                   setAiMessages((msgs) => [
                                     ...msgs,
-                                    { role: 'assistant', content: `Hata: ${answer || 'Bilinmeyen hata'}${details}` },
+                                    { role: "assistant", content: `Hata: ${answer || "Bilinmeyen hata"}${details}` },
                                   ]);
                                 } else {
                                   setAiMessages((msgs) => [
                                     ...msgs,
-                                    { role: 'assistant', content: String(answer || '(Yanıt alınamadı)') },
+                                    { role: "assistant", content: String(answer || "(Yanıt alınamadı)") },
                                   ]);
                                 }
                               } catch (err: any) {
-                                const msg = err?.message || String(err) || 'Bir hata oluştu.';
+                                const msg = err?.message || String(err) || "Bir hata oluştu.";
                                 setAiMessages((msgs) => [
                                   ...msgs,
-                                  { role: 'assistant', content: `Hata: ${msg}` },
+                                  { role: "assistant", content: `Hata: ${msg}` },
                                 ]);
                               } finally {
                                 setAiLoading(false);
@@ -242,11 +255,11 @@ export default function AssignedArchiveSingleDay({
                             <Input
                               value={aiInput}
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAiInput(e.target.value)}
-                              onFocus={() => { if (!aiInput) setAiInput('Neden bu dosyayı buraya atadın?'); }}
+                              onFocus={() => { if (!aiInput) setAiInput("Neden bu dosyayı buraya atadın?"); }}
                               placeholder="Sorunuzu yazın..."
                               className="flex-1"
                             />
-                            <Button type="submit" disabled={aiLoading}>{aiLoading ? 'Gönderiliyor...' : 'Yapay Zekaya Sor'}</Button>
+                            <Button type="submit" disabled={aiLoading}>{aiLoading ? "Gönderiliyor..." : "Yapay Zekaya Sor"}</Button>
                           </form>
                         </div>
                       </td>

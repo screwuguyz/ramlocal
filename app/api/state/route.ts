@@ -19,6 +19,7 @@ type Teacher = {
   active: boolean;
   pushoverKey?: string;
   isTester: boolean;
+  backupDay?: string;
 };
 type CaseFile = {
   id: string;
@@ -32,6 +33,7 @@ type CaseFile = {
   diagCount: number;
   isTest: boolean;
   assignReason?: string;
+  absencePenalty?: boolean;
 };
 type Announcement = { id: string; text: string; createdAt: string };
 type Settings = {
@@ -48,6 +50,7 @@ type StateShape = {
   cases: CaseFile[];
   history: Record<string, CaseFile[]>;
   lastRollover: string;
+  lastAbsencePenalty?: string;
   announcements?: Announcement[];
   settings?: Settings;
   updatedAt?: string;
@@ -59,6 +62,7 @@ const DEFAULT_STATE: StateShape = {
   cases: [],
   history: {},
   lastRollover: "",
+  lastAbsencePenalty: "",
   announcements: [],
   settings: undefined,
   updatedAt: undefined,
@@ -103,6 +107,7 @@ export async function POST(req: NextRequest) {
     cases: Array.isArray(body.cases) ? (body.cases as CaseFile[]) : [],
     history: (body.history && typeof body.history === "object") ? (body.history as Record<string, CaseFile[]>) : {},
     lastRollover: String(body.lastRollover ?? ""),
+    lastAbsencePenalty: body.lastAbsencePenalty ? String(body.lastAbsencePenalty) : undefined,
     announcements: Array.isArray(body.announcements) ? (body.announcements as Announcement[]) : [],
     settings: body.settings as Settings | undefined,
     updatedAt: body.updatedAt ? String(body.updatedAt) : new Date().toISOString(),

@@ -55,7 +55,7 @@ export default function DailyReportView({
       const key = `${c.assignedTo}|${ymd}`;
       const cur = m.get(key) || { points: 0, count: 0 };
       cur.points += c.score;
-      cur.count += 1;
+      if (!c.absencePenalty) cur.count += 1;
       m.set(key, cur);
     });
     return m;

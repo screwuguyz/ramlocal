@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pdfParse from "pdf-parse";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 type PdfEntry = {
   id: string;
@@ -9,6 +10,15 @@ type PdfEntry = {
   fileNo: string;
   extra: string;
 };
+
+function makeId() {
+  try {
+    return randomUUID();
+  } catch {
+    // Fallback: 8 haneli rastgele
+    return Math.random().toString(36).slice(2, 10);
+  }
+}
 
 export const runtime = "nodejs";
 const TABLE_NAME = "ram_pdf_appointments";
@@ -115,7 +125,7 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
       }
 
       return {
-        id: crypto.randomUUID(),
+        id: makeId(),
         time,
         name: nameParts.join(" ").replace(/\s+/g, " ").trim(),
         fileNo,
@@ -178,43 +188,65 @@ export async function POST(req: NextRequest) {
     if (!buffer.length) {
       return NextResponse.json({ error: "Boş dosya yüklendi." }, { status: 400 });
     }
-    const parsed = await pdfParse(buffer);
-    const result = parsePdfText(parsed.text || "");
+    let parsedText = "";
+    try {
+      const parsed = await pdfParse(buffer);
+      parsedText = parsed.text || "";
+    } catch (err) {
+      console.error("pdf-parse failed", err);
+      return NextResponse.json({ error: "PDF okunamadı. Dosya bozuk olabilir." }, { status: 400 });
+    }
+
+    const result = parsePdfText(parsedText);
     if (!result.entries.length) {
       return NextResponse.json({ error: "Geçerli kayıt bulunamadı." }, { status: 400 });
     }
+
+    const appointmentDateIso = parseDateLabelToIso(result.dateLabel) || new Date().toISOString().slice(0, 10);
+
     if (!SUPA_URL || !SUPA_SERVICE_KEY) {
       console.warn("Supabase env missing; skipping persistent storage.");
       return NextResponse.json({
         entries: result.entries,
-        date: result.dateLabel,
-        dateIso: parseDateLabelToIso(result.dateLabel) || null,
+        date: result.dateLabel || formatDisplayDate(appointmentDateIso),
+        dateIso: appointmentDateIso,
       });
     }
-    const admin = createClient(SUPA_URL, SUPA_SERVICE_KEY);
-    const appointmentDateIso = parseDateLabelToIso(result.dateLabel) || new Date().toISOString().slice(0, 10);
-    await admin.from(TABLE_NAME).delete().eq("appointment_date", appointmentDateIso);
-    const nowIso = new Date().toISOString();
-    const rows = result.entries.map((entry, idx) => ({
-      id: entry.id,
-      appointment_date: appointmentDateIso,
-      time: entry.time,
-      name: entry.name,
-      file_no: entry.fileNo,
-      extra: entry.extra,
-      order_index: idx,
-      uploaded_at: nowIso,
-    }));
-    const { error } = await admin.from(TABLE_NAME).insert(rows);
-    if (error) throw error;
+
+    try {
+      const admin = createClient(SUPA_URL, SUPA_SERVICE_KEY);
+      await admin.from(TABLE_NAME).delete().eq("appointment_date", appointmentDateIso);
+      const nowIso = new Date().toISOString();
+      const rows = result.entries.map((entry, idx) => ({
+        id: entry.id,
+        appointment_date: appointmentDateIso,
+        time: entry.time,
+        name: entry.name,
+        file_no: entry.fileNo,
+        extra: entry.extra,
+        order_index: idx,
+        uploaded_at: nowIso,
+      }));
+      const { error } = await admin.from(TABLE_NAME).insert(rows);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Supabase insert failed; returning parsed data only", err);
+      return NextResponse.json({
+        entries: result.entries,
+        date: result.dateLabel || formatDisplayDate(appointmentDateIso),
+        dateIso: appointmentDateIso,
+        warning: "Supabase kaydedilemedi, ancak veriler işlendi.",
+      });
+    }
+
     return NextResponse.json({
       entries: result.entries,
       date: result.dateLabel || formatDisplayDate(appointmentDateIso),
       dateIso: appointmentDateIso,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("pdf-import error", err);
-    return NextResponse.json({ error: "PDF işlenemedi." }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "PDF işlenemedi." }, { status: 500 });
   }
 }
 
