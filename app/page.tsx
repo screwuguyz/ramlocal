@@ -1772,6 +1772,9 @@ async function testNotifyTeacher(t: Teacher) {
   }
 }
 // === Otomatik atamada/yeniden atamada haber ver ===
+// GIF URL - dosya atama bildirimi için (public klasöründen)
+const NOTIFY_GIF_URL = "https://ram-dosya-atama.vercel.app/gocu-mu-ben-mi-kizlar_2437895.gif";
+
 async function notifyAssigned(t: Teacher, c: CaseFile) {
   if (!t?.pushoverKey) return; // key yoksa sessizce çık
   const desc = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
@@ -1781,9 +1784,10 @@ async function notifyAssigned(t: Teacher, c: CaseFile) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userKey: t.pushoverKey,
-        title: "Yeni Dosya Atandı",
-        message: `${t.name} için dosya: ${c.student} (${desc})`,
+        title: "📁 Yeni Dosya Atandı",
+        message: `${t.name} için dosya: ${c.student}\n${desc}`,
         priority: 0, // normal
+        imageUrl: NOTIFY_GIF_URL, // GIF ekle
       }),
     });
   } catch {}

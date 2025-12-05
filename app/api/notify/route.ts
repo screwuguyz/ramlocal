@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!isAdmin) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
-    const { userKey, title, message, priority } = await req.json();
+    const { userKey, title, message, priority, imageUrl } = await req.json();
     const token = process.env.PUSHOVER_TOKEN;
 
     if (!token) {
@@ -22,23 +22,39 @@ export async function POST(req: NextRequest) {
     }
 
     const effectivePriority = String(priority ?? "0");
-    const body = new URLSearchParams({
-      token,
-      user: String(userKey),
-      title: String(title ?? "Yeni Dosya Atandı"),
-      message: String(message ?? ""),
-      priority: effectivePriority,
-    });
-    // Emergency modunda (priority 2) tekrar/retry parametreleri gerekir; diğerlerinde eklenmez
+    
+    // FormData kullan (resim desteği için)
+    const formData = new FormData();
+    formData.append("token", token);
+    formData.append("user", String(userKey));
+    formData.append("title", String(title ?? "Yeni Dosya Atandı"));
+    formData.append("message", String(message ?? ""));
+    formData.append("priority", effectivePriority);
+    
+    // Emergency modunda (priority 2) tekrar/retry parametreleri gerekir
     if (effectivePriority === "2") {
-      body.set("retry", "60");
-      body.set("expire", "3600");
-      body.set("sound", "siren");
+      formData.append("retry", "60");
+      formData.append("expire", "3600");
+      formData.append("sound", "siren");
+    }
+    
+    // Resim varsa indir ve ekle
+    if (imageUrl) {
+      try {
+        const imgRes = await fetch(imageUrl);
+        if (imgRes.ok) {
+          const imgBuffer = await imgRes.arrayBuffer();
+          const blob = new Blob([imgBuffer], { type: imgRes.headers.get("content-type") || "image/gif" });
+          formData.append("attachment", blob, "image.gif");
+        }
+      } catch (imgErr) {
+        console.error("Resim indirilemedi:", imgErr);
+      }
     }
 
     // Timeout: network sorunlarında beklemeyi sınırlamak için
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 saniye
+    const timeout = setTimeout(() => controller.abort(), 12000); // 12 saniye (resim için daha uzun)
     let res: Response;
     try {
       // Kurumsal/self-signed sertifika zinciri sorunları için sadece GELİŞTİRMEDE geçici çözüm:
@@ -48,8 +64,7 @@ export async function POST(req: NextRequest) {
       if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
       res = await fetch("https://api.pushover.net/1/messages.json", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
+        body: formData,
         signal: controller.signal,
       });
       if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTls;
