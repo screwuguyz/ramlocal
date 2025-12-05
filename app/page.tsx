@@ -118,6 +118,15 @@ function ymOf(dateIso: string) {
   return dateIso.slice(0, 7); // YYYY-MM
 }
 function nowISO() {
+  // Simülasyon modunda simüle edilen tarihi kullan
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    const simDate = params.get("simDate");
+    if (simDate && /^\d{4}-\d{2}-\d{2}$/.test(simDate)) {
+      const now = new Date();
+      return `${simDate}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}.000Z`;
+    }
+  }
   return new Date().toISOString();
 }
 function ymdLocal(d: Date) {
@@ -125,6 +134,20 @@ function ymdLocal(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// ---- SİMÜLASYON: URL'de ?simDate=2025-12-06 ile tarih override
+function getSimulatedDate(): Date {
+  if (typeof window === "undefined") return new Date();
+  const params = new URLSearchParams(window.location.search);
+  const simDate = params.get("simDate");
+  if (simDate && /^\d{4}-\d{2}-\d{2}$/.test(simDate)) {
+    return new Date(simDate + "T12:00:00");
+  }
+  return new Date();
+}
+function getTodayYmd(): string {
+  return ymdLocal(getSimulatedDate());
 }
 function csvEscape(v: string | number) {
   const s = String(v ?? "");
@@ -544,7 +567,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       setLastRollover(s.lastRollover ?? "");
       setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
       if (Array.isArray(s.announcements)) {
-        const today = ymdLocal(new Date());
+        const today = getTodayYmd();
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
       if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
@@ -706,7 +729,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       // Duyurular: sadece bugüne ait olanları yükle
       if (aRaw) {
         const arr = JSON.parse(aRaw) as Announcement[];
-        const today = ymdLocal(new Date());
+        const today = getTodayYmd();
         setAnnouncements((arr || []).filter(a => (a.createdAt || "").slice(0,10) === today));
       }
       if (pRaw) {
@@ -950,12 +973,12 @@ useEffect(() => {
 
   // ---- Bugün test alıp almadı kontrolü (kilit)
   function hasTestToday(tid: string) {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     return cases.some(c => c.isTest && !c.absencePenalty && c.assignedTo === tid && c.createdAt.slice(0,10) === today);
   }
   // Bugün bu öğretmene kaç dosya atanmış (test/normal ayrımı gözetmeksizin)
   function countCasesToday(tid: string) {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     let n = 0;
     for (const c of cases) {
       if (c.absencePenalty) continue;
@@ -967,7 +990,7 @@ useEffect(() => {
   const MAX_DAILY_CASES = 4;
   // Bugün en son kime atama yapıldı? (liste en yeni başta olduğundan ilk uygun kaydı alır)
   function lastAssignedTeacherToday(): string | undefined {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     const recent = cases.find(c => !c.absencePenalty && c.createdAt.slice(0,10) === today && !!c.assignedTo);
     return recent?.assignedTo;
   }
@@ -988,7 +1011,7 @@ useEffect(() => {
   // ---- Otomatik atama (test/normal ayrımı ve kilit)
   function autoAssign(newCase: CaseFile): Teacher | null {
     // Test dosyasıysa: sadece testörler ve bugün test almamış olanlar
-    const todayYmd = ymdLocal(new Date());
+    const todayYmd = getTodayYmd();
     if (newCase.isTest) {
       const testers = teachers.filter(
         (t) => t.isTester && !t.isAbsent && t.active && t.backupDay !== todayYmd && !hasTestToday(t.id) && countCasesToday(t.id) < MAX_DAILY_CASES
@@ -1192,7 +1215,7 @@ useEffect(() => {
     setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, isTester: !t.isTester } : t)));
   }
   function toggleBackupToday(tid: string) {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     setTeachers(prev => prev.map(t => {
       if (t.id !== tid) return t;
       const nextBackup = t.backupDay === today ? undefined : today;
@@ -1221,7 +1244,8 @@ useEffect(() => {
     if (!hydrated) return;
     if (lastAbsencePenaltyRef.current === day) return;
 
-    const workingTeachers = teachersRef.current.filter((t) => t.active && !t.isAbsent);
+    // Çalışan öğretmenler: aktif, devamsız DEĞİL ve o gün yedek DEĞİL
+    const workingTeachers = teachersRef.current.filter((t) => t.active && !t.isAbsent && t.backupDay !== day);
     const workingIds = new Set(workingTeachers.map((t) => t.id));
     const dayWorkingCases = casesRef.current.filter(
       (c) =>
@@ -1369,7 +1393,7 @@ useEffect(() => {
 
   // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
   function doRollover() {
-    const dayOfCases = cases[0]?.createdAt.slice(0, 10) || ymdLocal(new Date());
+    const dayOfCases = cases[0]?.createdAt.slice(0, 10) || getTodayYmd();
     applyAbsencePenaltyForDay(dayOfCases);
     applyBackupBonusForDay(dayOfCases);
     const sourceCases = casesRef.current.length ? casesRef.current : cases;
@@ -1380,12 +1404,12 @@ useEffect(() => {
     }
     setHistory(nextHistory);
     setCases([]); // bugünkü liste sıfırlansın (kilitler de sıfırlanır)
-    setLastRollover(ymdLocal(new Date()));
+    setLastRollover(getTodayYmd());
   }
 
   // Uygulama açıldığında kaçırılmış rollover varsa uygula, sonra bir sonraki gece için zamanla
   useEffect(() => {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     if (lastRollover && lastRollover !== today) {
       doRollover();
     } else if (!lastRollover) {
@@ -1414,7 +1438,7 @@ useEffect(() => {
   // ---- Liste filtreleme
   // "Dosyalar" sadece BUGÜN
   const filteredCases = useMemo(
-    () => cases.filter(c => c.createdAt.slice(0,10) === ymdLocal(new Date())),
+    () => cases.filter(c => c.createdAt.slice(0,10) === getTodayYmd()),
     [cases]
   );
 
@@ -1525,7 +1549,7 @@ useEffect(() => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `e-arsiv_${ymdLocal(new Date())}.csv`;
+    a.download = `e-arsiv_${getTodayYmd()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -1667,7 +1691,7 @@ useEffect(() => {
         setTeachers(data.teachers);
         setCases(data.cases);
         setHistory(data.history || {});
-        setLastRollover(data.lastRollover || ymdLocal(new Date()));
+        setLastRollover(data.lastRollover || getTodayYmd());
         setLastAbsencePenalty(data.lastAbsencePenalty || "");
       } catch {
         alert("JSON okunamadı.");
@@ -1728,13 +1752,13 @@ async function notifyAssigned(t: Teacher, c: CaseFile) {
 function AssignedArchiveSingleDay() {
   const days = React.useMemo(() => {
     const set = new Set<string>(Object.keys(history));
-    const todayYmd = ymdLocal(new Date());
+    const todayYmd = getTodayYmd();
     if (cases.some((c) => c.createdAt.slice(0,10) === todayYmd)) set.add(todayYmd);
     return Array.from(set).sort();
   }, [history, cases]);
 
   const [day, setDay] = React.useState<string>(() => {
-    const today = ymdLocal(new Date());
+    const today = getTodayYmd();
     if (days.length === 0) return today;
     return days.includes(today) ? today : days[days.length - 1];
   });
@@ -2036,6 +2060,28 @@ function AssignedArchiveSingleDay() {
       {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
     </Button>
 
+    {/* Simülasyon Modu */}
+    {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("simDate") && (
+      <>
+        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
+          📅 Simülasyon: {new URLSearchParams(window.location.search).get("simDate")}
+        </span>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="min-h-9"
+          onClick={() => {
+            if (confirm("Günü bitir ve arşivle? (Devamsızlık cezası + Yedek bonusu uygulanacak)")) {
+              doRollover();
+              toast("Gün bitirildi! Devamsızlık/yedek puanları uygulandı.");
+            }
+          }}
+        >
+          🌙 Günü Bitir
+        </Button>
+      </>
+    )}
+
     {/* Çıkış */}
     <Button size="sm" variant="outline" className="min-h-9" onClick={() => setSettingsOpen(true)}>Ayarlar</Button>
     <Button size="sm" variant="outline" className="min-h-9" onClick={doLogout}>Çıkış</Button>
@@ -2311,7 +2357,7 @@ function AssignedArchiveSingleDay() {
                   <div className="space-y-1">
                     <div className="font-medium">{t.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === ymdLocal(new Date()) ? " • Yedek" : ""}
+                      Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === getTodayYmd() ? " • Yedek" : ""}
                       {/* Pushover: opsiyonel giriş */}
                       {!t.pushoverKey && !editKeyOpen[t.id] ? (
                         <div className="mt-2">
@@ -2422,12 +2468,12 @@ function AssignedArchiveSingleDay() {
                       {t.isTester ? "Testör (Açık)" : "Testör Yap"}
                     </Button>
                     <Button
-                      variant={t.backupDay === ymdLocal(new Date()) ? "default" : "outline"}
+                      variant={t.backupDay === getTodayYmd() ? "default" : "outline"}
                       onClick={() => toggleBackupToday(t.id)}
                       size="sm"
                       title="Bugün yedek: dosya almaz. Yarın en yüksek günlük puan +3 ile başlar."
                     >
-                      {t.backupDay === ymdLocal(new Date()) ? "Yedek İptal" : "Başkan Yedek"}
+                      {t.backupDay === getTodayYmd() ? "Yedek İptal" : "Başkan Yedek"}
                     </Button>
                     <Button variant="outline" onClick={() => toggleActive(t.id)}>{t.active ? "Arşivle" : "Aktif Et"}</Button>
                     <Button variant="destructive" size="sm" title="Kalıcı Sil" onClick={() => deleteTeacher(t.id)}>Sil</Button>
