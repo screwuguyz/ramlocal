@@ -2284,7 +2284,7 @@ function AssignedArchiveSingleDay() {
                   disabled={!student.trim()}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
                 >
-                  DOSYA ATA
+                  📁 DOSYA ATA
                 </Button>
               </div>
             </div>
@@ -2390,7 +2390,7 @@ function AssignedArchiveSingleDay() {
                   placeholder="Ad Soyad"
                 />
               </div>
-              <Button onClick={addTeacher}>Ekle</Button>
+              <Button onClick={addTeacher}>➕ Ekle</Button>
             </div>
 
             {teachers.map((t) => {
@@ -2505,10 +2505,10 @@ function AssignedArchiveSingleDay() {
                   <div className="flex items-center gap-3">
                     <div className="text-xs text-muted-foreground mr-2">{t.isAbsent ? "Devamsız" : "Uygun"}</div>
                     <Button variant={t.isAbsent ? "default" : "outline"} onClick={() => toggleAbsent(t.id)} size="sm">
-                      {t.isAbsent ? "Uygun Yap" : "Devamsız Yap"}
+                      {t.isAbsent ? "✅ Uygun Yap" : "🚫 Devamsız Yap"}
                     </Button>
                     <Button variant={t.isTester ? "default" : "outline"} onClick={() => toggleTester(t.id)} size="sm">
-                      {t.isTester ? "Testör (Açık)" : "Testör Yap"}
+                      {t.isTester ? "🧪 Testör (Açık)" : "🧪 Testör Yap"}
                     </Button>
                     <Button
                       variant={t.backupDay === getTodayYmd() ? "default" : "outline"}
@@ -2516,10 +2516,10 @@ function AssignedArchiveSingleDay() {
                       size="sm"
                       title="Bugün yedek: dosya almaz. Yarın en yüksek günlük puan +3 ile başlar."
                     >
-                      {t.backupDay === getTodayYmd() ? "Yedek İptal" : "Başkan Yedek"}
+                      {t.backupDay === getTodayYmd() ? "👑 Yedek İptal" : "👑 Başkan Yedek"}
                     </Button>
-                    <Button variant="outline" onClick={() => toggleActive(t.id)}>{t.active ? "Arşivle" : "Aktif Et"}</Button>
-                    <Button variant="destructive" size="sm" title="Kalıcı Sil" onClick={() => deleteTeacher(t.id)}>Sil</Button>
+                    <Button variant="outline" onClick={() => toggleActive(t.id)}>{t.active ? "📦 Arşivle" : "✨ Aktif Et"}</Button>
+                    <Button variant="destructive" size="sm" title="Kalıcı Sil" onClick={() => deleteTeacher(t.id)}>🗑️ Sil</Button>
                   </div>
                 </div>
               );
