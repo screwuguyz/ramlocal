@@ -14,14 +14,39 @@ function getMonths() {
   return ["01","02","03","04","05","06","07","08","09","10","11","12"];
 }
 
+function getTodayYmd() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+type LiveScores = {
+  maxScore: number;
+  minScore: number;
+  backupBonus: number;
+  absencePenalty: number;
+};
+
+type Settings = {
+  backupBonusMode: 'plus_max' | 'minus_min';
+  backupBonusAmount: number;
+  absencePenaltyAmount: number;
+};
+
 export default function DailyReportView({
   teachers,
   cases,
   history,
+  liveScores,
+  settings,
 }: {
   teachers: Teacher[];
   cases: CaseFile[];
   history: Record<string, CaseFile[]>;
+  liveScores?: LiveScores;
+  settings?: Settings;
 }) {
   const today = new Date();
   const [year, setYear] = useState<number>(today.getFullYear());
@@ -61,11 +86,30 @@ export default function DailyReportView({
     return m;
   }, [data, monthKey]);
 
+  const todayYmd = getTodayYmd();
+  
   const rows = teachers.map((t) => {
     const perDay: DayAgg[] = dayKeys.map((d) => agg.get(`${t.id}|${d}`) || { points: 0, count: 0 });
     const totalPoints = perDay.reduce((a, d) => a + d.points, 0);
     const totalCount = perDay.reduce((a, d) => a + d.count, 0);
-    return { id: t.id, name: t.name, perDay, totalPoints, totalCount };
+    
+    // Canlı puan hesaplama (bugün için)
+    const isBackupToday = t.backupDay === todayYmd;
+    const isAbsentToday = t.isAbsent && t.active;
+    let liveScore: number | null = null;
+    let liveType: 'backup' | 'absent' | null = null;
+    
+    if (liveScores && isCurrentMonth && currentDayIndex >= 0) {
+      if (isBackupToday) {
+        liveScore = liveScores.backupBonus;
+        liveType = 'backup';
+      } else if (isAbsentToday) {
+        liveScore = liveScores.absencePenalty;
+        liveType = 'absent';
+      }
+    }
+    
+    return { id: t.id, name: t.name, perDay, totalPoints, totalCount, liveScore, liveType, isBackupToday, isAbsentToday };
   });
 
   const colTotals = dayKeys.map((d) =>
@@ -121,12 +165,40 @@ export default function DailyReportView({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t">
-                  <td className="p-2">{r.name}</td>
-                  {r.perDay.map((cell, i) => (
-                    <td key={i} className={"p-2 text-right " + (i === currentDayIndex ? "text-red-600 font-semibold" : "")}>
-                      {cell.points}{cell.count ? ` (${cell.count})` : ""}
-                    </td>
-                  ))}
+                  <td className="p-2">
+                    {r.name}
+                    {r.isBackupToday && <span className="ml-1 text-amber-600" title="Yedek Başkan">👑</span>}
+                    {r.isAbsentToday && <span className="ml-1 text-red-600" title="Devamsız">🚫</span>}
+                  </td>
+                  {r.perDay.map((cell, i) => {
+                    const isToday = i === currentDayIndex;
+                    const showLiveScore = isToday && r.liveScore !== null;
+                    
+                    return (
+                      <td 
+                        key={i} 
+                        className={
+                          "p-2 text-right " + 
+                          (isToday ? "font-semibold " : "") +
+                          (showLiveScore && r.liveType === 'backup' ? "text-amber-600 bg-amber-50 dark:bg-amber-950 " : "") +
+                          (showLiveScore && r.liveType === 'absent' ? "text-red-600 bg-red-50 dark:bg-red-950 " : "") +
+                          (isToday && !showLiveScore ? "text-red-600 " : "")
+                        }
+                        title={showLiveScore ? (r.liveType === 'backup' 
+                          ? `👑 Yedek Başkan - Tahmini: ${r.liveScore} puan (${settings?.backupBonusMode === 'plus_max' ? `max+${settings?.backupBonusAmount}` : `min-${settings?.backupBonusAmount}`})`
+                          : `🚫 Devamsız - Tahmini: ${r.liveScore} puan (min-${settings?.absencePenaltyAmount})`) : undefined}
+                      >
+                        {showLiveScore ? (
+                          <span className="flex items-center justify-end gap-1">
+                            <span className="animate-pulse">●</span>
+                            {r.liveScore}
+                          </span>
+                        ) : (
+                          <>{cell.points}{cell.count ? ` (${cell.count})` : ""}</>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td className="p-2 text-right font-medium">{r.totalPoints}</td>
                   <td className="p-2 text-right font-medium">{r.totalCount}</td>
                 </tr>

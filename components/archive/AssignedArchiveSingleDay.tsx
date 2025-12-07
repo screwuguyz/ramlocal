@@ -23,6 +23,9 @@ type Settings = {
   scoreTypeY: number;
   scoreTypeD: number;
   scoreTypeI: number;
+  backupBonusMode: 'plus_max' | 'minus_min';
+  backupBonusAmount: number;
+  absencePenaltyAmount: number;
 };
 
 export default function AssignedArchiveSingleDay({
@@ -186,8 +189,8 @@ export default function AssignedArchiveSingleDay({
                                   "SIRALAMA: Yıllık yük az → Bugün aldığı dosya az → Rastgele; mümkünse son atanan öğretmene arka arkaya verilmez.",
                                   `GÜNLÜK SINIR: Öğretmen başına en fazla ${settings.dailyLimit} dosya.`,
                                   "MANUEL ATAMA: Admin manuel öğretmen seçerse otomatik seçim devre dışı kalır.",
-                                  "DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın 3 eksiği denge puanı eklenir.",
-                                  "BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda diğerlerinin en yüksek günlük puanına +3 eklenerek ertesi güne başlar.",
+                                  `DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın ${settings.absencePenaltyAmount} eksiği denge puanı eklenir.`,
+                                  `BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda ${settings.backupBonusMode === 'plus_max' ? `diğerlerinin en yüksek günlük puanına +${settings.backupBonusAmount} eklenir` : `en düşük günlük puandan -${settings.backupBonusAmount} çıkarılır`}.`,
                                   `PUANLAMA: TEST = ${settings.scoreTest}; YÖNLENDİRME = ${settings.scoreTypeY}; DESTEK = ${settings.scoreTypeD}; İKİSİ = ${settings.scoreTypeI}; YENİ = +${settings.scoreNewBonus}; TANI = 0–6 (üst sınır 6).`,
                                   "BİLDİRİM: Atama sonrası öğretmene bildirim gönderilir.",
                                 ];

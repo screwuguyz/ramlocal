@@ -176,6 +176,11 @@ type Settings = {
   scoreTypeY: number;       // yönlendirme
   scoreTypeD: number;       // destek
   scoreTypeI: number;       // ikisi
+  // Yedek başkan bonus ayarları
+  backupBonusMode: 'plus_max' | 'minus_min';  // 'plus_max' = en yüksek + X, 'minus_min' = en düşük - X
+  backupBonusAmount: number;                   // X değeri (varsayılan 3)
+  // Devamsızlık cezası ayarları
+  absencePenaltyAmount: number;                // Devamsızlık ceza miktarı (en düşük - X)
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -185,6 +190,9 @@ const DEFAULT_SETTINGS: Settings = {
   scoreTypeY: 1,
   scoreTypeD: 2,
   scoreTypeI: 3,
+  backupBonusMode: 'plus_max',
+  backupBonusAmount: 3,
+  absencePenaltyAmount: 3,
 };
 
 // Günlük Randevular Kartı (Bileşen)
@@ -396,6 +404,9 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   // Keep a ref in sync with soundOn to avoid stale closures in long-lived listeners
   const soundOnRef = React.useRef(soundOn);
   useEffect(() => { soundOnRef.current = soundOn; }, [soundOn]);
+  // Keep a ref in sync with settings to avoid stale closures in callbacks
+  const settingsRef = React.useRef(settings);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   // Sesli uyarılar (Web Audio API)
   const audioCtxRef = React.useRef<AudioContext | null>(null);
@@ -1335,7 +1346,8 @@ useEffect(() => {
     }
 
     const minScore = pointsByTeacher.size ? Math.min(...pointsByTeacher.values()) : 0;
-    const penaltyScore = Math.max(0, minScore - 3);
+    const { absencePenaltyAmount } = settingsRef.current;
+    const penaltyScore = Math.max(0, minScore - absencePenaltyAmount);
 
     const absentTeachers = teachersRef.current.filter((t) => t.active && t.isAbsent);
     const absentIds = new Set(absentTeachers.map((t) => t.id));
@@ -1355,7 +1367,7 @@ useEffect(() => {
 
     const loadDelta = new Map<string, number>();
     const newPenaltyCases: CaseFile[] = [];
-    const reasonText = `Devamsızlık sonrası dengeleme puanı: en düşük ${minScore} - 3`;
+    const reasonText = `Devamsızlık sonrası dengeleme puanı: en düşük ${minScore} - ${absencePenaltyAmount} = ${penaltyScore}`;
 
     for (const t of absentTeachers) {
       const existing = existingPenaltyCases.find((c) => c.assignedTo === t.id);
@@ -1442,10 +1454,23 @@ useEffect(() => {
       const tid = c.assignedTo as string;
       pointsByTeacher.set(tid, (pointsByTeacher.get(tid) || 0) + c.score);
     }
+    
+    // Ayarlardan bonus modu ve miktarını al
+    const { backupBonusMode, backupBonusAmount } = settingsRef.current;
     const maxScore = pointsByTeacher.size ? Math.max(...pointsByTeacher.values()) : 0;
-    const bonus = maxScore + 3;
+    const minScore = pointsByTeacher.size ? Math.min(...pointsByTeacher.values()) : 0;
+    
+    // Moda göre bonus hesapla
+    let bonus: number;
+    let reasonText: string;
+    if (backupBonusMode === 'minus_min') {
+      bonus = Math.max(0, minScore - backupBonusAmount);
+      reasonText = `Başkan yedek: en düşük ${minScore} - ${backupBonusAmount} = ${bonus}`;
+    } else {
+      bonus = maxScore + backupBonusAmount;
+      reasonText = `Başkan yedek bonusu: en yüksek ${maxScore} + ${backupBonusAmount} = ${bonus}`;
+    }
     const ym = day.slice(0, 7);
-    const reasonText = `Başkan yedek bonusu: en yüksek ${maxScore} + 3`;
 
     // Bonus CaseFile'ları oluştur (günlük raporda görünsün)
     const existingBonusCases = casesRef.current.filter(
@@ -1555,6 +1580,51 @@ useEffect(() => {
     () => cases.filter(c => c.createdAt.slice(0,10) === getTodayYmd()),
     [cases]
   );
+
+  // ---- Canlı puan hesaplama (Yedek Başkan ve Devamsız için)
+  const liveScores = useMemo(() => {
+    const today = getTodayYmd();
+    
+    // Çalışan öğretmenler: aktif, devamsız DEĞİL ve bugün yedek DEĞİL
+    const workingTeachers = teachers.filter((t) => t.active && !t.isAbsent && t.backupDay !== today);
+    const workingIds = new Set(workingTeachers.map((t) => t.id));
+    
+    // Bugünkü çalışan öğretmenlerin dosyaları (ceza/bonus hariç)
+    const todayCases = cases.filter(
+      (c) => !c.absencePenalty && !c.backupBonus && c.assignedTo && c.createdAt.slice(0, 10) === today && workingIds.has(c.assignedTo)
+    );
+    
+    // Öğretmen başına puan hesapla
+    const pointsByTeacher = new Map<string, number>();
+    workingTeachers.forEach((t) => pointsByTeacher.set(t.id, 0));
+    for (const c of todayCases) {
+      const tid = c.assignedTo as string;
+      pointsByTeacher.set(tid, (pointsByTeacher.get(tid) || 0) + c.score);
+    }
+    
+    const scores = Array.from(pointsByTeacher.values());
+    const maxScore = scores.length ? Math.max(...scores) : 0;
+    const minScore = scores.length ? Math.min(...scores) : 0;
+    
+    // Yedek başkan için hesaplanan bonus
+    let backupBonus: number;
+    if (settings.backupBonusMode === 'minus_min') {
+      backupBonus = Math.max(0, minScore - settings.backupBonusAmount);
+    } else {
+      backupBonus = maxScore + settings.backupBonusAmount;
+    }
+    
+    // Devamsız için hesaplanan ceza puanı
+    const absencePenalty = Math.max(0, minScore - settings.absencePenaltyAmount);
+    
+    return {
+      maxScore,
+      minScore,
+      backupBonus,
+      absencePenalty,
+      workingCount: workingTeachers.length,
+    };
+  }, [cases, teachers, settings.backupBonusMode, settings.backupBonusAmount, settings.absencePenaltyAmount]);
 
   // Seçili aya ait (YYYY-MM) tüm kayıtlar (arşiv + bugün)
   function getCasesForMonth(ym: string) {
@@ -2275,6 +2345,7 @@ function AssignedArchiveSingleDay() {
           <div className="text-sm opacity-90">📅 Arşivli Gün</div>
         </div>
       </div>
+
       
       {/* Admin olmayan kullanıcılar için randevu listesi ve duyurular */}
       {!isAdmin && (
@@ -2645,7 +2716,13 @@ function AssignedArchiveSingleDay() {
                     </div>
                     </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-xs text-muted-foreground mr-2">{t.isAbsent ? "Devamsız" : "Uygun"}</div>
+                    <div className="text-xs text-muted-foreground mr-2">
+                      {t.isAbsent ? (
+                        <span className="text-red-600 font-medium">🚫 Devamsız</span>
+                      ) : t.backupDay === getTodayYmd() ? (
+                        <span className="text-amber-600 font-medium">👑 Yedek</span>
+                      ) : "Uygun"}
+                    </div>
                     <Button variant={t.isAbsent ? "default" : "outline"} onClick={() => toggleAbsent(t.id)} size="sm">
                       {t.isAbsent ? "✅ Uygun Yap" : "🚫 Devamsız Yap"}
                     </Button>
@@ -2656,7 +2733,9 @@ function AssignedArchiveSingleDay() {
                       variant={t.backupDay === getTodayYmd() ? "default" : "outline"}
                       onClick={() => toggleBackupToday(t.id)}
                       size="sm"
-                      title="Bugün yedek: dosya almaz. Yarın en yüksek günlük puan +3 ile başlar."
+                      title={settings.backupBonusMode === 'plus_max' 
+                        ? `Bugün yedek: dosya almaz. Gün sonunda en yüksek puan +${settings.backupBonusAmount} ile başlar.`
+                        : `Bugün yedek: dosya almaz. Gün sonunda en düşük puan -${settings.backupBonusAmount} ile başlar.`}
                     >
                       {t.backupDay === getTodayYmd() ? "👑 Yedek İptal" : "👑 Başkan Yedek"}
                     </Button>
@@ -2783,7 +2862,17 @@ function AssignedArchiveSingleDay() {
 
       {reportMode === "monthly" && <MonthlyReport teachers={teachers} />}
       {reportMode === "daily" && (
-        <DailyReport teachers={teachers} cases={cases} history={history} />
+        <DailyReport 
+          teachers={teachers} 
+          cases={cases} 
+          history={history} 
+          liveScores={liveScores}
+          settings={{
+            backupBonusMode: settings.backupBonusMode,
+            backupBonusAmount: settings.backupBonusAmount,
+            absencePenaltyAmount: settings.absencePenaltyAmount,
+          }}
+        />
       )}
       {reportMode === "archive" && (
         isAdmin ? (
@@ -2885,9 +2974,47 @@ function AssignedArchiveSingleDay() {
                   <Input type="number" value={settings.scoreTypeD} onChange={e => setSettings({ ...settings, scoreTypeD: Number(e.target.value) || 0 })} />
                 </div>
                 <div className="col-span-2">
-                  <Label>kisi</Label>
+                  <Label>İkisi</Label>
                   <Input type="number" value={settings.scoreTypeI} onChange={e => setSettings({ ...settings, scoreTypeI: Number(e.target.value) || 0 })} />
                 </div>
+              </div>
+              {/* Yedek Başkan Bonus Ayarları */}
+              <div className="border-t pt-3 mt-2">
+                <Label className="text-sm font-semibold mb-2 block">👑 Yedek Başkan Bonus Ayarları</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Hesaplama Modu</Label>
+                    <Select value={settings.backupBonusMode} onValueChange={(v) => setSettings({ ...settings, backupBonusMode: v as 'plus_max' | 'minus_min' })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="plus_max">En Yüksek + X</SelectItem>
+                        <SelectItem value="minus_min">En Düşük - X</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Puan Farkı (X)</Label>
+                    <Input type="number" min={0} value={settings.backupBonusAmount} onChange={e => setSettings({ ...settings, backupBonusAmount: Math.max(0, Number(e.target.value) || 0) })} />
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {settings.backupBonusMode === 'plus_max' 
+                    ? `Yedek başkan: O günün en yüksek puanına +${settings.backupBonusAmount} eklenir.`
+                    : `Yedek başkan: O günün en düşük puanından -${settings.backupBonusAmount} çıkarılır.`}
+                </p>
+              </div>
+              {/* Devamsızlık Cezası Ayarları */}
+              <div className="border-t pt-3 mt-2">
+                <Label className="text-sm font-semibold mb-2 block">🚫 Devamsızlık Cezası Ayarları</Label>
+                <div>
+                  <Label className="text-xs">Puan Farkı (En Düşük - X)</Label>
+                  <Input type="number" min={0} value={settings.absencePenaltyAmount} onChange={e => setSettings({ ...settings, absencePenaltyAmount: Math.max(0, Number(e.target.value) || 0) })} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Devamsız öğretmen: O günün en düşük puanından -{settings.absencePenaltyAmount} çıkarılır.
+                </p>
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <Button variant="outline" onClick={() => setSettings(DEFAULT_SETTINGS)}>Varsayılanlara Dön</Button>
@@ -3132,8 +3259,8 @@ function AssignedArchiveSingleDay() {
                     <li>SIRALAMA: Yıllık yük az → Bugün aldığı dosya az → Rastgele; mümkünse son atanan öğretmene arka arkaya verilmez.</li>
                     <li>GÜNLÜK SINIR: Öğretmen başına günde en fazla <span className="font-semibold">{settings.dailyLimit}</span> dosya.</li>
                     <li>MANUEL ATAMA: Admin manuel öğretmen seçerse otomatik seçim devre dışı kalır.</li>
-                    <li>DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın 3 eksiği “denge puanı” eklenir.</li>
-                    <li>BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda diğerlerinin en yüksek günlük puanına +3 eklenerek ertesi güne başlar.</li>
+                    <li>DEVAMSIZ: Devamsız olan öğretmene dosya verilmez; gün sonunda devamsızlar için o gün en düşük puanın {settings.absencePenaltyAmount} eksiği "denge puanı" eklenir.</li>
+                    <li>BAŞKAN YEDEK: Yedek işaretli öğretmen o gün dosya almaz; gün sonunda {settings.backupBonusMode === 'plus_max' ? `diğerlerinin en yüksek günlük puanına +${settings.backupBonusAmount} eklenir` : `en düşük günlük puandan -${settings.backupBonusAmount} çıkarılır`}.</li>
                     <li className="text-xs md:text-sm">PUANLAMA: TEST = {settings.scoreTest}; YÖNLENDİRME = {settings.scoreTypeY}; DESTEK = {settings.scoreTypeD}; İKİSİ = {settings.scoreTypeI}; YENİ = +{settings.scoreNewBonus}; TANI = 0–6 (üst sınır 6).</li>
                     <li>BİLDİRİM: Atama sonrası öğretmene bildirim gönderilir.</li>
                   </ol>

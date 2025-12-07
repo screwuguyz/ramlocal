@@ -20,6 +20,9 @@ type Settings = {
   scoreTypeY: number;
   scoreTypeD: number;
   scoreTypeI: number;
+  backupBonusMode: 'plus_max' | 'minus_min';
+  backupBonusAmount: number;
+  absencePenaltyAmount: number;
 };
 
 export default function AssignedArchive({
