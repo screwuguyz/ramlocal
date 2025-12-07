@@ -2150,51 +2150,54 @@ function AssignedArchiveSingleDay() {
           <div className="absolute top-40 left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
         </div>
         
-        <div className="relative z-10 max-w-3xl w-full mx-4 px-8 py-14 text-center space-y-8 bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/50">
-          {/* Logo/İkon */}
+        <div className="relative z-10 max-w-3xl w-full mx-4 px-8 py-14 text-center space-y-8 bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/50 animate-landing-card">
+          {/* Logo/İkon - Floating animasyonu */}
           <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl transform hover:rotate-6 transition-transform">
+            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl animate-logo-float hover:animate-logo-spin cursor-pointer">
               <span className="text-4xl">📚</span>
             </div>
           </div>
           
-          <div className="text-sm md:text-base uppercase tracking-[0.5em] text-teal-600 font-semibold">
+          <div className="text-sm md:text-base uppercase tracking-[0.5em] text-teal-600 font-semibold animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             Karşıyaka Rehberlik ve Araştırma Merkezi
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-orange-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-orange-500 bg-clip-text text-transparent animate-fade-in-up" style={{animationDelay: '0.3s'}}>
             Özel Eğitim Bölümü Paneli
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-600 leading-relaxed max-w-xl mx-auto">
+          <p className="text-lg md:text-xl text-slate-600 leading-relaxed max-w-xl mx-auto animate-fade-in-up" style={{animationDelay: '0.4s'}}>
             👋 Hoş geldiniz! Günlük randevu listelerini yükleyin, dosya atamalarını yönetin ve öğretmen bildirimlerini takip edin.
           </p>
           
-          {/* Özellik kartları */}
+          {/* Özellik kartları - Staggered animasyon ve hover efekti */}
           <div className="grid grid-cols-3 gap-4 py-4">
-            <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
-              <div className="text-2xl mb-1">📁</div>
+            <div className="group p-4 rounded-xl bg-teal-50 border border-teal-100 cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-teal-200 hover:bg-teal-100 animate-card-pop" style={{animationDelay: '0.5s'}}>
+              <div className="text-2xl mb-1 transition-transform duration-300 group-hover:scale-125 group-hover:animate-bounce">📁</div>
               <div className="text-xs text-teal-700 font-medium">Dosya Atama</div>
             </div>
-            <div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
-              <div className="text-2xl mb-1">👨‍🏫</div>
+            <div className="group p-4 rounded-xl bg-orange-50 border border-orange-100 cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-orange-200 hover:bg-orange-100 animate-card-pop" style={{animationDelay: '0.6s'}}>
+              <div className="text-2xl mb-1 transition-transform duration-300 group-hover:scale-125 group-hover:animate-bounce">👨‍🏫</div>
               <div className="text-xs text-orange-700 font-medium">Öğretmen Takibi</div>
             </div>
-            <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
-              <div className="text-2xl mb-1">📊</div>
+            <div className="group p-4 rounded-xl bg-purple-50 border border-purple-100 cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-purple-200 hover:bg-purple-100 animate-card-pop" style={{animationDelay: '0.7s'}}>
+              <div className="text-2xl mb-1 transition-transform duration-300 group-hover:scale-125 group-hover:animate-bounce">📊</div>
               <div className="text-xs text-purple-700 font-medium">Raporlama</div>
             </div>
           </div>
           
-          <Button 
-            size="lg" 
-            className="px-12 py-6 text-xl bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all" 
-            onClick={() => setShowLanding(false)}
-          >
-            🚀 Panele Giriş Yap
-          </Button>
+          {/* Giriş butonu - Glow animasyonu */}
+          <div className="animate-fade-in-up" style={{animationDelay: '0.8s'}}>
+            <Button 
+              size="lg" 
+              className="px-12 py-6 text-xl bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all animate-button-glow" 
+              onClick={() => setShowLanding(false)}
+            >
+              🚀 Panele Giriş Yap
+            </Button>
+          </div>
           
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-slate-400 animate-fade-in-up" style={{animationDelay: '0.9s'}}>
             v2.0 • Son güncelleme: {new Date().toLocaleDateString('tr-TR')}
           </div>
         </div>
