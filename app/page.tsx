@@ -747,7 +747,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   // Versiyon bildirimi (admin olmayan kullanıcılar için)
   const [showVersionPopup, setShowVersionPopup] = useState(false);
   // Admin panel tab sistemi
-  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "settings" | "reports">("files");
+  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "reports">("files");
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -2420,14 +2420,6 @@ function AssignedArchiveSingleDay() {
                 👨‍🏫 Öğretmenler
               </Button>
               <Button
-                variant={adminTab === "settings" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setAdminTab("settings")}
-                className="min-h-9"
-              >
-                ⚙️ Ayarlar
-              </Button>
-              <Button
                 variant={adminTab === "reports" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setAdminTab("reports")}
@@ -2789,16 +2781,6 @@ function AssignedArchiveSingleDay() {
                 </div>
               );
             })}
-              </div>
-            )}
-
-            {adminTab === "settings" && (
-              <div className="space-y-4">
-                <div className="text-center text-muted-foreground py-8">
-                  <p className="text-lg font-medium mb-2">⚙️ Ayarlar</p>
-                  <p className="text-sm">Ayarlar panelini açmak için üst menüden "⚙️ Ayarlar" butonuna tıklayın.</p>
-                  <Button className="mt-4" onClick={() => setSettingsOpen(true)}>Ayarları Aç</Button>
-                </div>
               </div>
             )}
 
