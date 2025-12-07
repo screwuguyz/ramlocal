@@ -483,53 +483,88 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
     document.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, []);
-  function playBeep(freq: number, durationSec = 0.14, volume = 0.18) {
-    if (!soundOnRef.current) return; // Ses kapalıysa çalma
+  // Modern ses efekti: ADSR envelope ile daha profesyonel ton
+  function playTone(freq: number, durationSec = 0.14, volume = 0.18, type: OscillatorType = "sine", attack = 0.01, decay = 0.05, sustain = 0.7, release = 0.1) {
+    if (!soundOnRef.current) return;
     const ctx = getAudioCtx();
     if (!ctx) return;
-    // iOS/Chrome politika: önce resume etmeyi dene
     if (ctx.state === "suspended") {
       ctx.resume().catch(() => {});
     }
+    
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    gain.gain.value = volume;
-    osc.type = "triangle"; // daha belirgin
+    osc.type = type;
     osc.frequency.value = freq;
-    osc.connect(gain).connect(ctx.destination);
+    
     const now = ctx.currentTime;
+    const attackEnd = now + attack;
+    const decayEnd = attackEnd + decay;
+    const releaseStart = now + durationSec - release;
+    
+    // ADSR envelope
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(volume, attackEnd);
+    gain.gain.linearRampToValueAtTime(volume * sustain, decayEnd);
+    gain.gain.setValueAtTime(volume * sustain, releaseStart);
+    gain.gain.linearRampToValueAtTime(0, now + durationSec);
+    
+    osc.connect(gain).connect(ctx.destination);
     osc.start(now);
     osc.stop(now + durationSec);
   }
-  function playAssignSound() {
-    // Belirgin başarı melodisi (majör arpej)
-    playBeep(523, 0.16, 0.22);  // C5
-    window.setTimeout(() => playBeep(659, 0.16, 0.22), 170); // E5
-    window.setTimeout(() => playBeep(784, 0.18, 0.22), 340); // G5
+
+  // Eski beep fonksiyonu (geriye uyumluluk için)
+  function playBeep(freq: number, durationSec = 0.14, volume = 0.18) {
+    playTone(freq, durationSec, volume, "sine", 0.01, 0.02, 0.8, 0.05);
   }
+
+  function playAssignSound() {
+    // Modern başarı melodisi (majör akor + yükselen melodi)
+    resumeAudioIfNeeded();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    
+    // C majör akor (C-E-G) - daha zengin ses
+    playTone(523.25, 0.2, 0.2, "sine", 0.02, 0.05, 0.7, 0.1);  // C5
+    playTone(659.25, 0.2, 0.18, "sine", 0.02, 0.05, 0.7, 0.1); // E5
+    playTone(783.99, 0.2, 0.16, "sine", 0.02, 0.05, 0.7, 0.1);  // G5
+    
+    // Yükselen melodi
+    window.setTimeout(() => playTone(659.25, 0.15, 0.18, "sine", 0.01, 0.03, 0.8, 0.08), 220);
+    window.setTimeout(() => playTone(783.99, 0.18, 0.2, "sine", 0.01, 0.03, 0.8, 0.1), 380);
+    window.setTimeout(() => playTone(1046.50, 0.2, 0.22, "sine", 0.01, 0.03, 0.8, 0.12), 560); // C6
+  }
+
   function playEmergencySound() {
-    // Sirenimsi kısa uyarı (iki frekans arasında hızlı geçiş)
-    playBeep(720, 0.14, 0.25);
-    window.setTimeout(() => playBeep(480, 0.16, 0.25), 160);
-    window.setTimeout(() => playBeep(720, 0.14, 0.25), 340);
+    // Modern uyarı sesi (daha belirgin ve profesyonel)
+    resumeAudioIfNeeded();
+    playTone(880, 0.12, 0.25, "square", 0.005, 0.02, 0.9, 0.05);
+    window.setTimeout(() => playTone(660, 0.14, 0.25, "square", 0.005, 0.02, 0.9, 0.05), 140);
+    window.setTimeout(() => playTone(880, 0.12, 0.28, "square", 0.005, 0.02, 0.9, 0.05), 280);
+    window.setTimeout(() => playTone(1100, 0.15, 0.3, "square", 0.005, 0.02, 0.9, 0.05), 420);
   }
 
   function testSound() {
-    // AudioContext'i kesinlikle aç ve kısa bir dizi çal
+    // Modern test sesi
     resumeAudioIfNeeded();
-    playBeep(600, 0.12, 0.2);
-    window.setTimeout(() => playBeep(900, 0.12, 0.2), 160);
+    playTone(600, 0.12, 0.2, "sine", 0.01, 0.03, 0.8, 0.05);
+    window.setTimeout(() => playTone(900, 0.12, 0.2, "sine", 0.01, 0.03, 0.8, 0.05), 150);
+    window.setTimeout(() => playTone(1200, 0.15, 0.22, "sine", 0.01, 0.03, 0.8, 0.08), 300);
   }
 
   function playClickSound() {
+    // Modern hafif tık sesi
     resumeAudioIfNeeded();
-    playBeep(520, 0.06, 0.12);
+    playTone(800, 0.04, 0.1, "sine", 0.001, 0.01, 0.6, 0.02);
   }
 
   function playAnnouncementSound() {
-    // Kısa onay tonu (yükselen iki nota)
-    playBeep(700, 0.12, 0.18);
-    window.setTimeout(() => playBeep(920, 0.14, 0.18), 160);
+    // Modern onay tonu (daha melodik)
+    resumeAudioIfNeeded();
+    playTone(784, 0.1, 0.16, "sine", 0.01, 0.02, 0.8, 0.05); // G5
+    window.setTimeout(() => playTone(988, 0.12, 0.18, "sine", 0.01, 0.02, 0.8, 0.06), 120); // B5
+    window.setTimeout(() => playTone(1175, 0.14, 0.2, "sine", 0.01, 0.02, 0.8, 0.08), 240); // D6
   }
 
   // === Duyuru gönder (admin): state'e ekle + tüm öğretmenlere Pushover bildirimi ===
