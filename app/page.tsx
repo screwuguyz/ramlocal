@@ -2249,44 +2249,21 @@ function AssignedArchiveSingleDay() {
 <div className="sticky top-0 z-40 backdrop-blur bg-white/70 border-b border-slate-200/60">
   <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2 md:gap-3">
 
-    {/* Sol: Ay seçici + rapor butonları */}
-    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-      <Select value={filterYM} onValueChange={setFilterYM}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Ay seç" />
-        </SelectTrigger>
-        <SelectContent>
-          {allMonths.map((m) => (
-            <SelectItem key={m} value={m}>{m}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Button variant={reportMode === "monthly" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "monthly"} onClick={() => setReportMode("monthly")}>
-        📊 Aylık Rapor
-      </Button>
-      <Button variant={reportMode === "daily" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "daily"} onClick={() => setReportMode("daily")}>
-        📅 Günlük Rapor
-      </Button>
-      <Button variant={reportMode === "archive" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "archive"} onClick={() => setReportMode("archive")}>
-        📋 Atanan Dosyalar
-      </Button>
-      <Button variant={reportMode === "e-archive" ? "default" : "outline"} size="sm" className="min-h-9" aria-pressed={reportMode === "e-archive"} onClick={() => setReportMode("e-archive")}>
-        🗄️ E-Arşiv
-      </Button>
-
-      <Button variant="outline" size="sm" className="min-h-9" onClick={exportCSV2}>
-        📥 CSV
-      </Button>
-      <Button variant="outline" size="sm" className="min-h-9" onClick={exportJSON}>
-        💾 JSON Yedek
-      </Button>
-
-      <label className="cursor-pointer">
-        <Input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
-        <Button variant="outline" size="sm" className="min-h-9">📤 JSON İçe Aktar</Button>
-      </label>
-    </div>
+    {/* Sol: Ay seçici (sadece admin için) */}
+    {isAdmin && (
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <Select value={filterYM} onValueChange={setFilterYM}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Ay seç" />
+          </SelectTrigger>
+          <SelectContent>
+            {allMonths.map((m) => (
+              <SelectItem key={m} value={m}>{m}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )}
 
     {/* Sağ: Canlı rozet + giriş/çıkış */}
     <div className="flex items-center gap-3">
@@ -2841,8 +2818,21 @@ function AssignedArchiveSingleDay() {
                     🗄️ E-Arşiv
                   </Button>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Raporlar üst menüden de erişilebilir.
+                <div className="border-t pt-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={exportCSV2}>
+                      📥 CSV Dışa Aktar
+                    </Button>
+                    <Button variant="outline" onClick={exportJSON}>
+                      💾 JSON Yedek
+                    </Button>
+                    <label className="cursor-pointer">
+                      <Input type="file" accept=".json" onChange={handleImportJSON} className="hidden" id="json-import-input" />
+                      <Button variant="outline" type="button" onClick={() => (document.getElementById('json-import-input') as HTMLInputElement)?.click()}>
+                        📤 JSON İçe Aktar
+                      </Button>
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -2855,19 +2845,7 @@ function AssignedArchiveSingleDay() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>📂 Dosyalar (Bugün)</CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={filterYM} onValueChange={setFilterYM}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Ay seç" /></SelectTrigger>
-              <SelectContent>
-                {allMonths.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button variant="outline" onClick={testSound}>Ses Test</Button>
-            <Button variant="outline" onClick={() => setReportMode("monthly")}><BarChart2 className="h-4 w-4 mr-2"/>Aylık Rapor</Button>
-            <Button variant="outline" onClick={() => setReportMode("daily")}><BarChart2 className="h-4 w-4 mr-2"/>Günlük Rapor</Button>
-            <Button variant={reportMode === "archive" ? "default" : "outline"} aria-pressed={reportMode === "archive"} onClick={() => setReportMode("archive")}><BarChart2 className="h-4 w-4 mr-2"/>Atanan Dosyalar</Button>
-            <Button variant="outline" onClick={exportCSV2}><FileSpreadsheet className="h-4 w-4 mr-2"/>CSV</Button>
           </div>
         </CardHeader>
         <CardContent>
