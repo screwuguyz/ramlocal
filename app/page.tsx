@@ -111,6 +111,22 @@ const LS_PDF_DATE = "dosya_atama_pdf_date_v1";
 const LS_PDF_DATE_ISO = "dosya_atama_pdf_date_iso_v1";
 const LS_E_ARCHIVE = "dosya_atama_e_archive_v1"; // YENİ E-ARŞİV
 const LS_LAST_ABSENCE_PENALTY = "dosya_atama_last_absence_penalty";
+const LS_LAST_SEEN_VERSION = "dosya_atama_last_seen_version";
+
+// ---- Versiyon ve Changelog
+const APP_VERSION = "2.1.0";
+const CHANGELOG: Record<string, string[]> = {
+  "2.1.0": [
+    "Landing page animasyonları eklendi",
+    "Dosya atama bildirimi popup'ı eklendi",
+    "Versiyon bildirimi sistemi eklendi"
+  ],
+  "2.0.0": [
+    "Yedek başkan ve devamsızlık için ayarlanabilir puan sistemi",
+    "Günlük raporda canlı puan gösterimi",
+    "Next.js 15.5.7 güvenlik güncellemesi"
+  ]
+};
 // ---- Tarih yardımcıları
 function daysInMonth(year: number, month: number) { // month: 1-12
   return new Date(year, month, 0).getDate();
@@ -728,6 +744,8 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   const [showLanding, setShowLanding] = useState(true);
   const [showPdfPanel, setShowPdfPanel] = useState<boolean | Date>(false);
   const [showRules, setShowRules] = useState(false);
+  // Versiyon bildirimi (admin olmayan kullanıcılar için)
+  const [showVersionPopup, setShowVersionPopup] = useState(false);
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -912,6 +930,18 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       .then((d: any) => setIsAdmin(!!d.isAdmin))
       .catch(() => {});
   }, []);
+
+  // Versiyon kontrolü - Admin olmayan kullanıcılar için
+  useEffect(() => {
+    if (isAdmin || !hydrated) return; // Admin ise veya henüz yüklenmediyse gösterme
+    
+    try {
+      const lastSeenVersion = localStorage.getItem(LS_LAST_SEEN_VERSION);
+      if (lastSeenVersion !== APP_VERSION) {
+        setShowVersionPopup(true);
+      }
+    } catch {}
+  }, [isAdmin, hydrated]);
 // === Realtime abonelik: canlı güncelleme + ilk açılışta snapshot ===
 useEffect(() => {
   if (process.env.NEXT_PUBLIC_DISABLE_REALTIME === '1') { setLive('offline'); return; }
@@ -2198,7 +2228,7 @@ function AssignedArchiveSingleDay() {
           </div>
           
           <div className="text-xs text-slate-400 animate-fade-in-up" style={{animationDelay: '0.9s'}}>
-            v2.0 • Son güncelleme: {new Date().toLocaleDateString('tr-TR')}
+            v{APP_VERSION} • Son güncelleme: {new Date().toLocaleDateString('tr-TR')}
           </div>
         </div>
       </main>
@@ -3050,6 +3080,47 @@ function AssignedArchiveSingleDay() {
             <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-1">
               <span className="text-sm">Puan:</span>
               <span className="text-xl font-bold">+{assignmentPopup.score}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Versiyon Güncelleme Bildirimi - Admin olmayan kullanıcılar için */}
+      {showVersionPopup && !isAdmin && (
+        <div className="fixed top-3 right-3 z-[150] max-w-md animate-slide-in-right">
+          <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-xl shadow-2xl border border-teal-400/30 overflow-hidden">
+            <div className="flex items-start justify-between p-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">✨</span>
+                  <h3 className="font-bold text-lg">Uygulama Güncellendi</h3>
+                </div>
+                <div className="text-sm font-semibold mb-3 opacity-90">
+                  Versiyon {APP_VERSION}
+                </div>
+                <div className="text-sm space-y-1 mb-3">
+                  <div className="font-medium mb-1">Yapılan Değişiklikler:</div>
+                  <ul className="list-disc list-inside space-y-0.5 text-xs opacity-90">
+                    {CHANGELOG[APP_VERSION]?.map((change, idx) => (
+                      <li key={idx}>{change}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="text-xs font-medium bg-white/20 rounded px-2 py-1 inline-block mt-2">
+                  🔄 Sayfayı yenileyin
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowVersionPopup(false);
+                  try {
+                    localStorage.setItem(LS_LAST_SEEN_VERSION, APP_VERSION);
+                  } catch {}
+                }}
+                className="ml-3 text-white/80 hover:text-white hover:bg-white/20 rounded p-1 transition-colors"
+                aria-label="Kapat"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
