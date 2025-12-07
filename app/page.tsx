@@ -611,7 +611,26 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
       if (!isNaN(incomingTs) && incomingTs <= currentTs) return;
       lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
-      setTeachers(s.teachers ?? []);
+      
+      // KORUMA: Eğer Supabase'de öğretmen yoksa ama mevcut state'te varsa, mevcut state'i koru
+      // Ayrıca localStorage henüz yüklenmemişse (hydrated false), Supabase'den gelen boş veriyi kullanma
+      const supabaseTeachers = s.teachers ?? [];
+      const currentTeachers = teachersRef.current || [];
+      
+      // Eğer localStorage henüz yüklenmemişse ve Supabase'de öğretmen yoksa, öğretmenleri güncelleme
+      // (localStorage yüklemesi tamamlanana kadar bekle)
+      if (!hydrated && supabaseTeachers.length === 0) {
+        console.log("[fetchCentralState] localStorage henüz yüklenmedi, öğretmenleri güncellemiyoruz.");
+        // Öğretmenleri güncelleme, sadece diğer verileri güncelle
+      } else if (supabaseTeachers.length === 0 && currentTeachers.length > 0) {
+        console.warn("[fetchCentralState] Supabase'de öğretmen yok ama mevcut state'te var. Mevcut state'i koruyoruz.");
+        // Öğretmenleri güncelleme, sadece diğer verileri güncelle
+      } else if (supabaseTeachers.length > 0) {
+        // Supabase'de öğretmen varsa, onları kullan
+        setTeachers(supabaseTeachers);
+      }
+      // Eğer hem Supabase hem mevcut state boşsa, zaten boş kalacak
+      
       setCases(s.cases ?? []);
       setHistory(s.history ?? {});
       setLastRollover(s.lastRollover ?? "");
@@ -627,7 +646,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
     } finally {
       setCentralLoaded(true);
     }
-  }, []);
+  }, [hydrated]);
 
   function handlePdfFileChange(file: File | null) {
     setPdfFile(file);
