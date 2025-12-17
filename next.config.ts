@@ -2,10 +2,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true, // Build sırasında lint hatalarını yok say
-    // dirs: ["app", "components", "lib"], // istersen sadece bu klasörleri lintle
-  },
+  // Next.js 16'da eslint config artık burada desteklenmiyor
+  // ESLint ayarları için eslint.config.mjs kullanılmalı
 };
 
 export default nextConfig;
