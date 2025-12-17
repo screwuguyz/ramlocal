@@ -16,6 +16,8 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import MonthlyReport from "@/components/reports/MonthlyReport";
 import DailyReport from "@/components/reports/DailyReport";
+import Statistics from "@/components/reports/Statistics";
+import BackupManager from "@/components/BackupManager";
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
 import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer, Loader2, Inbox, FileText } from "lucide-react";
@@ -801,7 +803,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   }
 
   // ---- Rapor & filtre
-  const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive" | "e-archive">("none");
+  const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive" | "e-archive" | "statistics">("none");
 
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
   // Admin oturum durumu
@@ -817,7 +819,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   // Versiyon bildirimi (admin olmayan kullanıcılar için)
   const [showVersionPopup, setShowVersionPopup] = useState(false);
   // Admin panel tab sistemi
-  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "reports" | "announcements">("files");
+  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "reports" | "announcements" | "backup">("files");
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -2488,6 +2490,9 @@ function AssignedArchiveSingleDay() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant={reportMode === "statistics" ? "default" : "outline"} onClick={() => setReportMode("statistics")}>
+                  📈 İstatistikler
+                </Button>
                 <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
                   📊 Aylık Rapor
                 </Button>
@@ -2556,6 +2561,14 @@ function AssignedArchiveSingleDay() {
                 className="min-h-9"
               >
                 📢 Duyuru
+              </Button>
+              <Button
+                variant={adminTab === "backup" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setAdminTab("backup")}
+                className="min-h-9"
+              >
+                💾 Yedekleme
               </Button>
             </div>
           </div>
@@ -3008,6 +3021,9 @@ function AssignedArchiveSingleDay() {
             {adminTab === "reports" && (
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2 mb-4">
+                  <Button variant={reportMode === "statistics" ? "default" : "outline"} onClick={() => setReportMode("statistics")}>
+                    📈 İstatistikler
+                  </Button>
                   <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
                     📊 Aylık Rapor
                   </Button>
@@ -3114,10 +3130,34 @@ function AssignedArchiveSingleDay() {
                 </Card>
               </div>
             )}
+
+            {adminTab === "backup" && (
+              <BackupManager 
+                currentState={{
+                  teachers,
+                  cases,
+                  history,
+                  lastRollover,
+                  lastAbsencePenalty,
+                  announcements,
+                  settings,
+                  eArchive,
+                }}
+                onRestore={(state) => {
+                  if (state.teachers) setTeachers(state.teachers);
+                  if (state.cases) setCases(state.cases);
+                  if (state.history) setHistory(state.history);
+                  if (state.announcements) setAnnouncements(state.announcements);
+                  if (state.settings) setSettings(state.settings);
+                  if (state.eArchive) setEArchive(state.eArchive);
+                }}
+              />
+            )}
           </div>
         </Card>
       )}
 
+      {reportMode === "statistics" && <Statistics teachers={teachers} cases={cases} history={history} />}
       {reportMode === "monthly" && <MonthlyReport teachers={teachers} />}
       {reportMode === "daily" && (
         <DailyReport 
