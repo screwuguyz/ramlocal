@@ -89,11 +89,12 @@ export default function Statistics({ teachers, cases, history }: Props) {
 
   // Dosya türü dağılımı
   const typeDistribution = {
-    YONLENDIRME: thisMonthCases.filter(c => c.type === "YONLENDIRME").length,
-    DESTEK: thisMonthCases.filter(c => c.type === "DESTEK").length,
-    IKISI: thisMonthCases.filter(c => c.type === "IKISI").length,
+    YONLENDIRME: thisMonthCases.filter(c => c.type === "YONLENDIRME" && !c.isTest).length,
+    DESTEK: thisMonthCases.filter(c => c.type === "DESTEK" && !c.isTest).length,
+    IKISI: thisMonthCases.filter(c => c.type === "IKISI" && !c.isTest).length,
+    TEST: thisMonthCases.filter(c => c.isTest).length,
   };
-  const totalTypes = typeDistribution.YONLENDIRME + typeDistribution.DESTEK + typeDistribution.IKISI || 1;
+  const totalTypes = typeDistribution.YONLENDIRME + typeDistribution.DESTEK + typeDistribution.IKISI + typeDistribution.TEST || 1;
 
   // Saat dağılımı (en çok atama yapılan saatler)
   const hourDistribution: Record<number, number> = {};
@@ -240,6 +241,15 @@ export default function Statistics({ teachers, cases, history }: Props) {
                 </div>
                 <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
                   <div className="h-full bg-purple-500 rounded-full transition-all duration-500" style={{ width: `${(typeDistribution.IKISI / totalTypes) * 100}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>🧪 Test</span>
+                  <span className="text-slate-600">{typeDistribution.TEST} ({((typeDistribution.TEST / totalTypes) * 100).toFixed(0)}%)</span>
+                </div>
+                <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-orange-500 rounded-full transition-all duration-500" style={{ width: `${(typeDistribution.TEST / totalTypes) * 100}%` }} />
                 </div>
               </div>
             </div>
