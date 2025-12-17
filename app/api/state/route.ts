@@ -14,6 +14,7 @@ type Teacher = {
   id: string;
   name: string;
   isAbsent: boolean;
+  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD)
   yearlyLoad: number;
   monthly?: Record<string, number>;
   active: boolean;
@@ -45,6 +46,13 @@ type Settings = {
   scoreTypeD: number;
   scoreTypeI: number;
 };
+type EArchiveEntry = {
+  id: string;
+  student: string;
+  fileNo?: string;
+  assignedToName: string;
+  createdAt: string;
+};
 
 type StateShape = {
   teachers: Teacher[];
@@ -54,6 +62,7 @@ type StateShape = {
   lastAbsencePenalty?: string;
   announcements?: Announcement[];
   settings?: Settings;
+  eArchive?: EArchiveEntry[]; // E-Arşiv (tüm atanmış dosyalar)
   updatedAt?: string;
 };
 
@@ -66,6 +75,7 @@ const DEFAULT_STATE: StateShape = {
   lastAbsencePenalty: "",
   announcements: [],
   settings: undefined,
+  eArchive: [],
   updatedAt: undefined,
 };
 
@@ -116,6 +126,7 @@ export async function POST(req: NextRequest) {
     lastAbsencePenalty: body.lastAbsencePenalty ? String(body.lastAbsencePenalty) : undefined,
     announcements: Array.isArray(body.announcements) ? (body.announcements as Announcement[]) : [],
     settings: body.settings as Settings | undefined,
+    eArchive: Array.isArray(body.eArchive) ? (body.eArchive as EArchiveEntry[]) : [],
     updatedAt: body.updatedAt ? String(body.updatedAt) : new Date().toISOString(),
   };
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;

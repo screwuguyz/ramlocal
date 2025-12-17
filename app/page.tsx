@@ -27,6 +27,7 @@ export type Teacher = {
   id: string;
   name: string;
   isAbsent: boolean;
+  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD) - rollover için gerekli
   yearlyLoad: number;
   monthly?: Record<string, number>;
   active: boolean;
@@ -682,7 +683,11 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
       if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
-      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0);
+      // E-Arşiv'i Supabase'den yükle (varsa)
+      if (Array.isArray(s.eArchive) && s.eArchive.length > 0) {
+        setEArchive(s.eArchive);
+      }
+      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0);
     } catch (err) {
       console.error("[fetchCentralState] Network error:", err);
     } finally {
@@ -830,6 +835,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
           id: t.id,
           name: t.name,
           isAbsent: !!t.isAbsent,
+          absentDay: t.absentDay, // Devamsızlık tarihi
           yearlyLoad: Number(t.yearlyLoad || 0),
           monthly: t.monthly ?? {},
           active: t.active ?? true,
@@ -1092,6 +1098,7 @@ useEffect(() => {
     lastAbsencePenalty,
     announcements,
     settings,
+    eArchive,
     updatedAt: nowTs,
   };
   const t = window.setTimeout(() => {
@@ -1117,7 +1124,7 @@ useEffect(() => {
       });
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
-}, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, isAdmin, hydrated, centralLoaded]);
+}, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, isAdmin, hydrated, centralLoaded]);
 
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();
@@ -1394,7 +1401,17 @@ useEffect(() => {
 
   // ---- Öğretmen devamsızlık/aktiflik/silme/testör
   function toggleAbsent(tid: string) {
-    setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, isAbsent: !t.isAbsent } : t)));
+    const today = getTodayYmd();
+    setTeachers(prev => prev.map(t => {
+      if (t.id !== tid) return t;
+      const newAbsent = !t.isAbsent;
+      return { 
+        ...t, 
+        isAbsent: newAbsent,
+        // Devamsız işaretlenirken tarihi kaydet, uygun yapılırken temizle
+        absentDay: newAbsent ? today : undefined
+      };
+    }));
   }
   function toggleActive(tid: string) {
     setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, active: !t.active } : t)));
@@ -1432,8 +1449,14 @@ useEffect(() => {
     if (!hydrated) return;
     if (lastAbsencePenaltyRef.current === day) return;
 
-    // Çalışan öğretmenler: aktif, devamsız DEĞİL ve o gün yedek DEĞİL
-    const workingTeachers = teachersRef.current.filter((t) => t.active && !t.isAbsent && t.backupDay !== day);
+    // Çalışan öğretmenler: aktif, o gün devamsız DEĞİL ve o gün yedek DEĞİL
+    // absentDay === day kontrolü: öğretmen o gün için devamsız işaretlenmişse çalışmıyor sayılır
+    const workingTeachers = teachersRef.current.filter((t) => 
+      t.active && 
+      t.absentDay !== day && // O gün için devamsız değil
+      !t.isAbsent && // Şu an devamsız değil
+      t.backupDay !== day
+    );
     const workingIds = new Set(workingTeachers.map((t) => t.id));
     const dayWorkingCases = casesRef.current.filter(
       (c) =>
@@ -1454,7 +1477,10 @@ useEffect(() => {
     const { absencePenaltyAmount } = settingsRef.current;
     const penaltyScore = Math.max(0, minScore - absencePenaltyAmount);
 
-    const absentTeachers = teachersRef.current.filter((t) => t.active && t.isAbsent);
+    // Devamsız öğretmenler: o gün için devamsız işaretlenmiş VEYA şu an devamsız olan aktif öğretmenler
+    const absentTeachers = teachersRef.current.filter((t) => 
+      t.active && (t.absentDay === day || t.isAbsent)
+    );
     const absentIds = new Set(absentTeachers.map((t) => t.id));
 
     if (!absentTeachers.length) {

@@ -2,6 +2,7 @@ export type Teacher = {
   id: string;
   name: string;
   isAbsent: boolean;
+  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD) - rollover için gerekli
   yearlyLoad: number;
   monthly?: Record<string, number>;
   active: boolean;
