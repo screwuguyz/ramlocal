@@ -327,11 +327,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  // Not: Bu API rotası artık iron-session kullanmıyor, eski cookie yöntemini kullanıyor.
-  // Yetki kontrolünü buna göre ve bypassAuth bayrağını ekleyerek güncelliyoruz.
   const url = new URL(req.url);
   const bypassAuth = url.searchParams.get("bypassAuth") === "true";
-  const isAdmin = req.cookies.get("ram_admin")?.value === "1"; // Eski admin kontrolü
+  const dateQuery = url.searchParams.get("date"); // Silinecek tarih (opsiyonel)
+  const isAdmin = req.cookies.get("ram_admin")?.value === "1";
+  
   if (!isAdmin && !bypassAuth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -340,14 +340,35 @@ export async function DELETE(req: NextRequest) {
   }
   try {
     const admin = createClient(SUPA_URL, SUPA_SERVICE_KEY);
-    // Önceki konuşmalarımıza göre, silme işlemi artık tüm PDF kayıtlarını temizleyecek.
-    // `neq` (not equal) kullanarak tüm satırları silmek için bir koşul sağlıyoruz.
-    const { error } = await admin
-      .from(TABLE_NAME)
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000"); // Hepsini sil
-    if (error) throw error;
-    return NextResponse.json({ ok: true });
+    
+    if (dateQuery) {
+      // Sadece belirtilen tarihin kayıtlarını sil
+      const { error } = await admin
+        .from(TABLE_NAME)
+        .delete()
+        .eq("appointment_date", dateQuery);
+      if (error) throw error;
+      return NextResponse.json({ ok: true, deletedDate: dateQuery });
+    } else {
+      // Tarih belirtilmemişse sadece bugünün (veya en son yüklenen tarihin) kayıtlarını sil
+      // Önce en son tarihi bul
+      const { data: latestDates } = await admin
+        .from(TABLE_NAME)
+        .select("appointment_date")
+        .order("appointment_date", { ascending: false })
+        .limit(1);
+      
+      const latestDate = latestDates?.[0]?.appointment_date;
+      if (latestDate) {
+        const { error } = await admin
+          .from(TABLE_NAME)
+          .delete()
+          .eq("appointment_date", latestDate);
+        if (error) throw error;
+        return NextResponse.json({ ok: true, deletedDate: latestDate });
+      }
+      return NextResponse.json({ ok: true, message: "Silinecek kayıt yok" });
+    }
   } catch (err) {
     console.error("pdf-import DELETE error", err);
     return NextResponse.json({ error: "Kayıtlar silinemedi." }, { status: 500 });

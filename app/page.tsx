@@ -736,9 +736,13 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
 
   async function clearPdfEntries(confirmFirst = true, bypassAuth = false) {
     if (!pdfEntries.length) return;
-    if (confirmFirst && !confirm("Yüklenen tüm PDF kayıtlarını silmek istiyor musunuz?")) return;
+    if (confirmFirst && !confirm("Bu tarihin PDF kayıtlarını silmek istiyor musunuz?")) return;
     try {
-      const qs = bypassAuth ? "?bypassAuth=true" : (pdfDateIso ? `?date=${encodeURIComponent(pdfDateIso)}` : "");
+      // Hem tarihi hem bypassAuth'u query string'e ekle
+      const params = new URLSearchParams();
+      if (pdfDateIso) params.set("date", pdfDateIso);
+      if (bypassAuth) params.set("bypassAuth", "true");
+      const qs = params.toString() ? `?${params.toString()}` : "";
       const res = await fetch(`/api/pdf-import${qs}`, { method: "DELETE" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
