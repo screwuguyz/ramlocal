@@ -1892,6 +1892,69 @@ useEffect(() => {
 
   // E-Arşiv Görüntüleme Bileşeni
   function EArchiveView({ showAdminButtons = false }: { showAdminButtons?: boolean }) {
+    const [searchStudent, setSearchStudent] = useState("");
+    const [searchFileNo, setSearchFileNo] = useState("");
+    const [filterTeacher, setFilterTeacher] = useState<string>("");
+    const [dateFrom, setDateFrom] = useState<string>("");
+    const [dateTo, setDateTo] = useState<string>("");
+
+    // Filtrelenmiş liste
+    const filteredArchive = useMemo(() => {
+      let filtered = [...eArchive];
+
+      // Öğrenci adına göre filtrele
+      if (searchStudent.trim()) {
+        const searchLower = searchStudent.toLowerCase().trim();
+        filtered = filtered.filter(e => 
+          e.student.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Dosya numarasına göre filtrele
+      if (searchFileNo.trim()) {
+        const searchLower = searchFileNo.toLowerCase().trim();
+        filtered = filtered.filter(e => 
+          e.fileNo?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Öğretmen bazlı filtrele
+      if (filterTeacher) {
+        filtered = filtered.filter(e => e.assignedToName === filterTeacher);
+      }
+
+      // Tarih aralığı filtreleme
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(e => {
+          const entryDate = new Date(e.createdAt);
+          entryDate.setHours(0, 0, 0, 0);
+          return entryDate >= fromDate;
+        });
+      }
+
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(e => {
+          const entryDate = new Date(e.createdAt);
+          return entryDate <= toDate;
+        });
+      }
+
+      // Tarihe göre sırala (en yeni üstte)
+      return filtered.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }, [eArchive, searchStudent, searchFileNo, filterTeacher, dateFrom, dateTo]);
+
+    // Tüm öğretmen isimlerini al (filtreleme için)
+    const teacherNames = useMemo(() => {
+      const names = new Set(eArchive.map(e => e.assignedToName));
+      return Array.from(names).sort();
+    }, [eArchive]);
+
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -1905,19 +1968,104 @@ useEffect(() => {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Arama ve Filtreleme */}
+          <div className="mb-4 space-y-3 p-4 bg-slate-50 rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-slate-600 mb-1 block">🔍 Öğrenci Adı</Label>
+                <Input
+                  placeholder="Öğrenci adına göre ara..."
+                  value={searchStudent}
+                  onChange={(e) => setSearchStudent(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-600 mb-1 block">📁 Dosya No</Label>
+                <Input
+                  placeholder="Dosya numarasına göre ara..."
+                  value={searchFileNo}
+                  onChange={(e) => setSearchFileNo(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs text-slate-600 mb-1 block">👨‍🏫 Öğretmen</Label>
+                <Select value={filterTeacher} onValueChange={setFilterTeacher}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Tüm öğretmenler" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tüm öğretmenler</SelectItem>
+                    {teacherNames.map(name => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-600 mb-1 block">📅 Başlangıç Tarihi</Label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-600 mb-1 block">📅 Bitiş Tarihi</Label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+            {(searchStudent || searchFileNo || filterTeacher || dateFrom || dateTo) && (
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-xs text-slate-600">
+                  {filteredArchive.length} sonuç bulundu (toplam {eArchive.length})
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchStudent("");
+                    setSearchFileNo("");
+                    setFilterTeacher("");
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                  className="h-7 text-xs"
+                >
+                  ✕ Filtreleri Temizle
+                </Button>
+              </div>
+            )}
+          </div>
+
           {eArchive.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <div className="text-4xl mb-3">📭</div>
               <div className="font-medium">E-Arşiv boş</div>
               <div className="text-sm">Henüz atanmış dosya bulunmuyor.</div>
             </div>
+          ) : filteredArchive.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="text-4xl mb-3">🔍</div>
+              <div className="font-medium">Sonuç bulunamadı</div>
+              <div className="text-sm">Arama kriterlerinize uygun dosya yok.</div>
+            </div>
           ) : (
             <div className="overflow-auto border rounded-md max-h-[70vh]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-muted"><tr><th className="p-2 text-left">Öğrenci Adı</th><th className="p-2 text-left">Dosya No</th><th className="p-2 text-left">Atanan Öğretmen</th><th className="p-2 text-left">Atama Tarihi</th></tr></thead>
                 <tbody>
-                  {eArchive.map(entry => (
-                    <tr key={entry.id} className="border-t">
+                  {filteredArchive.map(entry => (
+                    <tr key={entry.id} className="border-t hover:bg-slate-50">
                       <td className="p-2 font-medium">{entry.student}</td><td className="p-2">{entry.fileNo || '—'}</td><td className="p-2">{entry.assignedToName}</td><td className="p-2">{new Date(entry.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}</td>
                     </tr>
                   ))}
