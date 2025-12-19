@@ -825,6 +825,8 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   const [archivePassword, setArchivePassword] = useState("");
   const [archiveAuthenticated, setArchiveAuthenticated] = useState(false);
   const [selectedAbsenceDate, setSelectedAbsenceDate] = useState<string | null>(null);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(0);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const [showPdfPanel, setShowPdfPanel] = useState<boolean | Date>(false);
   const [showRules, setShowRules] = useState(false);
   // Versiyon bildirimi (admin olmayan kullanıcılar için)
@@ -2572,6 +2574,22 @@ function AssignedArchiveSingleDay() {
       }
     });
     
+    // Geçmiş devamsızlıklar (history'den absencePenalty kayıtları)
+    Object.keys(history).forEach(day => {
+      history[day].forEach(entry => {
+        if (entry.absencePenalty && entry.assignedTo) {
+          const teacher = teachers.find(t => t.id === entry.assignedTo);
+          if (teacher) {
+            if (!absentByDay[day]) absentByDay[day] = [];
+            // Aynı öğretmen aynı gün için zaten eklenmemişse ekle
+            if (!absentByDay[day].find(t => t.id === teacher.id)) {
+              absentByDay[day].push(teacher);
+            }
+          }
+        }
+      });
+    });
+    
     const sortedDays = Object.keys(absentByDay).sort((a, b) => b.localeCompare(a));
     
     // Seçili tarih yoksa veya listede yoksa en son tarihi seç
@@ -2618,6 +2636,16 @@ function AssignedArchiveSingleDay() {
       });
       monthlyGroups[monthKey].days.push(day);
     });
+    
+    // Sıralı hafta ve ay listeleri
+    const sortedWeeks = Object.values(weeklyGroups).sort((a, b) => b.week.localeCompare(a.week));
+    const sortedMonths = Object.values(monthlyGroups).sort((a, b) => b.month.localeCompare(a.month));
+    
+    // Seçili hafta ve ay index'lerini kontrol et
+    const currentWeekIndex = Math.min(selectedWeekIndex, sortedWeeks.length - 1);
+    const currentMonthIndex = Math.min(selectedMonthIndex, sortedMonths.length - 1);
+    const currentWeek = sortedWeeks[currentWeekIndex] || null;
+    const currentMonth = sortedMonths[currentMonthIndex] || null;
 
     return (
       <div className="container mx-auto p-4 space-y-6">
@@ -2690,31 +2718,56 @@ function AssignedArchiveSingleDay() {
               <CardTitle>📆 Haftalık Devamsızlık Özeti</CardTitle>
             </CardHeader>
             <CardContent>
-              {Object.keys(weeklyGroups).length === 0 ? (
+              {sortedWeeks.length === 0 ? (
                 <p className="text-slate-500">Henüz haftalık devamsızlık kaydı yok.</p>
-              ) : (
+              ) : currentWeek ? (
                 <div className="space-y-4">
-                  {Object.values(weeklyGroups)
-                    .sort((a, b) => b.week.localeCompare(a.week))
-                    .map(group => (
-                      <div key={group.week} className="border rounded-lg p-4">
-                        <div className="font-semibold text-lg mb-2 text-orange-700">
-                          Hafta: {format(new Date(group.week), 'dd MMMM yyyy', { locale: tr })} - {format(new Date(new Date(group.week).getTime() + 6*24*60*60*1000), 'dd MMMM yyyy', { locale: tr })}
+                  {/* Hafta navigasyonu */}
+                  <div className="flex items-center justify-between mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedWeekIndex(Math.max(0, currentWeekIndex - 1))}
+                      disabled={currentWeekIndex === 0}
+                      className="flex items-center gap-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Önceki
+                    </Button>
+                    <div className="font-semibold text-lg text-orange-700 text-center flex-1">
+                      Hafta: {format(new Date(currentWeek.week), 'dd MMMM yyyy', { locale: tr })} - {format(new Date(new Date(currentWeek.week).getTime() + 6*24*60*60*1000), 'dd MMMM yyyy', { locale: tr })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedWeekIndex(Math.min(sortedWeeks.length - 1, currentWeekIndex + 1))}
+                      disabled={currentWeekIndex === sortedWeeks.length - 1}
+                      className="flex items-center gap-2"
+                    >
+                      Sonraki
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {/* Seçili haftanın devamsızlıkları */}
+                  <div className="border rounded-lg p-4">
+                    <div className="text-sm text-slate-600 mb-2">
+                      {currentWeek.days.length} gün devamsızlık kaydı
+                    </div>
+                    <div className="space-y-1">
+                      {currentWeek.teachers.map(t => (
+                        <div key={t.id} className="flex items-center gap-2 text-slate-700">
+                          <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                          <span>{t.name}</span>
                         </div>
-                        <div className="text-sm text-slate-600 mb-2">
-                          {group.days.length} gün devamsızlık kaydı
-                        </div>
-                        <div className="space-y-1">
-                          {group.teachers.map(t => (
-                            <div key={t.id} className="flex items-center gap-2 text-slate-700">
-                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                              <span>{t.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                      {currentWeek.teachers.length === 0 && (
+                        <p className="text-slate-500 text-sm">Bu hafta devamsızlık kaydı yok.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <p className="text-slate-500">Henüz haftalık devamsızlık kaydı yok.</p>
               )}
             </CardContent>
           </Card>
@@ -2725,31 +2778,56 @@ function AssignedArchiveSingleDay() {
               <CardTitle>📊 Aylık Devamsızlık Özeti</CardTitle>
             </CardHeader>
             <CardContent>
-              {Object.keys(monthlyGroups).length === 0 ? (
+              {sortedMonths.length === 0 ? (
                 <p className="text-slate-500">Henüz aylık devamsızlık kaydı yok.</p>
-              ) : (
+              ) : currentMonth ? (
                 <div className="space-y-4">
-                  {Object.values(monthlyGroups)
-                    .sort((a, b) => b.month.localeCompare(a.month))
-                    .map(group => (
-                      <div key={group.month} className="border rounded-lg p-4">
-                        <div className="font-semibold text-lg mb-2 text-purple-700">
-                          {format(new Date(group.month + '-01'), 'MMMM yyyy', { locale: tr })}
+                  {/* Ay navigasyonu */}
+                  <div className="flex items-center justify-between mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedMonthIndex(Math.max(0, currentMonthIndex - 1))}
+                      disabled={currentMonthIndex === 0}
+                      className="flex items-center gap-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Önceki
+                    </Button>
+                    <div className="font-semibold text-lg text-purple-700 text-center flex-1">
+                      {format(new Date(currentMonth.month + '-01'), 'MMMM yyyy', { locale: tr })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedMonthIndex(Math.min(sortedMonths.length - 1, currentMonthIndex + 1))}
+                      disabled={currentMonthIndex === sortedMonths.length - 1}
+                      className="flex items-center gap-2"
+                    >
+                      Sonraki
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {/* Seçili ayın devamsızlıkları */}
+                  <div className="border rounded-lg p-4">
+                    <div className="text-sm text-slate-600 mb-2">
+                      {currentMonth.days.length} gün devamsızlık kaydı, {currentMonth.teachers.length} öğretmen
+                    </div>
+                    <div className="space-y-1">
+                      {currentMonth.teachers.map(t => (
+                        <div key={t.id} className="flex items-center gap-2 text-slate-700">
+                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                          <span>{t.name}</span>
                         </div>
-                        <div className="text-sm text-slate-600 mb-2">
-                          {group.days.length} gün devamsızlık kaydı, {group.teachers.length} öğretmen
-                        </div>
-                        <div className="space-y-1">
-                          {group.teachers.map(t => (
-                            <div key={t.id} className="flex items-center gap-2 text-slate-700">
-                              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                              <span>{t.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                      {currentMonth.teachers.length === 0 && (
+                        <p className="text-slate-500 text-sm">Bu ay devamsızlık kaydı yok.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <p className="text-slate-500">Henüz aylık devamsızlık kaydı yok.</p>
               )}
             </CardContent>
           </Card>
