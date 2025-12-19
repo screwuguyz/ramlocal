@@ -226,6 +226,8 @@ function DailyAppointmentsCard({
   onRemoveEntry,
   onPrint,
   onClearAll,
+  cases,
+  history,
 }: {
   pdfDate: string | null;
   pdfLoading: boolean;
@@ -237,6 +239,8 @@ function DailyAppointmentsCard({
   onRemoveEntry?: (id: string) => void;
   onPrint?: () => void;
   onClearAll?: () => void;
+  cases?: CaseFile[];
+  history?: Record<string, CaseFile[]>;
 }) {
   return (
     <Card className="border border-emerald-200 bg-emerald-50/70">
@@ -302,15 +306,33 @@ function DailyAppointmentsCard({
                 </tr>
               </thead>
               <tbody>
-                {pdfEntries.map((entry) => (
+                {pdfEntries.map((entry) => {
+                  // Bu randevunun atanıp atanmadığını kontrol et
+                  let isAssigned = false;
+                  if (cases || history) {
+                    // cases içinde kontrol et
+                    const inCases = cases?.some(c => c.sourcePdfEntry?.id === entry.id) || false;
+                    // history içinde kontrol et
+                    const inHistory = history ? Object.values(history).some(dayCases => 
+                      dayCases.some(c => c.sourcePdfEntry?.id === entry.id)
+                    ) : false;
+                    isAssigned = inCases || inHistory;
+                  }
+                  
+                  return (
                   <tr
                     key={entry.id}
-                    className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"}`}
+                    className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "relative opacity-75" : ""}`}
                   >
-                    <td className="p-2 font-semibold">{entry.time}</td>
-                    <td className="p-2">{entry.name}</td>
-                    <td className="p-2">{entry.fileNo || "-"}</td>
-                    <td className="p-2 text-xs text-slate-600">{entry.extra || "-"}</td>
+                    {isAssigned && (
+                      <div className="absolute inset-0 pointer-events-none z-10">
+                        <div className="absolute top-1/2 left-0 right-0 h-1 bg-red-500 transform -translate-y-1/2 shadow-sm"></div>
+                      </div>
+                    )}
+                    <td className={`p-2 font-semibold relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.time}</td>
+                    <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.name}</td>
+                    <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.fileNo || "-"}</td>
+                    <td className={`p-2 text-xs text-slate-600 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.extra || "-"}</td>
                       {isAdmin && onApplyEntry && onRemoveEntry && (
                         <td className="p-2 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -324,7 +346,8 @@ function DailyAppointmentsCard({
                         </td>
                       )}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -3123,6 +3146,8 @@ function AssignedArchiveSingleDay() {
             onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
             onPrint={handlePrintPdfList}
             onClearAll={() => clearPdfEntries(true, true)}
+            cases={cases}
+            history={history}
           />
           
           {/* Non-admin için Raporlar ve Atanan Dosyalar */}
@@ -3240,6 +3265,8 @@ function AssignedArchiveSingleDay() {
             onPrint={handlePrintPdfList}
             onClearAll={() => clearPdfEntries()}
               onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
+            cases={cases}
+            history={history}
             />
             {activePdfEntry && (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
