@@ -3003,6 +3003,27 @@ function AssignedArchiveSingleDay() {
     return null; // Diğer modlar zaten yukarıda handle edildi
   }
 
+  // Atanmamış randevuları say (kırmızı çizilmemiş olanlar)
+  const pendingAppointmentsCount = useMemo(() => {
+    const assignedPdfIds = new Set<string>();
+    // cases içindeki atanan randevuları topla
+    cases.forEach(c => {
+      if (c.sourcePdfEntry?.id) {
+        assignedPdfIds.add(c.sourcePdfEntry.id);
+      }
+    });
+    // history içindeki atanan randevuları topla
+    Object.values(history).forEach(dayCases => {
+      dayCases.forEach(c => {
+        if (c.sourcePdfEntry?.id) {
+          assignedPdfIds.add(c.sourcePdfEntry.id);
+        }
+      });
+    });
+    // Toplam randevu sayısından atananları çıkar
+    return pdfEntries.filter(entry => !assignedPdfIds.has(entry.id)).length;
+  }, [cases, history, pdfEntries]);
+
   // ---------- TEK RETURN: BİLEŞEN ÇIKIŞI ----------
   return (
     <>
@@ -3114,26 +3135,7 @@ function AssignedArchiveSingleDay() {
           <div className="text-sm opacity-90">📁 Bugün Atanan</div>
         </div>
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-default">
-          <div className="text-3xl font-bold">{useMemo(() => {
-            // Atanmamış randevuları say (kırmızı çizilmemiş olanlar)
-            const assignedPdfIds = new Set<string>();
-            // cases içindeki atanan randevuları topla
-            cases.forEach(c => {
-              if (c.sourcePdfEntry?.id) {
-                assignedPdfIds.add(c.sourcePdfEntry.id);
-              }
-            });
-            // history içindeki atanan randevuları topla
-            Object.values(history).forEach(dayCases => {
-              dayCases.forEach(c => {
-                if (c.sourcePdfEntry?.id) {
-                  assignedPdfIds.add(c.sourcePdfEntry.id);
-                }
-              });
-            });
-            // Toplam randevu sayısından atananları çıkar
-            return pdfEntries.filter(entry => !assignedPdfIds.has(entry.id)).length;
-          }, [cases, history, pdfEntries])}</div>
+          <div className="text-3xl font-bold">{pendingAppointmentsCount}</div>
           <div className="text-sm opacity-90">📋 Bekleyen Randevu</div>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-default">
