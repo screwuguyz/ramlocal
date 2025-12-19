@@ -348,6 +348,8 @@ export default function DosyaAtamaApp() {
   const [lastAbsencePenalty, setLastAbsencePenalty] = useState<string>("");
   // ---- E-ARŞİV (sürekli)
   const [eArchive, setEArchive] = useState<EArchiveEntry[]>([]);
+  // ---- DEVAMSIZLIK KAYITLARI (Supabase'de saklanır)
+  const [absenceRecords, setAbsenceRecords] = useState<Array<{ teacherId: string; date: string }>>([]);
 
   // --- Canlı yayın (Supabase)
   const clientId = React.useMemo(() => uid(), []);
@@ -691,7 +693,11 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
       if (Array.isArray(s.eArchive) && s.eArchive.length > 0) {
         setEArchive(s.eArchive);
       }
-      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0);
+      // Devamsızlık kayıtlarını Supabase'den yükle
+      if (Array.isArray(s.absenceRecords)) {
+        setAbsenceRecords(s.absenceRecords);
+      }
+      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0);
     } catch (err) {
       console.error("[fetchCentralState] Network error:", err);
     } finally {
@@ -1050,7 +1056,7 @@ useEffect(() => {
     ch.send({
       type: "broadcast",
       event: "state",
-      payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
+      payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, absenceRecords, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
     });
   });
 
@@ -1109,6 +1115,7 @@ useEffect(() => {
     announcements,
     settings,
     eArchive,
+    absenceRecords,
     updatedAt: nowTs,
   };
   const t = window.setTimeout(() => {
@@ -1134,7 +1141,7 @@ useEffect(() => {
       });
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
-}, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, isAdmin, hydrated, centralLoaded]);
+}, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, isAdmin, hydrated, centralLoaded]);
 
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();
@@ -1439,9 +1446,12 @@ useEffect(() => {
   // ---- Öğretmen devamsızlık/aktiflik/silme/testör
   function toggleAbsent(tid: string) {
     const today = getTodayYmd();
+    // Önce mevcut durumu kontrol et
+    const currentTeacher = teachers.find(t => t.id === tid);
+    const newAbsent = !currentTeacher?.isAbsent;
+    
     setTeachers(prev => prev.map(t => {
       if (t.id !== tid) return t;
-      const newAbsent = !t.isAbsent;
       return { 
         ...t, 
         isAbsent: newAbsent,
@@ -1449,6 +1459,21 @@ useEffect(() => {
         absentDay: newAbsent ? today : undefined
       };
     }));
+    
+    // Devamsızlık kaydını Supabase'de sakla/sil
+    setAbsenceRecords(prev => {
+      if (newAbsent) {
+        // Devamsız yapılıyor - kayıt ekle
+        const newRecord = { teacherId: tid, date: today };
+        if (!prev.find(r => r.teacherId === tid && r.date === today)) {
+          return [...prev, newRecord];
+        }
+        return prev;
+      } else {
+        // Uygun yapılıyor - kaydı sil
+        return prev.filter(r => !(r.teacherId === tid && r.date === today));
+      }
+    });
   }
   function toggleActive(tid: string) {
     setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, active: !t.active } : t)));
@@ -2523,30 +2548,27 @@ function AssignedArchiveSingleDay() {
 
   // Öğretmen Takibi sayfası
   if (viewMode === "teacher-tracking") {
-    // Mevcut devamsızlıklar (absentDay'den)
-    const absentTeachers = teachers.filter(t => t.absentDay);
     const absentByDay: Record<string, Teacher[]> = {};
-    absentTeachers.forEach(t => {
-      if (t.absentDay) {
-        if (!absentByDay[t.absentDay]) absentByDay[t.absentDay] = [];
-        absentByDay[t.absentDay].push(t);
+    
+    // Supabase'deki devamsızlık kayıtlarından oku (ana kaynak)
+    absenceRecords.forEach(record => {
+      const teacher = teachers.find(t => t.id === record.teacherId);
+      if (teacher) {
+        if (!absentByDay[record.date]) absentByDay[record.date] = [];
+        // Aynı öğretmen aynı gün için zaten eklenmemişse ekle
+        if (!absentByDay[record.date].find(t => t.id === teacher.id)) {
+          absentByDay[record.date].push(teacher);
+        }
       }
     });
     
-    // Geçmiş devamsızlıklar (history'den absencePenalty kayıtları)
-    Object.keys(history).forEach(day => {
-      history[day].forEach(entry => {
-        if (entry.absencePenalty && entry.assignedTo) {
-          const teacher = teachers.find(t => t.id === entry.assignedTo);
-          if (teacher) {
-            if (!absentByDay[day]) absentByDay[day] = [];
-            // Aynı öğretmen aynı gün için zaten eklenmemişse ekle
-            if (!absentByDay[day].find(t => t.id === teacher.id)) {
-              absentByDay[day].push(teacher);
-            }
-          }
-        }
-      });
+    // Mevcut devamsızlıklar (absentDay'den - bugün için)
+    const today = getTodayYmd();
+    teachers.filter(t => t.absentDay === today).forEach(t => {
+      if (!absentByDay[today]) absentByDay[today] = [];
+      if (!absentByDay[today].find(tt => tt.id === t.id)) {
+        absentByDay[today].push(t);
+      }
     });
     
     const sortedDays = Object.keys(absentByDay).sort((a, b) => b.localeCompare(a));
