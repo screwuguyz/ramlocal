@@ -168,12 +168,41 @@ export default function AssignedArchiveSingleDay({
                         <div className="border rounded-md p-3 space-y-3">
                           <div className="font-medium">Yapay Zeka Açıklaması — Atanan: {teacherName(c.assignedTo) || "—"}</div>
                           <div className="space-y-2 max-h-64 overflow-auto">
-                            {aiMessages.map((m, idx) => (
-                              <div key={idx} className={m.role === "user" ? "text-slate-800" : "text-emerald-800"}>
-                                <span className="text-xs uppercase font-semibold mr-2">{m.role === "user" ? "Siz" : "Asistan"}</span>
-                                <span>{m.content}</span>
-                              </div>
-                            ))}
+                            {aiMessages.map((m, idx) => {
+                              // Markdown bold formatını render et (**metin**)
+                              const renderWithBold = (text: string) => {
+                                const parts: (string | JSX.Element)[] = [];
+                                let lastIndex = 0;
+                                const regex = /\*\*(.+?)\*\*/g;
+                                let match;
+                                
+                                while ((match = regex.exec(text)) !== null) {
+                                  // Önceki kısmı ekle
+                                  if (match.index > lastIndex) {
+                                    parts.push(text.substring(lastIndex, match.index));
+                                  }
+                                  // Kalın kısmı ekle
+                                  parts.push(
+                                    <strong key={match.index} className="font-bold text-emerald-900">
+                                      {match[1]}
+                                    </strong>
+                                  );
+                                  lastIndex = regex.lastIndex;
+                                }
+                                // Kalan kısmı ekle
+                                if (lastIndex < text.length) {
+                                  parts.push(text.substring(lastIndex));
+                                }
+                                return parts.length > 0 ? parts : text;
+                              };
+                              
+                              return (
+                                <div key={idx} className={m.role === "user" ? "text-slate-800" : "text-emerald-800"}>
+                                  <span className="text-xs uppercase font-semibold mr-2">{m.role === "user" ? "Siz" : "Asistan"}</span>
+                                  <span className="whitespace-pre-wrap">{renderWithBold(m.content)}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                           <form
                             className="flex gap-2"
