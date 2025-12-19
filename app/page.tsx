@@ -2523,27 +2523,6 @@ function AssignedArchiveSingleDay() {
   );
 }
 
-  // Atanmamış randevuları say (kırmızı çizilmemiş olanlar) - Hook'lar conditional return'lerden ÖNCE olmalı
-  const pendingAppointmentsCount = useMemo(() => {
-    const assignedPdfIds = new Set<string>();
-    // cases içindeki atanan randevuları topla
-    cases.forEach((c: CaseFile) => {
-      if (c.sourcePdfEntry?.id) {
-        assignedPdfIds.add(c.sourcePdfEntry.id);
-      }
-    });
-    // history içindeki atanan randevuları topla
-    Object.values(history).forEach((dayCases: CaseFile[]) => {
-      dayCases.forEach((c: CaseFile) => {
-        if (c.sourcePdfEntry?.id) {
-          assignedPdfIds.add(c.sourcePdfEntry.id);
-        }
-      });
-    });
-    // Toplam randevu sayısından atananları çıkar
-    return pdfEntries.filter(entry => !assignedPdfIds.has(entry.id)).length;
-  }, [cases, history, pdfEntries]);
-
   if (viewMode === "landing") {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-50 via-white to-orange-50 relative text-slate-800 overflow-hidden">
