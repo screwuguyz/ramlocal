@@ -2601,8 +2601,11 @@ function AssignedArchiveSingleDay() {
       }
     }
     const currentIndex = currentSelectedDate ? sortedDays.indexOf(currentSelectedDate) : -1;
-    const prevDate = currentIndex > 0 ? sortedDays[currentIndex - 1] : null;
-    const nextDate = currentIndex < sortedDays.length - 1 ? sortedDays[currentIndex + 1] : null;
+    // sortedDays büyükten küçüğe sıralı (en yeni en başta), bu yüzden:
+    // Önceki = daha eski tarih = dizide daha sonraki eleman (index + 1)
+    // Sonraki = daha yeni tarih = dizide daha önceki eleman (index - 1)
+    const prevDate = currentIndex >= 0 && currentIndex < sortedDays.length - 1 ? sortedDays[currentIndex + 1] : null;
+    const nextDate = currentIndex > 0 ? sortedDays[currentIndex - 1] : null;
     
     // Haftalık gruplama
     const weeklyGroups: Record<string, { week: string; teachers: Teacher[]; days: string[] }> = {};
@@ -2727,8 +2730,8 @@ function AssignedArchiveSingleDay() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedWeekIndex(Math.max(0, currentWeekIndex - 1))}
-                      disabled={currentWeekIndex === 0}
+                      onClick={() => setSelectedWeekIndex(Math.min(sortedWeeks.length - 1, currentWeekIndex + 1))}
+                      disabled={currentWeekIndex === sortedWeeks.length - 1}
                       className="flex items-center gap-2"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -2740,8 +2743,8 @@ function AssignedArchiveSingleDay() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedWeekIndex(Math.min(sortedWeeks.length - 1, currentWeekIndex + 1))}
-                      disabled={currentWeekIndex === sortedWeeks.length - 1}
+                      onClick={() => setSelectedWeekIndex(Math.max(0, currentWeekIndex - 1))}
+                      disabled={currentWeekIndex === 0}
                       className="flex items-center gap-2"
                     >
                       Sonraki
@@ -2787,8 +2790,8 @@ function AssignedArchiveSingleDay() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedMonthIndex(Math.max(0, currentMonthIndex - 1))}
-                      disabled={currentMonthIndex === 0}
+                      onClick={() => setSelectedMonthIndex(Math.min(sortedMonths.length - 1, currentMonthIndex + 1))}
+                      disabled={currentMonthIndex === sortedMonths.length - 1}
                       className="flex items-center gap-2"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -2800,8 +2803,8 @@ function AssignedArchiveSingleDay() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedMonthIndex(Math.min(sortedMonths.length - 1, currentMonthIndex + 1))}
-                      disabled={currentMonthIndex === sortedMonths.length - 1}
+                      onClick={() => setSelectedMonthIndex(Math.max(0, currentMonthIndex - 1))}
+                      disabled={currentMonthIndex === 0}
                       className="flex items-center gap-2"
                     >
                       Sonraki

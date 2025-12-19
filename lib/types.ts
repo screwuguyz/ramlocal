@@ -2,21 +2,12 @@ export type Teacher = {
   id: string;
   name: string;
   isAbsent: boolean;
-  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD) - rollover için gerekli
   yearlyLoad: number;
   monthly?: Record<string, number>;
   active: boolean;
   pushoverKey?: string;
   isTester: boolean;
   backupDay?: string;
-};
-
-export type PdfAppointment = {
-  id: string;
-  time: string;
-  name: string;
-  fileNo: string;
-  extra?: string;
 };
 
 export type CaseFile = {
@@ -33,5 +24,4 @@ export type CaseFile = {
   assignReason?: string;
   absencePenalty?: boolean;
   backupBonus?: boolean;
-  sourcePdfEntry?: PdfAppointment; // Randevu listesinden geldiyse, geri yükleme için
 };
