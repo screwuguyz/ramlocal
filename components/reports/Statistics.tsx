@@ -1,6 +1,8 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Teacher, CaseFile } from "@/lib/types";
 
 type Props = {
@@ -46,16 +48,23 @@ function getMonthDates(monthsAgo = 0): string[] {
 const DAYS_TR = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 export default function Statistics({ teachers, cases, history }: Props) {
+  // Navigasyon state'leri
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = bu hafta, 1 = geçen hafta, vb.
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = bu ay, 1 = geçen ay, vb.
+
   // Tüm dosyaları birleştir (bugün + history)
   const allCases = useMemo(() => {
     const fromHistory = Object.values(history).flat();
     return [...cases, ...fromHistory].filter(c => !c.absencePenalty && !c.backupBonus);
   }, [cases, history]);
 
-  // Bu hafta ve geçen hafta verileri
+  // Seçili hafta verileri
+  const selectedWeekDates = getWeekDates(weekOffset);
+  const selectedWeekCases = allCases.filter(c => selectedWeekDates.includes(c.createdAt.slice(0, 10)));
+
+  // Bu hafta ve geçen hafta verileri (karşılaştırma için)
   const thisWeekDates = getWeekDates(0);
   const lastWeekDates = getWeekDates(1);
-  
   const thisWeekCases = allCases.filter(c => thisWeekDates.includes(c.createdAt.slice(0, 10)));
   const lastWeekCases = allCases.filter(c => lastWeekDates.includes(c.createdAt.slice(0, 10)));
 
@@ -64,14 +73,51 @@ export default function Statistics({ teachers, cases, history }: Props) {
   const lastWeekTotal = lastWeekCases.length;
   const weekChange = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal * 100).toFixed(0) : 0;
 
-  // Günlük dağılım (bu hafta)
-  const dailyDistribution = thisWeekDates.map((date, idx) => {
-    const count = thisWeekCases.filter(c => c.createdAt.slice(0, 10) === date).length;
+  // Günlük dağılım (seçili hafta)
+  const dailyDistribution = selectedWeekDates.map((date, idx) => {
+    const count = selectedWeekCases.filter(c => c.createdAt.slice(0, 10) === date).length;
     return { day: DAYS_TR[idx], count, date };
   });
   const maxDaily = Math.max(...dailyDistribution.map(d => d.count), 1);
 
-  // Öğretmen performansı (bu ay)
+  // Hafta başlangıç ve bitiş tarihleri (gösterim için)
+  const weekStartDate = selectedWeekDates[0];
+  const weekEndDate = selectedWeekDates[6];
+  const weekStartFormatted = new Date(weekStartDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  const weekEndFormatted = new Date(weekEndDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+
+  // Seçili ay verileri
+  const selectedMonthDates = getMonthDates(monthOffset);
+  const selectedMonthCases = allCases.filter(c => selectedMonthDates.includes(c.createdAt.slice(0, 10)));
+
+  // Öğretmen performansı (seçili ay)
+  const teacherPerformance = teachers
+    .filter(t => t.active)
+    .map(t => {
+      const teacherCases = selectedMonthCases.filter(c => c.assignedTo === t.id);
+      const totalPoints = teacherCases.reduce((sum, c) => sum + c.score, 0);
+      const fileCount = teacherCases.length;
+      return { id: t.id, name: t.name, points: totalPoints, files: fileCount };
+    })
+    .sort((a, b) => b.points - a.points);
+
+  const maxPoints = Math.max(...teacherPerformance.map(t => t.points), 1);
+
+  // Dosya türü dağılımı (seçili ay)
+  const typeDistribution = {
+    YONLENDIRME: selectedMonthCases.filter(c => c.type === "YONLENDIRME" && !c.isTest).length,
+    DESTEK: selectedMonthCases.filter(c => c.type === "DESTEK" && !c.isTest).length,
+    IKISI: selectedMonthCases.filter(c => c.type === "IKISI" && !c.isTest).length,
+    TEST: selectedMonthCases.filter(c => c.isTest).length,
+  };
+  const totalTypes = typeDistribution.YONLENDIRME + typeDistribution.DESTEK + typeDistribution.IKISI + typeDistribution.TEST || 1;
+
+  // Ay adı (gösterim için)
+  const monthDate = new Date();
+  monthDate.setMonth(monthDate.getMonth() - monthOffset);
+  const monthName = monthDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+
+  // Bu ay verileri (karşılaştırma için)
   const thisMonthDates = getMonthDates(0);
   const thisMonthCases = allCases.filter(c => thisMonthDates.includes(c.createdAt.slice(0, 10)));
   
@@ -170,7 +216,31 @@ export default function Statistics({ teachers, cases, history }: Props) {
         {/* Haftalık Dağılım */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">📅 Bu Hafta Günlük Dağılım</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">📅 Günlük Dağılım</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setWeekOffset(prev => prev + 1)}
+                  className="h-7 px-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-slate-600 min-w-[120px] text-center">
+                  {weekOffset === 0 ? "Bu Hafta" : `${weekStartFormatted} - ${weekEndFormatted}`}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
+                  disabled={weekOffset === 0}
+                  className="h-7 px-2"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between gap-2 h-40">
@@ -212,7 +282,31 @@ export default function Statistics({ teachers, cases, history }: Props) {
         {/* Dosya Türü Dağılımı */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">📊 Dosya Türü Dağılımı (Bu Ay)</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">📊 Dosya Türü Dağılımı</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMonthOffset(prev => prev + 1)}
+                  className="h-7 px-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-slate-600 min-w-[140px] text-center capitalize">
+                  {monthOffset === 0 ? "Bu Ay" : monthName}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMonthOffset(prev => Math.max(0, prev - 1))}
+                  disabled={monthOffset === 0}
+                  className="h-7 px-2"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -305,7 +399,31 @@ export default function Statistics({ teachers, cases, history }: Props) {
       {/* Öğretmen Performansı */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">👨‍🏫 Öğretmen Performansı (Bu Ay)</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">👨‍🏫 Öğretmen Performansı</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setMonthOffset(prev => prev + 1)}
+                className="h-7 px-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-slate-600 min-w-[140px] text-center capitalize">
+                {monthOffset === 0 ? "Bu Ay" : monthName}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setMonthOffset(prev => Math.max(0, prev - 1))}
+                disabled={monthOffset === 0}
+                className="h-7 px-2"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
