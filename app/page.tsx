@@ -23,6 +23,9 @@ import YearlyReport from "@/components/reports/YearlyReport";
 import TeacherPerformanceReport from "@/components/reports/TeacherPerformanceReport";
 import FileTypeAnalysis from "@/components/reports/FileTypeAnalysis";
 import BackupManager from "@/components/BackupManager";
+import ThemeSettings from "@/components/ThemeSettings";
+import DashboardWidgets from "@/components/DashboardWidgets";
+import ThemeToggle from "@/components/ThemeToggle";
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
 import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer, Loader2, Inbox, FileText, ChevronLeft, ChevronRight } from "lucide-react";
@@ -481,6 +484,7 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
   // Persist hydration guard: LS'den ilk yükleme bitene kadar yazma yapma
   const [hydrated, setHydrated] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"general" | "theme" | "widgets">("general");
   // Ayarlar (persist)
   const [settings, setSettings] = useState<Settings>(() => {
     try {
@@ -3094,6 +3098,7 @@ function AssignedArchiveSingleDay() {
   // ---------- TEK RETURN: BİLEŞEN ÇIKIŞI ----------
   return (
     <>
+    <ThemeToggle />
     <div className="container mx-auto p-4 space-y-6">
       {/* Üst araç çubuğu: rapor ve giriş */}
      {/* ÜST BAR (sticky + cam) */}
@@ -4048,14 +4053,42 @@ function AssignedArchiveSingleDay() {
         {/* Settings Modal */}
       {settingsOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setSettingsOpen(false)}>
-          <Card className="w-[500px] max-h-[90vh] overflow-y-auto shadow-2xl border-0" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl border-0" onClick={(e) => e.stopPropagation()}>
             <CardHeader className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-t-lg sticky top-0 z-10">
               <CardTitle className="text-white flex items-center gap-2">
                 <span className="text-2xl">⚙️</span>
                 <span>Ayarlar</span>
               </CardTitle>
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant={settingsTab === "general" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSettingsTab("general")}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  Genel
+                </Button>
+                <Button
+                  variant={settingsTab === "theme" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSettingsTab("theme")}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  🎨 Tema
+                </Button>
+                <Button
+                  variant={settingsTab === "widgets" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSettingsTab("widgets")}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                >
+                  📊 Widget'lar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {settingsTab === "general" && (
               <div>
                 <Label>Günlük Limit (öğretmen başına)</Label>
                 <Input type="number" value={settings.dailyLimit} onChange={e => setSettings({ ...settings, dailyLimit: Math.max(1, Number(e.target.value) || 0) })} />
@@ -4118,6 +4151,25 @@ function AssignedArchiveSingleDay() {
                 <Button variant="outline" onClick={() => setSettings(DEFAULT_SETTINGS)}>Varsayılanlara Dön</Button>
                 <Button onClick={() => setSettingsOpen(false)}>Kapat</Button>
               </div>
+              )}
+              
+              {settingsTab === "theme" && (
+                <div className="space-y-4">
+                  <ThemeSettings />
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button onClick={() => setSettingsOpen(false)}>Kapat</Button>
+                  </div>
+                </div>
+              )}
+              
+              {settingsTab === "widgets" && (
+                <div className="space-y-4">
+                  <DashboardWidgets />
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button onClick={() => setSettingsOpen(false)}>Kapat</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
