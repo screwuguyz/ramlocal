@@ -29,11 +29,10 @@ export async function exportToPDF(
   try {
     // Element'i canvas'a dönüştür
     const canvas = await html2canvas(element, {
-      scale: quality,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-    });
+    } as any);
 
     const imgData = canvas.toDataURL('image/png');
     const imgWidth = format === 'a4' ? 210 : 216; // A4 veya Letter genişliği (mm)
@@ -118,11 +117,10 @@ export async function exportMultipleToPDF(
       }
 
       const canvas = await html2canvas(element, {
-        scale: quality,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-      });
+      } as any);
 
       const imgData = canvas.toDataURL('image/png');
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
