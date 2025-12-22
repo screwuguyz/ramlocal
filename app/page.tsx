@@ -4089,6 +4089,7 @@ function AssignedArchiveSingleDay() {
             </CardHeader>
             <CardContent className="space-y-3">
               {settingsTab === "general" && (
+                <>
               <div>
                 <Label>Günlük Limit (öğretmen başına)</Label>
                 <Input type="number" value={settings.dailyLimit} onChange={e => setSettings({ ...settings, dailyLimit: Math.max(1, Number(e.target.value) || 0) })} />
@@ -4151,6 +4152,7 @@ function AssignedArchiveSingleDay() {
                 <Button variant="outline" onClick={() => setSettings(DEFAULT_SETTINGS)}>Varsayılanlara Dön</Button>
                 <Button onClick={() => setSettingsOpen(false)}>Kapat</Button>
               </div>
+                </>
               )}
               
               {settingsTab === "theme" && (

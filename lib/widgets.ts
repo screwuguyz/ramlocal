@@ -90,7 +90,7 @@ export function reorderWidgets(widgetIds: string[]) {
   
   // Eksik widget'ları sona ekle
   const reorderedIds = new Set(reordered.map(w => w.id));
-  const remaining = widgets.filter(w => !reorderedIds.has(w));
+  const remaining = widgets.filter(w => !reorderedIds.has(w.id));
   remaining.forEach((w, i) => {
     w.order = reordered.length + i;
   });
