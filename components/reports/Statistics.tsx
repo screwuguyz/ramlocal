@@ -117,30 +117,9 @@ export default function Statistics({ teachers, cases, history }: Props) {
   monthDate.setMonth(monthDate.getMonth() - monthOffset);
   const monthName = monthDate.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
-  // Bu ay verileri (karşılaştırma için)
+  // Bu ay verileri (karşılaştırma için - özet kartlarında kullanılıyor)
   const thisMonthDates = getMonthDates(0);
   const thisMonthCases = allCases.filter(c => thisMonthDates.includes(c.createdAt.slice(0, 10)));
-  
-  const teacherPerformance = teachers
-    .filter(t => t.active)
-    .map(t => {
-      const teacherCases = thisMonthCases.filter(c => c.assignedTo === t.id);
-      const totalPoints = teacherCases.reduce((sum, c) => sum + c.score, 0);
-      const fileCount = teacherCases.length;
-      return { id: t.id, name: t.name, points: totalPoints, files: fileCount };
-    })
-    .sort((a, b) => b.points - a.points);
-
-  const maxPoints = Math.max(...teacherPerformance.map(t => t.points), 1);
-
-  // Dosya türü dağılımı
-  const typeDistribution = {
-    YONLENDIRME: thisMonthCases.filter(c => c.type === "YONLENDIRME" && !c.isTest).length,
-    DESTEK: thisMonthCases.filter(c => c.type === "DESTEK" && !c.isTest).length,
-    IKISI: thisMonthCases.filter(c => c.type === "IKISI" && !c.isTest).length,
-    TEST: thisMonthCases.filter(c => c.isTest).length,
-  };
-  const totalTypes = typeDistribution.YONLENDIRME + typeDistribution.DESTEK + typeDistribution.IKISI + typeDistribution.TEST || 1;
 
   // Saat dağılımı (en çok atama yapılan saatler)
   const hourDistribution: Record<number, number> = {};
