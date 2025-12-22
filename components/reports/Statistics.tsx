@@ -353,14 +353,12 @@ export default function Statistics({ teachers, cases, history }: Props) {
                         }`}
                         style={{ width: `${percentage}%`, minWidth: count > 0 ? "8px" : "0" }}
                       />
-                      {count > 0 && (
-                        <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold ${
-                          percentage > 60 ? "text-white" : "text-slate-600"
-                        }`}>
-                          {count} dosya
-                        </span>
-                      )}
                     </div>
+                    {count > 0 && (
+                      <span className="text-sm font-semibold text-slate-700 min-w-[70px] text-right">
+                        {count} dosya
+                      </span>
+                    )}
                     {isTopHour && <span className="text-amber-500">🔥</span>}
                   </div>
                 );
