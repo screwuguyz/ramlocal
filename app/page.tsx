@@ -26,6 +26,7 @@ import BackupManager from "@/components/BackupManager";
 import ThemeSettings from "@/components/ThemeSettings";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import ThemeToggle from "@/components/ThemeToggle";
+import { setSupabaseSyncCallback, loadThemeFromSupabase, getThemeMode, getColorScheme } from "@/lib/theme";
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
 import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer, Loader2, Inbox, FileText, ChevronLeft, ChevronRight } from "lucide-react";
@@ -772,6 +773,10 @@ const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
       if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
+      // Tema ayarlarını Supabase'den yükle
+      if (s.themeSettings) {
+        loadThemeFromSupabase(s.themeSettings);
+      }
       // E-Arşiv'i Supabase'den yükle (varsa)
       if (Array.isArray(s.eArchive) && s.eArchive.length > 0) {
         setEArchive(s.eArchive);
@@ -1131,6 +1136,10 @@ useEffect(() => {
     setCases(p.cases ?? []);
     if (p.history) setHistory(p.history);
     if (typeof p.lastAbsencePenalty === "string") setLastAbsencePenalty(p.lastAbsencePenalty);
+    // Tema ayarlarını güncelle
+    if (p.themeSettings) {
+      loadThemeFromSupabase(p.themeSettings);
+    }
   });
 
   // 2) İzleyici "hello" derse admin state göndersin
@@ -1139,10 +1148,34 @@ useEffect(() => {
     if (!hydrated) return;                // LS yüklenmeden varsayılan state'i yayınlama
     const p = e.payload as any;
     if (!p || p.sender === clientId) return;
+    const themeMode = getThemeMode();
+    const colorSchemeName = typeof window !== "undefined" ? (localStorage.getItem("site_color_scheme") || "default") : "default";
+    const customColors = typeof window !== "undefined" ? (() => {
+      try {
+        const custom = localStorage.getItem("site_custom_colors");
+        return custom ? JSON.parse(custom) : undefined;
+      } catch {
+        return undefined;
+      }
+    })() : undefined;
+    
     ch.send({
       type: "broadcast",
       event: "state",
-      payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, absenceRecords, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
+      payload: { 
+        sender: clientId, 
+        teachers, 
+        cases, 
+        history, 
+        lastAbsencePenalty, 
+        absenceRecords,
+        themeSettings: {
+          themeMode,
+          colorScheme: colorSchemeName,
+          customColors: colorSchemeName === "custom" ? customColors : undefined,
+        },
+        updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) 
+      },
     });
   });
 
@@ -1169,11 +1202,34 @@ useEffect(() => {
   if (!centralLoaded) return; // Merkez yüklenmeden yayınlama
   const ch = channelRef.current;
   if (!ch) return;
-  ch.send({
-    type: "broadcast",
-    event: "state",
-    payload: { sender: clientId, teachers, cases, history, lastAbsencePenalty, updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) },
-  });
+    const themeMode = getThemeMode();
+    const colorSchemeName = typeof window !== "undefined" ? (localStorage.getItem("site_color_scheme") || "default") : "default";
+    const customColors = typeof window !== "undefined" ? (() => {
+      try {
+        const custom = localStorage.getItem("site_custom_colors");
+        return custom ? JSON.parse(custom) : undefined;
+      } catch {
+        return undefined;
+      }
+    })() : undefined;
+    
+    ch.send({
+      type: "broadcast",
+      event: "state",
+      payload: { 
+        sender: clientId, 
+        teachers, 
+        cases, 
+        history, 
+        lastAbsencePenalty,
+        themeSettings: {
+          themeMode,
+          colorScheme: colorSchemeName,
+          customColors: colorSchemeName === "custom" ? customColors : undefined,
+        },
+        updatedAt: (lastAppliedAtRef.current || new Date().toISOString()) 
+      },
+    });
 }, [teachers, cases, history, lastAbsencePenalty, isAdmin, clientId, hydrated, centralLoaded]);
 
 // === Admin değiştirince merkezi state'e de yaz (kalıcılık)
@@ -1192,6 +1248,18 @@ useEffect(() => {
   const ctrl = new AbortController();
   const nowTs = new Date().toISOString();
   lastAppliedAtRef.current = nowTs;
+  // Tema ayarlarını payload'a ekle
+  const themeMode = getThemeMode();
+  const colorSchemeName = typeof window !== "undefined" ? (localStorage.getItem("site_color_scheme") || "default") : "default";
+  const customColors = typeof window !== "undefined" ? (() => {
+    try {
+      const custom = localStorage.getItem("site_custom_colors");
+      return custom ? JSON.parse(custom) : undefined;
+    } catch {
+      return undefined;
+    }
+  })() : undefined;
+  
   const payload = {
     teachers,
     cases,
@@ -1200,6 +1268,11 @@ useEffect(() => {
     lastAbsencePenalty,
     announcements,
     settings,
+    themeSettings: {
+      themeMode,
+      colorScheme: colorSchemeName,
+      customColors: colorSchemeName === "custom" ? customColors : undefined,
+    },
     eArchive,
     absenceRecords,
     updatedAt: nowTs,
@@ -1228,6 +1301,41 @@ useEffect(() => {
   }, 300);
   return () => { window.clearTimeout(t); ctrl.abort(); };
 }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, isAdmin, hydrated, centralLoaded]);
+
+  // Tema ayarlarını Supabase'e senkronize et
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (!hydrated) return;
+    
+    // Supabase sync callback'i ayarla
+    setSupabaseSyncCallback((themeMode, colorScheme, customColors) => {
+      // Tema değişikliği olduğunda Supabase'e kaydet
+      const nowTs = new Date().toISOString();
+      fetch("/api/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teachers,
+          cases,
+          history,
+          lastRollover,
+          lastAbsencePenalty,
+          announcements,
+          settings,
+          themeSettings: {
+            themeMode,
+            colorScheme,
+            customColors: colorScheme === "custom" ? customColors : undefined,
+          },
+          eArchive,
+          absenceRecords,
+          updatedAt: nowTs,
+        }),
+      }).catch((err) => {
+        console.error("[theme sync] Failed:", err);
+      });
+    });
+  }, [isAdmin, hydrated, teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords]);
 
   async function doLogin(e?: React.FormEvent) {
     e?.preventDefault?.();

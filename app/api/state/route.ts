@@ -46,6 +46,29 @@ type Settings = {
   scoreTypeD: number;
   scoreTypeI: number;
 };
+type ThemeSettings = {
+  themeMode: "light" | "dark" | "auto";
+  colorScheme: string; // "default" | "blue" | "green" | "purple" | "red" | "custom"
+  customColors?: {
+    name: string;
+    primary: string;
+    primaryDark: string;
+    primaryLight: string;
+    accent: string;
+    accentDark: string;
+    accentLight: string;
+    bgBase: string;
+    bgWarm: string;
+    bgCard: string;
+    textMain: string;
+    textMuted: string;
+    textLight: string;
+    success: string;
+    warning: string;
+    danger: string;
+    info: string;
+  };
+};
 type EArchiveEntry = {
   id: string;
   student: string;
@@ -66,6 +89,7 @@ type StateShape = {
   lastAbsencePenalty?: string;
   announcements?: Announcement[];
   settings?: Settings;
+  themeSettings?: ThemeSettings; // Tema ayarları
   eArchive?: EArchiveEntry[]; // E-Arşiv (tüm atanmış dosyalar)
   absenceRecords?: AbsenceRecord[]; // Devamsızlık kayıtları (öğretmen ID + tarih)
   updatedAt?: string;
@@ -132,6 +156,7 @@ export async function POST(req: NextRequest) {
     lastAbsencePenalty: body.lastAbsencePenalty ? String(body.lastAbsencePenalty) : undefined,
     announcements: Array.isArray(body.announcements) ? (body.announcements as Announcement[]) : [],
     settings: body.settings as Settings | undefined,
+    themeSettings: body.themeSettings as ThemeSettings | undefined,
     eArchive: Array.isArray(body.eArchive) ? (body.eArchive as EArchiveEntry[]) : [],
     absenceRecords: Array.isArray(body.absenceRecords) ? (body.absenceRecords as AbsenceRecord[]) : [],
     updatedAt: body.updatedAt ? String(body.updatedAt) : new Date().toISOString(),

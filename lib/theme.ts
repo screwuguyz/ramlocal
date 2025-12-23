@@ -124,16 +124,35 @@ const THEME_MODE_KEY = "site_theme_mode";
 const COLOR_SCHEME_KEY = "site_color_scheme";
 const CUSTOM_COLORS_KEY = "site_custom_colors";
 
+// Supabase senkronizasyon için callback
+let syncToSupabaseCallback: ((themeMode: ThemeMode, colorScheme: string, customColors?: ColorScheme) => void) | null = null;
+
+export function setSupabaseSyncCallback(callback: (themeMode: ThemeMode, colorScheme: string, customColors?: ColorScheme) => void) {
+  syncToSupabaseCallback = callback;
+}
+
 export function getThemeMode(): ThemeMode {
   if (typeof window === "undefined") return "auto";
   const saved = localStorage.getItem(THEME_MODE_KEY) as ThemeMode | null;
   return saved === "light" || saved === "dark" || saved === "auto" ? saved : "auto";
 }
 
-export function setThemeMode(mode: ThemeMode) {
+export function setThemeMode(mode: ThemeMode, syncToSupabase = true) {
   if (typeof window === "undefined") return;
   localStorage.setItem(THEME_MODE_KEY, mode);
   applyTheme();
+  
+  // Supabase'e senkronize et
+  if (syncToSupabase && syncToSupabaseCallback) {
+    const schemeName = localStorage.getItem(COLOR_SCHEME_KEY) || "default";
+    const customColors = localStorage.getItem(CUSTOM_COLORS_KEY);
+    try {
+      const custom = customColors ? JSON.parse(customColors) : undefined;
+      syncToSupabaseCallback(mode, schemeName, custom);
+    } catch {
+      syncToSupabaseCallback(mode, schemeName);
+    }
+  }
 }
 
 export function getColorScheme(): ColorScheme {
@@ -143,7 +162,21 @@ export function getColorScheme(): ColorScheme {
   const customColors = localStorage.getItem(CUSTOM_COLORS_KEY);
   if (customColors) {
     try {
-      return JSON.parse(customColors);
+      const parsed = JSON.parse(customColors);
+      // Dark mode için renkleri ayarla
+      const theme = getEffectiveTheme();
+      if (theme === "dark") {
+        return {
+          ...parsed,
+          bgBase: parsed.bgBase || "#0f172a",
+          bgWarm: parsed.bgWarm || "#1e293b",
+          bgCard: parsed.bgCard || "#1e293b",
+          textMain: parsed.textMain || "#f1f5f9",
+          textMuted: parsed.textMuted || "#94a3b8",
+          textLight: parsed.textLight || "#64748b",
+        };
+      }
+      return parsed;
     } catch {
       // Hatalı JSON, varsayılan döndür
     }
@@ -151,22 +184,71 @@ export function getColorScheme(): ColorScheme {
   
   // Seçili şema
   const schemeName = localStorage.getItem(COLOR_SCHEME_KEY) || "default";
-  return DEFAULT_COLOR_SCHEMES[schemeName] || DEFAULT_COLOR_SCHEMES.default;
+  const scheme = DEFAULT_COLOR_SCHEMES[schemeName] || DEFAULT_COLOR_SCHEMES.default;
+  
+  // Dark mode için renkleri ayarla
+  const theme = getEffectiveTheme();
+  if (theme === "dark") {
+    return {
+      ...scheme,
+      bgBase: "#0f172a",
+      bgWarm: "#1e293b",
+      bgCard: "#1e293b",
+      textMain: "#f1f5f9",
+      textMuted: "#94a3b8",
+      textLight: "#64748b",
+    };
+  }
+  
+  return scheme;
 }
 
-export function setColorScheme(schemeName: string) {
+export function setColorScheme(schemeName: string, syncToSupabase = true) {
   if (typeof window === "undefined") return;
   localStorage.setItem(COLOR_SCHEME_KEY, schemeName);
   localStorage.removeItem(CUSTOM_COLORS_KEY); // Özel renkleri temizle
   applyTheme();
+  
+  // Supabase'e senkronize et
+  if (syncToSupabase && syncToSupabaseCallback) {
+    const mode = getThemeMode();
+    syncToSupabaseCallback(mode, schemeName);
+  }
 }
 
-export function setCustomColors(colors: Partial<ColorScheme>) {
+export function setCustomColors(colors: Partial<ColorScheme>, syncToSupabase = true) {
   if (typeof window === "undefined") return;
   const currentScheme = getColorScheme();
   const customScheme = { ...currentScheme, ...colors, name: "Özel Tema" };
   localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customScheme));
   localStorage.setItem(COLOR_SCHEME_KEY, "custom");
+  applyTheme();
+  
+  // Supabase'e senkronize et
+  if (syncToSupabase && syncToSupabaseCallback) {
+    const mode = getThemeMode();
+    syncToSupabaseCallback(mode, "custom", customScheme);
+  }
+}
+
+// Supabase'den tema ayarlarını yükle
+export function loadThemeFromSupabase(themeSettings: { themeMode?: string; colorScheme?: string; customColors?: ColorScheme } | null | undefined) {
+  if (typeof window === "undefined" || !themeSettings) return;
+  
+  if (themeSettings.themeMode && (themeSettings.themeMode === "light" || themeSettings.themeMode === "dark" || themeSettings.themeMode === "auto")) {
+    localStorage.setItem(THEME_MODE_KEY, themeSettings.themeMode);
+  }
+  
+  if (themeSettings.colorScheme) {
+    localStorage.setItem(COLOR_SCHEME_KEY, themeSettings.colorScheme);
+    
+    if (themeSettings.colorScheme === "custom" && themeSettings.customColors) {
+      localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(themeSettings.customColors));
+    } else {
+      localStorage.removeItem(CUSTOM_COLORS_KEY);
+    }
+  }
+  
   applyTheme();
 }
 

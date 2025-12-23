@@ -29,8 +29,11 @@ export default function ThemeToggle() {
     const currentIndex = modes.indexOf(mode);
     const nextMode = modes[(currentIndex + 1) % modes.length];
     setMode(nextMode);
-    setThemeMode(nextMode);
-    setEffectiveTheme(getEffectiveTheme());
+    setThemeMode(nextMode, false); // Supabase sync'i burada yapma, sadece localStorage'a kaydet
+    // Tema değişikliğini hemen uygula
+    setTimeout(() => {
+      setEffectiveTheme(getEffectiveTheme());
+    }, 0);
   }
 
   const getIcon = () => {

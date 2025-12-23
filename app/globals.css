@@ -719,9 +719,139 @@ input:focus::placeholder {
   }
 }
 
-/* ===== DARK MODE (opsiyonel) ===== */
+/* ===== DARK MODE ===== */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #0f172a;
+  --bg-warm: #1e293b;
+  --bg-card: #1e293b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+}
+
+[data-theme="dark"] body,
+body[data-theme="dark"] {
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
+}
+
+[data-theme="dark"] .card {
+  @apply bg-slate-800/90 border-slate-700;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+[data-theme="dark"] .card-header {
+  background: linear-gradient(135deg, 
+    rgba(13, 148, 136, 0.15) 0%, 
+    rgba(249, 115, 22, 0.1) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .table th {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+[data-theme="dark"] .table td {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+  background: linear-gradient(90deg, 
+    rgba(13, 148, 136, 0.15) 0%, 
+    rgba(249, 115, 22, 0.1) 100%);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .sticky {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-bottom: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+/* Dark mode butonlar */
+[data-theme="dark"] button {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] button[class*="outline"],
+[data-theme="dark"] .border-slate-300 {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] button[class*="outline"]:hover,
+[data-theme="dark"] .border-slate-300:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] button[class*="ghost"] {
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] button[class*="ghost"]:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+}
+
+[data-theme="dark"] button[class*="subtle"] {
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] button[class*="subtle"]:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+}
+
+/* Dark mode badge'ler */
+[data-theme="dark"] [class*="bg-emerald-50"],
+[data-theme="dark"] [class*="bg-amber-50"],
+[data-theme="dark"] [class*="bg-rose-50"] {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .text-rose-700 {
+  color: #fca5a5 !important;
+}
+
+/* Dark mode genel metin */
+[data-theme="dark"] {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] * {
+  color: inherit;
+}
+
+[data-theme="dark"] .text-slate-900,
+[data-theme="dark"] .text-slate-800,
+[data-theme="dark"] .text-slate-700 {
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .text-slate-600,
+[data-theme="dark"] .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+/* Fallback: Sistem teması için */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg-base: #0f172a;
     --bg-warm: #1e293b;
     --bg-card: #1e293b;
@@ -729,11 +859,11 @@ input:focus::placeholder {
     --text-muted: #94a3b8;
   }
   
-  body {
+  :root:not([data-theme]) body {
     background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
   }
   
-  .card {
+  :root:not([data-theme]) .card {
     @apply bg-slate-800/90 border-slate-700;
   }
 }

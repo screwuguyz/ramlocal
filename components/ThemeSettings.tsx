@@ -40,7 +40,7 @@ export default function ThemeSettings() {
 
   const handleThemeModeChange = (mode: ThemeMode) => {
     setThemeModeState(mode);
-    setThemeMode(mode);
+    setThemeMode(mode, true); // Supabase'e senkronize et
   };
 
   const handleSchemeChange = (schemeName: string) => {
@@ -51,7 +51,7 @@ export default function ThemeSettings() {
       setCustomColorsState(current);
     } else {
       setShowCustomColors(false);
-      setColorScheme(schemeName);
+      setColorScheme(schemeName, true); // Supabase'e senkronize et
     }
   };
 
@@ -60,7 +60,7 @@ export default function ThemeSettings() {
   };
 
   const handleSaveCustomColors = () => {
-    setCustomColors(customColors);
+    setCustomColors(customColors, true); // Supabase'e senkronize et
   };
 
   const handleReset = () => {
