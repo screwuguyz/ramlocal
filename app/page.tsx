@@ -4261,28 +4261,28 @@ function AssignedArchiveSingleDay() {
               {settingsTab === "general" && (
                 <>
               <div>
-                <Label>Günlük Limit (öğretmen başına)</Label>
+                <Label className="text-slate-900 font-semibold">Günlük Limit (öğretmen başına)</Label>
                 <Input type="number" value={settings.dailyLimit} onChange={e => setSettings({ ...settings, dailyLimit: Math.max(1, Number(e.target.value) || 0) })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Test Puanı</Label>
+                  <Label className="text-slate-900 font-semibold">Test Puanı</Label>
                   <Input type="number" value={settings.scoreTest} onChange={e => setSettings({ ...settings, scoreTest: Number(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Yeni Bonus</Label>
+                  <Label className="text-slate-900 font-semibold">Yeni Bonus</Label>
                   <Input type="number" value={settings.scoreNewBonus} onChange={e => setSettings({ ...settings, scoreNewBonus: Number(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Yönlendirme</Label>
+                  <Label className="text-slate-900 font-semibold">Yönlendirme</Label>
                   <Input type="number" value={settings.scoreTypeY} onChange={e => setSettings({ ...settings, scoreTypeY: Number(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Destek</Label>
+                  <Label className="text-slate-900 font-semibold">Destek</Label>
                   <Input type="number" value={settings.scoreTypeD} onChange={e => setSettings({ ...settings, scoreTypeD: Number(e.target.value) || 0 })} />
                 </div>
                 <div className="col-span-2">
-                  <Label>İkisi</Label>
+                  <Label className="text-slate-900 font-semibold">İkisi</Label>
                   <Input type="number" value={settings.scoreTypeI} onChange={e => setSettings({ ...settings, scoreTypeI: Number(e.target.value) || 0 })} />
                 </div>
               </div>
@@ -4294,7 +4294,7 @@ function AssignedArchiveSingleDay() {
                     <span>Yedek Başkan Bonus Ayarları</span>
                   </Label>
                 <div>
-                  <Label className="text-xs">Bonus Miktarı (En Yüksek + X)</Label>
+                  <Label className="text-xs text-slate-900 font-semibold">Bonus Miktarı (En Yüksek + X)</Label>
                   <Input type="number" min={0} value={settings.backupBonusAmount} onChange={e => setSettings({ ...settings, backupBonusAmount: Math.max(0, Number(e.target.value) || 0) })} />
                 </div>
                   <p className="text-[11px] text-amber-700 mt-1">
@@ -4310,7 +4310,7 @@ function AssignedArchiveSingleDay() {
                     <span>Devamsızlık Cezası Ayarları</span>
                   </Label>
                 <div>
-                  <Label className="text-xs">Puan Farkı (En Düşük - X)</Label>
+                  <Label className="text-xs text-slate-900 font-semibold">Puan Farkı (En Düşük - X)</Label>
                   <Input type="number" min={0} value={settings.absencePenaltyAmount} onChange={e => setSettings({ ...settings, absencePenaltyAmount: Math.max(0, Number(e.target.value) || 0) })} />
                 </div>
                   <p className="text-[11px] text-red-700 mt-1">
