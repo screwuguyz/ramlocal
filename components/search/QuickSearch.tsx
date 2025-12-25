@@ -153,14 +153,16 @@ export default function QuickSearch({
     };
 
     if (!isOpen) {
-        // Floating buton
+        // Üst barda küçük buton
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm transition-all border border-slate-200"
                 title="Hızlı Ara (Ctrl+K)"
             >
-                <Search className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                <Search className="h-4 w-4" />
+                <span className="hidden sm:inline">Ara</span>
+                <kbd className="hidden md:inline text-xs bg-white px-1.5 py-0.5 rounded border text-slate-400">⌘K</kbd>
             </button>
         );
     }
@@ -211,8 +213,8 @@ export default function QuickSearch({
                             key={`${result.type}-${result.id}`}
                             onClick={() => handleSelect(result)}
                             className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${index === selectedIndex
-                                    ? "bg-teal-50 border-l-4 border-teal-500"
-                                    : "hover:bg-slate-50"
+                                ? "bg-teal-50 border-l-4 border-teal-500"
+                                : "hover:bg-slate-50"
                                 }`}
                         >
                             <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">

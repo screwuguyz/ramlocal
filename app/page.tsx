@@ -3214,22 +3214,6 @@ export default function DosyaAtamaApp() {
   return (
     <>
       <ThemeToggle />
-      <QuickSearch
-        teachers={teachers}
-        cases={cases}
-        history={history}
-        onSelectTeacher={(id) => {
-          // Öğretmeni bul ve konsola yaz (ileride detay sayfasına yönlendirilebilir)
-          const teacher = teachers.find(t => t.id === id);
-          if (teacher) {
-            toast(`${teacher.name} seçildi`);
-          }
-        }}
-        onSelectCase={(caseFile) => {
-          // Dosyayı seçince bilgi göster
-          toast(`${caseFile.student} - ${caseFile.createdAt.split("T")[0]}`);
-        }}
-      />
       <div className="container mx-auto p-4 space-y-6">
         {/* Üst araç çubuğu: rapor ve giriş */}
         {/* ÜST BAR (sticky + cam) - MOBİL OPTİMİZE */}
@@ -3238,7 +3222,7 @@ export default function DosyaAtamaApp() {
 
             {/* Satır 1: Ana kontroller */}
             <div className="flex items-center justify-between gap-2">
-              {/* Sol: Ana sayfa + Ay */}
+              {/* Sol: Ana sayfa + Ay + Arama */}
               <div className="flex items-center gap-1 sm:gap-2">
                 <Button size="sm" variant="outline" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setViewMode("landing")}>
                   🏠 <span className="hidden sm:inline">Ana Sayfa</span>
@@ -3255,6 +3239,19 @@ export default function DosyaAtamaApp() {
                     </SelectContent>
                   </Select>
                 )}
+                {/* Hızlı Arama Butonu */}
+                <QuickSearch
+                  teachers={teachers}
+                  cases={cases}
+                  history={history}
+                  onSelectTeacher={(id) => {
+                    const teacher = teachers.find(t => t.id === id);
+                    if (teacher) toast(`${teacher.name} seçildi`);
+                  }}
+                  onSelectCase={(caseFile) => {
+                    toast(`${caseFile.student} - ${caseFile.createdAt.split("T")[0]}`);
+                  }}
+                />
               </div>
 
               {/* Sağ: Canlı rozet + Admin/Giriş */}
