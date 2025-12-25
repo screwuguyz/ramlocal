@@ -35,6 +35,7 @@ import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, Bar
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionModal from "@/components/modals/VersionModal";
 import CalendarView from "@/components/reports/CalendarView";
+import QuickSearch from "@/components/search/QuickSearch";
 
 
 
@@ -3213,6 +3214,22 @@ export default function DosyaAtamaApp() {
   return (
     <>
       <ThemeToggle />
+      <QuickSearch
+        teachers={teachers}
+        cases={cases}
+        history={history}
+        onSelectTeacher={(id) => {
+          // Öğretmeni bul ve konsola yaz (ileride detay sayfasına yönlendirilebilir)
+          const teacher = teachers.find(t => t.id === id);
+          if (teacher) {
+            toast(`${teacher.name} seçildi`);
+          }
+        }}
+        onSelectCase={(caseFile) => {
+          // Dosyayı seçince bilgi göster
+          toast(`${caseFile.student} - ${caseFile.createdAt.split("T")[0]}`);
+        }}
+      />
       <div className="container mx-auto p-4 space-y-6">
         {/* Üst araç çubuğu: rapor ve giriş */}
         {/* ÜST BAR (sticky + cam) - MOBİL OPTİMİZE */}
