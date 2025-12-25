@@ -798,9 +798,17 @@ export default function DosyaAtamaApp() {
       if (Array.isArray(s.absenceRecords)) {
         setAbsenceRecords(s.absenceRecords);
       }
-      // Queue'yu Supabase'den yükle
-      if (Array.isArray(s.queue)) {
+      // Queue'yu Supabase'den yükle - eğer Supabase'de queue varsa onu kullan, yoksa local state'teki queue'yu koru
+      if (Array.isArray(s.queue) && s.queue.length > 0) {
+        console.log("[fetchCentralState] Loading queue from Supabase:", s.queue.length, "tickets");
         setQueue(s.queue);
+      } else if (Array.isArray(s.queue) && s.queue.length === 0) {
+        // Supabase'de queue boş ama array olarak var - bu normal, sadece log
+        console.log("[fetchCentralState] Supabase queue is empty");
+        // Local state'teki queue'yu koru (silme)
+      } else {
+        // Supabase'de queue yok - local state'teki queue'yu koru
+        console.log("[fetchCentralState] No queue in Supabase, keeping local queue");
       }
       console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0, "queue:", s.queue?.length || 0);
     } catch (err) {
@@ -1293,6 +1301,7 @@ export default function DosyaAtamaApp() {
       },
       eArchive,
       absenceRecords,
+      queue, // Queue'yu payload'a ekle
       updatedAt: nowTs,
     };
     const t = window.setTimeout(() => {
@@ -1308,7 +1317,7 @@ export default function DosyaAtamaApp() {
             console.error("[state POST] Error:", json);
             toast(`Supabase kayıt hatası: ${json?.error || res.status}`);
           } else {
-            console.log("[state POST] Success, teachers:", teachers.length);
+            console.log("[state POST] Success, teachers:", teachers.length, "queue:", queue.length);
           }
         })
         .catch((err) => {
@@ -1318,7 +1327,7 @@ export default function DosyaAtamaApp() {
         });
     }, 300);
     return () => { window.clearTimeout(t); ctrl.abort(); };
-  }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, isAdmin, hydrated, centralLoaded]);
+  }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, queue, isAdmin, hydrated, centralLoaded]);
 
   // Tema ayarlarını Supabase'e senkronize et
   useEffect(() => {
