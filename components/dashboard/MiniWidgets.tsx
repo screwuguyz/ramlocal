@@ -130,8 +130,8 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                     <div className="flex items-center gap-1 text-sm mt-2">
                         <div className="flex -space-x-2 overflow-hidden">
                             {teachers.filter(t => t.active && !t.isAbsent).slice(0, 5).map(t => (
-                                <div key={t.id} className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] text-blue-600 dark:text-blue-300 font-bold" title={t.name}>
-                                    {t.name.substring(0, 1)}
+                                <div key={t.id} className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] text-blue-600 dark:text-blue-300 font-bold" title={String(t.name || '')}>
+                                    {String(t.name || '').substring(0, 1) || '?'}
                                 </div>
                             ))}
                             {teacherStats.activeCount > 5 && (
@@ -161,11 +161,11 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Sıradaki Randevu</div>
                         {nextAppointment ? (
                             <>
-                                <div className="text-lg font-bold text-slate-800 dark:text-white truncate" title={nextAppointment.name}>
-                                    {nextAppointment.name}
+                                <div className="text-lg font-bold text-slate-800 dark:text-white truncate" title={String(nextAppointment.name || '')}>
+                                    {String(nextAppointment.name || '')}
                                 </div>
                                 <div className="text-sm text-purple-600 dark:text-purple-400 font-medium">
-                                    {nextAppointment.time.split(" ")[0]}
+                                    {String(nextAppointment.time || '').split(" ")[0]}
                                 </div>
                             </>
                         ) : (
@@ -178,7 +178,7 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                     {nextAppointment && (
                         <div className="space-y-2 mt-2">
                             <div className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded inline-block w-fit">
-                                {nextAppointment.fileNo ? `#${nextAppointment.fileNo}` : "Dosya No Yok"} {nextAppointment.extra && `- ${nextAppointment.extra}`}
+                                {nextAppointment.fileNo ? `#${String(nextAppointment.fileNo)}` : "Dosya No Yok"}{nextAppointment.extra ? ` - ${String(nextAppointment.extra)}` : ''}
                             </div>
 
                             {/* Tahmini Atama */}
@@ -187,14 +187,14 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <span className="block text-[10px] text-slate-400">Destek / İkisi</span>
-                                        <span className="font-medium text-purple-600 dark:text-purple-400 truncate block" title={prediction?.bestForSupport?.name || "-"}>
-                                            {prediction?.bestForSupport?.name || "-"}
+                                        <span className="font-medium text-purple-600 dark:text-purple-400 truncate block" title={String(prediction?.bestForSupport?.name || "-")}>
+                                            {String(prediction?.bestForSupport?.name || "-")}
                                         </span>
                                     </div>
                                     <div className="border-l pl-2 border-slate-200 dark:border-slate-600">
                                         <span className="block text-[10px] text-slate-400">Test Varsa</span>
-                                        <span className="font-medium text-rose-500 dark:text-rose-400 truncate block" title={prediction?.bestForTest?.name || "-"}>
-                                            {prediction?.bestForTest?.name || "-"}
+                                        <span className="font-medium text-rose-500 dark:text-rose-400 truncate block" title={String(prediction?.bestForTest?.name || "-")}>
+                                            {String(prediction?.bestForTest?.name || "-")}
                                         </span>
                                     </div>
                                 </div>
