@@ -38,10 +38,20 @@ export default function TvDisplayPage() {
         console.log("[TV] Queue state changed, total tickets:", queue.length);
         console.log("[TV] Full queue:", JSON.stringify(queue, null, 2));
         
-        // En son update edilen ve called olanı bul
+        // En son update edilen ve called olanı bul - güvenli array check
+        if (!Array.isArray(queue)) {
+            console.warn("[TV] Queue is not an array:", queue);
+            setCurrentTicket(null);
+            return;
+        }
+        
         const calledTickets = queue
-            .filter(t => t.status === 'called')
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+            .filter(t => t && t.status === 'called')
+            .sort((a, b) => {
+                const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+                return bTime - aTime;
+            });
 
         const latest = calledTickets[0];
 
@@ -121,11 +131,13 @@ export default function TvDisplayPage() {
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
-    // Bekleyen sıralar
-    const waitingTickets = queue
-        .filter(t => t.status === 'waiting')
-        .sort((a, b) => a.no - b.no)
-        .slice(0, 10); // İlk 10 bekleyen
+    // Bekleyen sıralar - güvenli array check
+    const waitingTickets = Array.isArray(queue)
+        ? queue
+            .filter(t => t && t.status === 'waiting')
+            .sort((a, b) => (a.no || 0) - (b.no || 0))
+            .slice(0, 10) // İlk 10 bekleyen
+        : [];
 
     return (
         <div
@@ -161,11 +173,11 @@ export default function TvDisplayPage() {
                 {currentTicket ? (
                     <div className="animate-in zoom-in duration-500">
                         <div className="text-[12rem] lg:text-[16rem] font-black leading-none tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-purple-200 drop-shadow-[0_0_35px_rgba(168,85,247,0.5)]">
-                            {currentTicket.no}
+                            {String(currentTicket.no || '')}
                         </div>
-                        {currentTicket.name && (
+                        {currentTicket.name && currentTicket.name !== "Misafir" && (
                             <div className="text-4xl lg:text-6xl font-medium mt-8 text-white/90">
-                                {currentTicket.name}
+                                {String(currentTicket.name || '')}
                             </div>
                         )}
                         <div className="mt-8 inline-block px-8 py-3 bg-green-500/20 text-green-300 rounded-full text-2xl font-bold border border-green-500/30 animate-pulse">
@@ -213,9 +225,9 @@ export default function TvDisplayPage() {
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="bg-purple-500/20 text-purple-300 font-bold w-10 h-10 flex items-center justify-center rounded-full text-lg border border-purple-500/30">
-                                        {t.no}
+                                        {String(t.no || '')}
                                     </div>
-                                    <span className="text-sm truncate max-w-[120px] text-white/80">{t.name || "Misafir"}</span>
+                                    <span className="text-sm truncate max-w-[120px] text-white/80">{String(t.name || "Misafir")}</span>
                                 </div>
                                 <div className="text-xs text-slate-400">
                                     {idx === 0 && <span className="text-purple-300 font-bold">Sırada</span>}
@@ -230,21 +242,25 @@ export default function TvDisplayPage() {
             <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:block w-64 z-10">
                 <h3 className="text-slate-400 font-bold mb-4 uppercase tracking-wider text-sm border-b border-slate-700 pb-2">Geçmiş Çağrılar</h3>
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {queue
-                        .filter(t => t.status === 'called' && (!currentTicket || t.id !== currentTicket.id))
-                        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                    {Array.isArray(queue) && queue
+                        .filter(t => t && t.status === 'called' && (!currentTicket || t.id !== currentTicket.id))
+                        .sort((a, b) => {
+                            const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                            const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+                            return bTime - aTime;
+                        })
                         .slice(0, 8)
                         .map((t, idx) => (
                             <div
-                                key={t.id}
+                                key={t.id || idx}
                                 className="bg-white/5 p-3 rounded-lg border border-white/5 flex justify-between items-center opacity-70 hover:opacity-100 transition-opacity animate-in slide-in-from-right duration-300"
                                 style={{ animationDelay: `${idx * 50}ms` }}
                             >
-                                <span className="font-bold text-2xl text-green-400">{t.no}</span>
-                                <span className="text-sm truncate max-w-[100px]">{t.name || "Misafir"}</span>
+                                <span className="font-bold text-2xl text-green-400">{String(t.no || '')}</span>
+                                <span className="text-sm truncate max-w-[100px]">{String(t.name || "Misafir")}</span>
                             </div>
                         ))}
-                    {queue.filter(t => t.status === 'called' && (!currentTicket || t.id !== currentTicket.id)).length === 0 && (
+                    {(!Array.isArray(queue) || queue.filter(t => t && t.status === 'called' && (!currentTicket || t.id !== currentTicket.id)).length === 0) && (
                         <div className="text-slate-500 text-sm text-center py-8">Henüz çağrı yok</div>
                     )}
                 </div>
