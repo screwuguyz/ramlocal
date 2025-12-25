@@ -36,7 +36,6 @@ import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionModal from "@/components/modals/VersionModal";
 import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
-import WeeklyChart from "@/components/dashboard/WeeklyChart";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -3494,9 +3493,6 @@ export default function DosyaAtamaApp() {
           pdfEntries={pdfEntries}
           history={history}
         />
-
-        {/* 📈 HAFTALIK TREND GRAFİĞİ (Herkes için) */}
-        <WeeklyChart cases={cases} history={history} />
 
 
         {/* Admin olmayan kullanıcılar için randevu listesi ve duyurular */}

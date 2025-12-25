@@ -21,33 +21,7 @@ interface MiniWidgetsProps {
 export default function MiniWidgets({ teachers, cases, pdfEntries, history }: MiniWidgetsProps) {
     const settings = useAppStore((state) => state.settings);
 
-    // 1. Bugünün Durumu
-    const todayStats = useMemo(() => {
-        const todayCases = cases.filter(c => !c.absencePenalty);
-        const count = todayCases.length;
-        const goal = 15; // Günlük hedef (varsayılan)
-        const progress = Math.min((count / goal) * 100, 100);
-
-        // En çok dosya alan öğretmen
-        const teacherCounts = new Map<string, number>();
-        todayCases.forEach(c => {
-            if (c.assignedTo) {
-                teacherCounts.set(c.assignedTo, (teacherCounts.get(c.assignedTo) || 0) + 1);
-            }
-        });
-
-        let topTeacher = { name: "-", count: 0 };
-        teacherCounts.forEach((cnt, id) => {
-            if (cnt > topTeacher.count) {
-                const teacher = teachers.find(t => t.id === id);
-                if (teacher) topTeacher = { name: teacher.name, count: cnt };
-            }
-        });
-
-        return { count, progress, topTeacher };
-    }, [cases, teachers]);
-
-    // 2. Öğretmen Özeti
+    // 1. Öğretmen Özeti
     const teacherStats = useMemo(() => {
         const active = teachers.filter(t => t.active && !t.isAbsent);
         const absent = teachers.filter(t => t.isAbsent);
@@ -139,31 +113,7 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-            {/* 1. Bugünün Hedefi */}
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-teal-500 transition-colors">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <FileText className="w-12 h-12 text-teal-600 dark:text-teal-400" />
-                </div>
-                <div className="flex flex-col h-full justify-between">
-                    <div>
-                        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Bugün</div>
-                        <div className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
-                            {todayStats.count} <span className="text-sm font-normal text-slate-400">/ 15</span>
-                        </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-2">
-                            <div
-                                className="bg-teal-500 h-2 rounded-full transition-all duration-500"
-                                style={{ width: `${todayStats.progress}%` }}
-                            />
-                        </div>
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        <span className="font-medium text-teal-600 dark:text-teal-400">En çok:</span> {todayStats.topTeacher.name} ({todayStats.topTeacher.count})
-                    </div>
-                </div>
-            </div>
-
-            {/* 2. Öğretmen Durumu */}
+            {/* 1. Öğretmen Durumu */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-blue-500 transition-colors">
                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Users className="w-12 h-12 text-blue-600 dark:text-blue-400" />
@@ -201,7 +151,7 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                 </div>
             </div>
 
-            {/* 3. Sıradaki Randevu (ve Tahmini Atama) */}
+            {/* 2. Sıradaki Randevu (ve Tahmini Atama) */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-purple-500 transition-colors">
                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                     <Clock className="w-12 h-12 text-purple-600 dark:text-purple-400" />
@@ -254,7 +204,7 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                 </div>
             </div>
 
-            {/* 4. Aylık Performans */}
+            {/* 3. Aylık Performans */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:border-orange-500 transition-colors">
                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                     <TrendingUp className="w-12 h-12 text-orange-600 dark:text-orange-400" />
@@ -277,10 +227,12 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
                 </div>
             </div>
 
-            {/* 5. Sıramatik Widget */}
-            <div className="lg:col-span-1">
-                <QueueWidget />
-            </div>
+            {/* 5. Sıramatik Widget - Sadece admin için */}
+            {typeof window !== "undefined" && document.cookie.includes("ram_admin=1") && (
+                <div className="lg:col-span-1">
+                    <QueueWidget />
+                </div>
+            )}
 
         </div>
     );
