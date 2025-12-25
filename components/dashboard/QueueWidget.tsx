@@ -28,23 +28,28 @@ export default function QueueWidget() {
         .sort((a, b) => a.no - b.no);
 
     // Bilet çağırma
-    const handleCall = (id: string) => {
+    const handleCall = async (id: string) => {
         callQueueTicket(id, "admin");
-        setTimeout(syncToServer, 50);
+        // Hemen sync et
+        await syncToServer();
+        // Ekstra güvenlik için bir kez daha dene
+        setTimeout(() => syncToServer(), 200);
     };
 
     // Tekrar anons
-    const handleRecall = () => {
+    const handleRecall = async () => {
         if (activeTicket) {
             callQueueTicket(activeTicket.id, activeTicket.calledBy);
-            setTimeout(syncToServer, 50);
+            await syncToServer();
+            setTimeout(() => syncToServer(), 200);
         }
     };
 
     // Tamamla
-    const handleComplete = (id: string) => {
+    const handleComplete = async (id: string) => {
         updateQueueTicketStatus(id, 'done');
-        setTimeout(syncToServer, 50);
+        await syncToServer();
+        setTimeout(() => syncToServer(), 200);
     };
 
     return (

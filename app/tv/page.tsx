@@ -11,14 +11,22 @@ import { Maximize2, Minimize2 } from "lucide-react";
 export default function TvDisplayPage() {
     const queue = useAppStore(s => s.queue);
     const { playDingDong } = useAudioFeedback();
-
+    
     // Sync hook'unu aktif et (data fetch + realtime sub)
-    useSupabaseSync();
+    const { fetchCentralState } = useSupabaseSync();
 
     const [lastAnnouncedId, setLastAnnouncedId] = useState<string | null>(null);
     const [currentTicket, setCurrentTicket] = useState<QueueTicket | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const hasInteractedRef = useRef(false);
+
+    // Periyodik olarak queue'yu güncelle (backup for realtime)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchCentralState();
+        }, 2000); // Her 2 saniyede bir güncelle
+        return () => clearInterval(interval);
+    }, [fetchCentralState]);
 
     // Son çağrılan bileti bul
     useEffect(() => {
@@ -29,9 +37,17 @@ export default function TvDisplayPage() {
 
         const latest = calledTickets[0];
 
+        console.log("[TV] Queue updated:", {
+            totalQueue: queue.length,
+            calledTickets: calledTickets.length,
+            latestTicket: latest ? { no: latest.no, name: latest.name, id: latest.id } : null,
+            lastAnnouncedId
+        });
+
         setCurrentTicket(latest || null);
 
         if (latest && latest.id !== lastAnnouncedId) {
+            console.log("[TV] New ticket called:", latest.no, latest.name);
             setLastAnnouncedId(latest.id);
             announceTicket(latest);
         }
