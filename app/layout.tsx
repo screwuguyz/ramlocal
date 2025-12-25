@@ -1,36 +1,93 @@
 // app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Dosya Atama Sistemi",
-  description: "RAM Yük Dengelemeli Atama",
+  title: "RAM Dosya Atama",
+  description: "Rehberlik Araştırma Merkezi - Yük Dengelemeli Dosya Atama Sistemi",
   manifest: "/manifest.webmanifest",
-  themeColor: "#0ea5e9", // sky-500
+  applicationName: "RAM Dosya Atama",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RAM Atama",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
     ],
     apple: [
-      { url: "/favicon.ico" },
+      { url: "/apple-touch-icon.svg", type: "image/svg+xml" },
     ],
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: "cover",
+  other: {
+    "mobile-web-app-capable": "yes",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0d9488" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f766e" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr">
       <head>
+        {/* iOS PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="RAM Atama" />
+
+        {/* Android PWA */}
         <meta name="mobile-web-app-capable" content="yes" />
+
+        {/* iOS Splash Screens - iPhone */}
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1170 2532'><rect fill='%230d9488' width='1170' height='2532'/><text x='585' y='1266' text-anchor='middle' font-size='120' fill='white' font-family='system-ui'>📋</text><text x='585' y='1400' text-anchor='middle' font-size='48' fill='white' font-family='system-ui'>RAM Atama</text></svg>"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1284 2778'><rect fill='%230d9488' width='1284' height='2778'/><text x='642' y='1389' text-anchor='middle' font-size='120' fill='white' font-family='system-ui'>📋</text><text x='642' y='1530' text-anchor='middle' font-size='48' fill='white' font-family='system-ui'>RAM Atama</text></svg>"
+          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)"
+        />
+
+        {/* Prevent pull-to-refresh on iOS */}
+        <style>{`
+          html, body {
+            overscroll-behavior-y: contain;
+          }
+          /* iOS safe area padding */
+          @supports (padding: env(safe-area-inset-top)) {
+            body {
+              padding-top: env(safe-area-inset-top);
+              padding-bottom: env(safe-area-inset-bottom);
+              padding-left: env(safe-area-inset-left);
+              padding-right: env(safe-area-inset-right);
+            }
+          }
+          /* iOS standalone mode adjustments */
+          @media all and (display-mode: standalone) {
+            body {
+              -webkit-user-select: none;
+              user-select: none;
+            }
+          }
+        `}</style>
       </head>
       <body className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900 antialiased">
         <ThemeProvider>
