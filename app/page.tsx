@@ -3214,60 +3214,86 @@ export default function DosyaAtamaApp() {
       <ThemeToggle />
       <div className="container mx-auto p-4 space-y-6">
         {/* Üst araç çubuğu: rapor ve giriş */}
-        {/* ÜST BAR (sticky + cam) */}
+        {/* ÜST BAR (sticky + cam) - MOBİL OPTİMİZE */}
         <div className="sticky top-0 z-40 backdrop-blur bg-white/70 border-b border-slate-200/60">
-          <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2 md:gap-3">
+          <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
 
-            {/* Sol: Ana sayfa butonu + Ay seçici (sadece admin için) */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              <Button size="sm" variant="outline" onClick={() => setViewMode("landing")}>
-                🏠 Ana Sayfa
-              </Button>
-              {isAdmin && (
-                <Select value={filterYM} onValueChange={setFilterYM}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Ay seç" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allMonths.map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            {/* Satır 1: Ana kontroller */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Sol: Ana sayfa + Ay */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button size="sm" variant="outline" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setViewMode("landing")}>
+                  🏠 <span className="hidden sm:inline">Ana Sayfa</span>
+                </Button>
+                {isAdmin && (
+                  <Select value={filterYM} onValueChange={setFilterYM}>
+                    <SelectTrigger className="w-[90px] sm:w-[130px] text-xs sm:text-sm">
+                      <SelectValue placeholder="Ay" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allMonths.map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* Sağ: Canlı rozet + Admin/Giriş */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {/* CANLI ROZET - Kısa versiyon mobilde */}
+                <span
+                  className={
+                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ring-1 " +
+                    (live === "online"
+                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                      : live === "connecting"
+                        ? "bg-amber-50 text-amber-700 ring-amber-200"
+                        : "bg-rose-50 text-rose-700 ring-rose-200")
+                  }
+                  title={live === "online" ? "Bağlı" : live === "connecting" ? "Bağlanıyor" : "Bağlı değil"}
+                >
+                  <span className="inline-block size-1.5 rounded-full bg-current animate-pulse" />
+                  <span className="hidden sm:inline">🔴 Canlı:</span> {live}
+                </span>
+
+                {isAdmin ? (
+                  <>
+                    <span className="hidden sm:inline text-xs sm:text-sm text-emerald-700 font-medium">👑 Admin</span>
+                    {/* Çıkış Butonu - HER ZAMAN GÖRÜNÜR */}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="px-2 sm:px-3 text-xs sm:text-sm"
+                      onClick={doLogout}
+                    >
+                      🚪 <span className="hidden sm:inline">Çıkış</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setLoginOpen(true)}>
+                    🔐 <span className="hidden sm:inline">Giriş</span>
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {/* Sağ: Canlı rozet + giriş/çıkış */}
-            <div className="flex items-center gap-3">
-              <Button size="sm" variant="outline" className="min-h-9" onClick={() => setShowRules(true)}>📖 Kurallar</Button>
+            {/* Satır 2: Ek butonlar (mobilde kaydırılabilir) */}
+            <div className="flex items-center gap-1 sm:gap-2 mt-2 overflow-x-auto pb-1 no-scrollbar">
+              <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setShowRules(true)}>
+                📖 <span className="hidden sm:inline">Kurallar</span>
+              </Button>
+              <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setFeedbackOpen(true)}>
+                💬 <span className="hidden xs:inline">Öneri</span><span className="hidden sm:inline">/Şikayet</span>
+              </Button>
 
-              {/* CANLI ROZET (şık stil) */}
-              <span
-                className={
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 " +
-                  (live === "online"
-                    ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                    : live === "connecting"
-                      ? "bg-amber-50 text-amber-700 ring-amber-200"
-                      : "bg-rose-50 text-rose-700 ring-rose-200")
-                }
-                title={live === "online" ? "Bağlı" : live === "connecting" ? "Bağlanıyor" : "Bağlı değil"}
-              >
-                <span className="inline-block size-1.5 rounded-full bg-current animate-pulse" />
-                🔴 Canlı: {live}
-              </span>
-
-              <Button size="sm" variant="outline" className="min-h-9" onClick={() => setFeedbackOpen(true)}>💬 Öneri/Şikayet</Button>
-
-              {isAdmin ? (
+              {isAdmin && (
                 <>
-                  <span className="text-sm text-emerald-700 font-medium">👑 Admin</span>
-
                   {/* Ses Aç/Kapat */}
                   <Button
                     size="sm"
                     variant="outline"
-                    className="min-h-9"
+                    className="shrink-0 px-2"
                     data-silent="true"
                     title={soundOn ? "Sesi Kapat" : "Sesi Aç"}
                     onClick={() => setSoundOn(v => !v)}
@@ -3275,16 +3301,21 @@ export default function DosyaAtamaApp() {
                     {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
 
+                  {/* Ayarlar */}
+                  <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setSettingsOpen(true)}>
+                    ⚙️ <span className="hidden sm:inline">Ayarlar</span>
+                  </Button>
+
                   {/* Simülasyon Modu */}
                   {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("simDate") && (
                     <>
-                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
-                        📅 Simülasyon: {new URLSearchParams(window.location.search).get("simDate")}
+                      <span className="shrink-0 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
+                        📅 {new URLSearchParams(window.location.search).get("simDate")}
                       </span>
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="min-h-9"
+                        className="shrink-0 px-2 sm:px-3 text-xs"
                         onClick={() => {
                           if (confirm("Günü bitir ve arşivle? (Devamsızlık cezası + Yedek bonusu uygulanacak)")) {
                             doRollover();
@@ -3292,17 +3323,11 @@ export default function DosyaAtamaApp() {
                           }
                         }}
                       >
-                        🌙 Günü Bitir
+                        🌙 <span className="hidden sm:inline">Günü Bitir</span>
                       </Button>
                     </>
                   )}
-
-                  {/* Çıkış */}
-                  <Button size="sm" variant="outline" className="min-h-9" onClick={() => setSettingsOpen(true)}>⚙️ Ayarlar</Button>
-                  <Button size="sm" variant="outline" className="min-h-9" onClick={doLogout}>🚪 Çıkış</Button>
                 </>
-              ) : (
-                <Button size="sm" className="min-h-9" onClick={() => setLoginOpen(true)}>🔐 Giriş</Button>
               )}
             </div>
 
