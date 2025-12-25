@@ -754,7 +754,11 @@ export default function DosyaAtamaApp() {
 
       const incomingTs = Date.parse(String(s.updatedAt || 0));
       const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
-      if (!isNaN(incomingTs) && incomingTs <= currentTs) return;
+      // Eğer gelen veri daha eskiyse veya aynıysa, güncelleme yapma (race condition önleme)
+      if (!isNaN(incomingTs) && incomingTs <= currentTs) {
+        console.log("[fetchCentralState] Skipping update - incoming data is older or same");
+        return;
+      }
       lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
 
       // KORUMA: Eğer Supabase'de öğretmen yoksa ama mevcut state'te varsa, mevcut state'i koru
@@ -797,26 +801,44 @@ export default function DosyaAtamaApp() {
       if (Array.isArray(s.absenceRecords)) {
         setAbsenceRecords(s.absenceRecords);
       }
-      // Queue'yu Supabase'den yükle
-      // Eğer Supabase'de queue varsa onu kullan (her zaman Supabase öncelikli)
+      // Queue'yu Supabase'den yükle - Race condition önleme ile
+      const currentLocalQueue = useAppStore.getState().queue;
+      const localCalledTickets = currentLocalQueue.filter((t: any) => t && t.status === 'called');
+      const supabaseQueue = Array.isArray(s.queue) ? s.queue : [];
+      const supabaseCalledTickets = supabaseQueue.filter((t: any) => t && t.status === 'called');
+      
+      // Eğer local'de yeni çağrılan bir ticket varsa ve Supabase'de yoksa, local'i koru
+      // (Yeni çağrılan ticket henüz Supabase'e sync olmamış olabilir)
+      if (localCalledTickets.length > 0 && supabaseCalledTickets.length === 0) {
+        const latestLocalCalled = localCalledTickets.sort((a, b) => {
+          const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          return bTime - aTime;
+        })[0];
+        
+        // Eğer local'deki çağrılan ticket çok yeni ise (son 2 saniye içinde), local'i koru
+        const localCalledTime = latestLocalCalled.updatedAt ? new Date(latestLocalCalled.updatedAt).getTime() : 0;
+        const now = Date.now();
+        if (now - localCalledTime < 2000) {
+          console.log("[fetchCentralState] Keeping local queue - recent call detected");
+          // Local queue'yu koru, Supabase'e sync olmasını bekle
+          return;
+        }
+      }
+      
+      // Normal durum: Supabase'de queue varsa onu kullan
       if (Array.isArray(s.queue)) {
-        // Supabase'de queue var (boş olsa bile array olarak var)
         if (s.queue.length > 0) {
           console.log("[fetchCentralState] Loading queue from Supabase:", s.queue.length, "tickets");
           setQueue(s.queue);
         } else {
-          // Supabase'de queue boş array olarak var
           console.log("[fetchCentralState] Supabase queue is empty array");
-          setQueue([]); // Boş array olarak set et
+          setQueue([]);
         }
       } else {
-        // Supabase'de queue property yok
         console.log("[fetchCentralState] No queue property in Supabase state");
-        // Local state'te queue varsa onu koru, yoksa boş array set et
-        const currentLocalQueue = useAppStore.getState().queue;
         if (Array.isArray(currentLocalQueue) && currentLocalQueue.length > 0) {
-          console.log("[fetchCentralState] Keeping local queue:", currentLocalQueue.length, "tickets (will sync to Supabase)");
-          // Local queue'yu koru (setQueue çağırma, zaten var)
+          console.log("[fetchCentralState] Keeping local queue:", currentLocalQueue.length, "tickets");
         } else {
           setQueue([]);
         }
