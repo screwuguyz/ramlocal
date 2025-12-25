@@ -28,6 +28,7 @@ interface SearchResult {
     id: string;
     title: string;
     fileNo?: string;
+    teacherName?: string;
     date?: string;
     icon: React.ReactNode;
 }
@@ -79,11 +80,13 @@ export default function QuickSearch({
                 if (seen.has(key)) return;
                 seen.add(key);
 
+                const teacher = teachers.find(t => t.id === c.assignedTo);
                 results.push({
                     type: "case",
                     id: c.id,
                     title: c.student,
                     fileNo: c.fileNo,
+                    teacherName: teacher?.name,
                     date: c.createdAt.split("T")[0],
                     icon: <FileText className="h-4 w-4 text-emerald-500" />,
                 });
@@ -211,11 +214,10 @@ export default function QuickSearch({
                                 <div className="font-medium text-slate-800 truncate">
                                     {result.title}
                                 </div>
-                                {result.fileNo && (
-                                    <div className="text-xs text-slate-400">
-                                        #{result.fileNo}
-                                    </div>
-                                )}
+                                <div className="text-xs text-slate-400 flex items-center gap-2">
+                                    {result.fileNo && <span>#{result.fileNo}</span>}
+                                    {result.teacherName && <span>→ {result.teacherName}</span>}
+                                </div>
                             </div>
                             {result.date && (
                                 <div className="flex items-center gap-1 text-xs text-slate-400">
