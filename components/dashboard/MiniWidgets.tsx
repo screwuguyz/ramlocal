@@ -16,9 +16,10 @@ interface MiniWidgetsProps {
     cases: CaseFile[];
     pdfEntries: PdfAppointment[];
     history: Record<string, CaseFile[]>;
+    isAdmin?: boolean;
 }
 
-export default function MiniWidgets({ teachers, cases, pdfEntries, history }: MiniWidgetsProps) {
+export default function MiniWidgets({ teachers, cases, pdfEntries, history, isAdmin = false }: MiniWidgetsProps) {
     const settings = useAppStore((state) => state.settings);
 
     // 1. Öğretmen Özeti
@@ -228,7 +229,7 @@ export default function MiniWidgets({ teachers, cases, pdfEntries, history }: Mi
             </div>
 
             {/* 5. Sıramatik Widget - Sadece admin için */}
-            {typeof window !== "undefined" && document.cookie.includes("ram_admin=1") && (
+            {isAdmin && (
                 <div className="lg:col-span-1">
                     <QueueWidget />
                 </div>

@@ -3492,6 +3492,7 @@ export default function DosyaAtamaApp() {
           cases={cases}
           pdfEntries={pdfEntries}
           history={history}
+          isAdmin={isAdmin}
         />
 
 
