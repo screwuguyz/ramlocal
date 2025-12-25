@@ -38,6 +38,7 @@ import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
 import WeeklyChart from "@/components/dashboard/WeeklyChart";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
+import { useAppStore } from "@/stores/useAppStore";
 
 
 
@@ -390,6 +391,8 @@ function DailyAppointmentsCard({
 }
 
 export default function DosyaAtamaApp() {
+  // Queue state from store
+  const { queue, setQueue } = useAppStore();
 
   // ---- Öğretmenler
   const [teachers, setTeachers] = useState<Teacher[]>([])
@@ -795,13 +798,17 @@ export default function DosyaAtamaApp() {
       if (Array.isArray(s.absenceRecords)) {
         setAbsenceRecords(s.absenceRecords);
       }
-      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0);
+      // Queue'yu Supabase'den yükle
+      if (Array.isArray(s.queue)) {
+        setQueue(s.queue);
+      }
+      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0, "queue:", s.queue?.length || 0);
     } catch (err) {
       console.error("[fetchCentralState] Network error:", err);
     } finally {
       setCentralLoaded(true);
     }
-  }, [hydrated]);
+  }, [hydrated, setQueue]);
 
   function handlePdfFileChange(file: File | null) {
     setPdfFile(file);

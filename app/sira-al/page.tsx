@@ -38,18 +38,29 @@ export default function SiraAlPage() {
                 body: JSON.stringify({ action: "add", name: nameInput })
             });
 
-            if (!res.ok) throw new Error("Sıra alınamadı");
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || "Sıra alınamadı");
+            }
 
             const data = await res.json();
             if (data.ok && data.ticket) {
                 const newTicket = data.ticket as QueueTicket;
-                // Anında UI güncellemesi
+                // Anında UI güncellemesi (optimistic update)
                 setQueue([...queue, newTicket]);
                 setMyTicketId(newTicket.id);
+                
+                // Supabase'den güncel queue'yu çek (realtime sync için)
+                setTimeout(() => {
+                    fetchCentralState();
+                }, 500);
+            } else {
+                throw new Error(data.error || "Sıra alınamadı");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Queue error:", err);
-            alert("Sıra alınırken bir hata oluştu.");
+            const errorMessage = err?.message || "Sıra alınırken bir hata oluştu.";
+            alert(errorMessage);
         } finally {
             setLoading(false);
         }

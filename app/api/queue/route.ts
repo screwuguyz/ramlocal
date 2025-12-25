@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
         // 3. State'i güncelle
         const { error: updateError } = await adminMs
             .from("app_state")
-            .update({
+            .upsert({
+                id: "global",
                 state: {
                     ...state,
                     queue: newQueue,
@@ -64,9 +65,12 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", "global");
 
-        if (updateError) throw updateError;
+        if (updateError) {
+            console.error("[api/queue] Update error:", updateError);
+            throw updateError;
+        }
 
-        console.log("[api/queue] New ticket added:", newTicket.no);
+        console.log("[api/queue] New ticket added:", newTicket.no, "Total queue length:", newQueue.length);
 
         return NextResponse.json({ ok: true, ticket: newTicket });
 
