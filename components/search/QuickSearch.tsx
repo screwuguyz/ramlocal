@@ -57,32 +57,18 @@ export default function QuickSearch({
         return [...cases, ...archived];
     }, [cases, history]);
 
-    // Arama sonuçları
+    // Arama sonuçları - sadece öğrenci
     const results = useMemo((): SearchResult[] => {
         if (!query.trim()) return [];
 
         const q = query.toLowerCase().trim();
         const results: SearchResult[] = [];
 
-        // Öğretmen ara
-        teachers
-            .filter(t => t.name.toLowerCase().includes(q))
-            .slice(0, 5)
-            .forEach(t => {
-                results.push({
-                    type: "teacher",
-                    id: t.id,
-                    title: t.name,
-                    subtitle: t.isAbsent ? "🔴 Devamsız" : t.active ? "🟢 Aktif" : "⚪ Pasif",
-                    icon: <User className="h-4 w-4 text-blue-500" />,
-                });
-            });
-
         // Öğrenci/Dosya ara
         const seen = new Set<string>();
         allCases
             .filter(c => c.student.toLowerCase().includes(q))
-            .slice(0, 10)
+            .slice(0, 15)
             .forEach(c => {
                 // Aynı öğrenciyi tekrar gösterme
                 const key = c.student.toLowerCase();
@@ -100,7 +86,7 @@ export default function QuickSearch({
                 });
             });
 
-        return results.slice(0, 10);
+        return results;
     }, [query, teachers, allCases]);
 
     // Klavye kısayolu (Ctrl+K)
@@ -182,7 +168,7 @@ export default function QuickSearch({
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Öğrenci veya öğretmen ara..."
+                        placeholder="Öğrenci ara..."
                         value={query}
                         onChange={e => {
                             setQuery(e.target.value);
@@ -241,7 +227,7 @@ export default function QuickSearch({
 
                     {!query && (
                         <div className="p-6 text-center text-slate-400 text-sm">
-                            <p>Öğrenci veya öğretmen adı yazın</p>
+                            <p>Öğrenci adı yazın</p>
                             <p className="mt-1 text-xs">
                                 <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">↑</kbd>
                                 <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 ml-1">↓</kbd>
