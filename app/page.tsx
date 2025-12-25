@@ -34,6 +34,7 @@ import { Calendar as CalendarIcon, Trash2, UserMinus, Plus, FileSpreadsheet, Bar
 // === YENİ MODÜLER BİLEŞENLER ===
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionModal from "@/components/modals/VersionModal";
+import CalendarView from "@/components/reports/CalendarView";
 
 
 
@@ -905,7 +906,7 @@ export default function DosyaAtamaApp() {
   }
 
   // ---- Rapor & filtre
-  const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive" | "e-archive" | "statistics" | "weekly" | "yearly" | "teacher-performance" | "file-type-analysis">("none");
+  const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive" | "e-archive" | "statistics" | "weekly" | "yearly" | "teacher-performance" | "file-type-analysis" | "calendar">("none");
 
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
   // Admin oturum durumu
@@ -3440,6 +3441,9 @@ export default function DosyaAtamaApp() {
                   <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
                     📊 Aylık Rapor
                   </Button>
+                  <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
+                    🗓️ Takvim
+                  </Button>
                   <Button variant={reportMode === "archive" ? "default" : "outline"} onClick={() => setReportMode("archive")}>
                     📋 Atanan Dosyalar
                   </Button>
@@ -4194,6 +4198,21 @@ export default function DosyaAtamaApp() {
           )
         )}
         {reportMode === "e-archive" && <EArchiveView showAdminButtons={isAdmin} />}
+        {reportMode === "calendar" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🗓️ Takvim Görünümü
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CalendarView
+                history={history}
+                teachers={teachers}
+              />
+            </CardContent>
+          </Card>
+        )}
 
 
 
