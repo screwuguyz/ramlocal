@@ -4245,7 +4245,7 @@ export default function DosyaAtamaApp() {
           />
         )}
         {reportMode === "weekly" && <WeeklyReport teachers={teachers} cases={cases} history={history} />}
-        {reportMode === "monthly" && <MonthlyReport teachers={teachers} cases={cases} history={history} />}
+        {reportMode === "monthly" && <MonthlyReport teachers={teachers} />}
         {reportMode === "yearly" && <YearlyReport teachers={teachers} cases={cases} history={history} />}
         {reportMode === "teacher-performance" && <TeacherPerformanceReport teachers={teachers} cases={cases} history={history} />}
         {reportMode === "file-type-analysis" && <FileTypeAnalysis teachers={teachers} cases={cases} history={history} />}
