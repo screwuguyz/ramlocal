@@ -432,6 +432,7 @@ export default function DosyaAtamaApp() {
   const [isNew, setIsNew] = useState(false);
   const [diagCount, setDiagCount] = useState(0); // 0-6
   const [isTestCase, setIsTestCase] = useState(false); // <-- YENİ: Test dosyası
+  const [customDate, setCustomDate] = useState(""); // <-- YENİ: Geçmiş tarih için
   const [newTeacherName, setNewTeacherName] = useState(""); // <-- yeni öğretmen ekleme
   // Geçici Pushover User Key girişleri (öğretmen başına)
   const [editPushover, setEditPushover] = useState<Record<string, string>>({});
@@ -806,7 +807,7 @@ export default function DosyaAtamaApp() {
       const localCalledTickets = currentLocalQueue.filter((t: any) => t && t.status === 'called');
       const supabaseQueue = Array.isArray(s.queue) ? s.queue : [];
       const supabaseCalledTickets = supabaseQueue.filter((t: any) => t && t.status === 'called');
-      
+
       // Eğer local'de yeni çağrılan bir ticket varsa ve Supabase'de yoksa, local'i koru
       // (Yeni çağrılan ticket henüz Supabase'e sync olmamış olabilir)
       if (localCalledTickets.length > 0 && supabaseCalledTickets.length === 0) {
@@ -815,7 +816,7 @@ export default function DosyaAtamaApp() {
           const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
           return bTime - aTime;
         })[0];
-        
+
         // Eğer local'deki çağrılan ticket çok yeni ise (son 2 saniye içinde), local'i koru
         const localCalledTime = latestLocalCalled.updatedAt ? new Date(latestLocalCalled.updatedAt).getTime() : 0;
         const now = Date.now();
@@ -825,7 +826,7 @@ export default function DosyaAtamaApp() {
           return;
         }
       }
-      
+
       // Normal durum: Supabase'de queue varsa onu kullan
       if (Array.isArray(s.queue)) {
         if (s.queue.length > 0) {
@@ -1181,9 +1182,9 @@ export default function DosyaAtamaApp() {
   // Not: Broadcast kaldırıldı, sadece postgres_changes kullanılıyor
   // useSupabaseSync hook'u zaten postgres_changes ile app_state tablosunu dinliyor
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_REALTIME === '1') { 
-      setLive('offline'); 
-      return; 
+    if (process.env.NEXT_PUBLIC_DISABLE_REALTIME === '1') {
+      setLive('offline');
+      return;
     }
     // Realtime connection status için basit bir kontrol
     // Asıl sync useSupabaseSync hook'unda yapılıyor
@@ -1198,14 +1199,14 @@ export default function DosyaAtamaApp() {
     if (!isAdmin) return;
     if (!hydrated) return;
     if (!centralLoaded) return;
-    
+
     // KORUMA: Eğer Supabase'de öğretmen varsa ama local'de yoksa, yazma!
     // Bu, yeni tarayıcı/boş localStorage'ın Supabase verisini silmesini önler
     if (supabaseTeacherCountRef.current > 0 && teachers.length === 0) {
       console.warn("[state POST] BLOCKED: Supabase has", supabaseTeacherCountRef.current, "teachers but local has 0. Refusing to overwrite.");
       return;
     }
-    
+
     // KORUMA: Queue boşsa ve Supabase'de queue varsa, yazma!
     // Bu, /api/queue endpoint'inin yazdığı queue'yu silmeyi önler
     // Queue sadece admin panelinde değişiklik yapıldığında yazılmalı
@@ -1215,7 +1216,7 @@ export default function DosyaAtamaApp() {
       // Queue boş, Supabase'e yazma (queue sadece /api/queue veya admin panelinde değişiklik yapıldığında yazılmalı)
       console.log("[state POST] Skipping queue sync - queue is empty (will be written by /api/queue endpoint)");
     }
-    
+
     const ctrl = new AbortController();
     const nowTs = new Date().toISOString();
     lastAppliedAtRef.current = nowTs;
@@ -1468,7 +1469,10 @@ export default function DosyaAtamaApp() {
       toast("Öğrenci adı gerekli");
       return;
     }
-    const createdAt = nowISO();
+    // Eğer customDate varsa o tarihi kullan, yoksa bugünün tarihini
+    const createdAt = customDate
+      ? `${customDate}T12:00:00.000Z` // Geçmiş tarih için ISO format
+      : nowISO();
     const newCase: CaseFile = {
       id: uid(),
       student: student.trim() || "(İsimsiz)",
@@ -3624,7 +3628,7 @@ export default function DosyaAtamaApp() {
                         </div>
                       </div>
                     )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>👤 Öğrenci Adı</Label>
                         <Input
@@ -3640,6 +3644,15 @@ export default function DosyaAtamaApp() {
                       <div className="space-y-2">
                         <Label>🔢 Dosya No</Label>
                         <Input value={fileNo} onChange={(e) => setFileNo(e.target.value)} placeholder="Örn. 2025-001" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>📅 Tarih <span className="text-muted-foreground text-xs">(geçmiş tarih için)</span></Label>
+                        <Input
+                          type="date"
+                          value={customDate}
+                          onChange={(e) => setCustomDate(e.target.value)}
+                          max={new Date().toISOString().split('T')[0]}
+                        />
                       </div>
                     </div>
 

@@ -32,6 +32,7 @@ export interface CaseFormData {
     isNew: boolean;
     diagCount: number;
     isTest: boolean;
+    customDate?: string; // YYYY-MM-DD format for historical entries
 }
 
 export default function CaseForm({
@@ -45,6 +46,7 @@ export default function CaseForm({
     const [isNew, setIsNew] = React.useState(initialData?.isNew || false);
     const [diagCount, setDiagCount] = React.useState(initialData?.diagCount || 0);
     const [isTest, setIsTest] = React.useState(initialData?.isTest || false);
+    const [customDate, setCustomDate] = React.useState(initialData?.customDate || "");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,6 +60,7 @@ export default function CaseForm({
             isNew,
             diagCount,
             isTest,
+            customDate: customDate || undefined,
         });
 
         // Reset form
@@ -67,12 +70,13 @@ export default function CaseForm({
         setIsNew(false);
         setDiagCount(0);
         setIsTest(false);
+        // Keep customDate - user might want to add more entries for same date
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Row 1: Student name and file no */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Row 1: Student name, file no, and date */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                     <Label htmlFor="case-student">Öğrenci Adı *</Label>
                     <Input
@@ -92,6 +96,19 @@ export default function CaseForm({
                         value={fileNo}
                         onChange={(e) => setFileNo(e.target.value)}
                         disabled={disabled}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <Label htmlFor="case-date">
+                        Tarih <span className="text-muted-foreground text-xs">(geçmiş tarih için)</span>
+                    </Label>
+                    <Input
+                        id="case-date"
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        disabled={disabled}
+                        max={new Date().toISOString().split('T')[0]}
                     />
                 </div>
             </div>
