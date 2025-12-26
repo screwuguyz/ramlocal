@@ -4521,8 +4521,99 @@ export default function DosyaAtamaApp() {
                                 }
                               }, 1000);
                             }}
+
                           >
                             🔚 Günü Sonlandır ve Sonraki Güne Geç
+                          </Button>
+                        </CardContent>
+                      </Card>
+
+                      {/* Hata Düzeltici - Yinelenen Bonusları Temizle */}
+                      <Card className="border border-orange-200 bg-orange-50">
+                        <CardHeader className="py-3">
+                          <CardTitle className="text-base text-orange-800 flex items-center gap-2">
+                            <span>🛠️</span> Hata Düzeltici
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="py-3">
+                          <p className="text-xs text-orange-700 mb-3">
+                            Eğer geçmişe dönük işlemlerde bir günde birden fazla "Yedek Bonus" veya "Devamsızlık Cezası" oluştuysa (örn: aynı gün 3-4 defa bonus verilmişse), bu buton ile temizleyebilirsiniz. Sistem sadece en yüksek puanlı (en son hesaplanan) bonusu tutar.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-white border-orange-300 text-orange-700 hover:bg-orange-100"
+                            onClick={() => {
+                              if (!confirm("Tüm geçmişteki yinelenen bonus ve ceza kayıtları temizlenecek. Devam edilsin mi?")) return;
+
+                              let removedCount = 0;
+                              const newHistory = { ...history };
+
+                              Object.keys(newHistory).forEach(date => {
+                                const dayCases = newHistory[date] || [];
+                                const uniqueBonusMap: Record<string, CaseFile[]> = {}; // teacherId -> cases[]
+                                const uniquePenaltyMap: Record<string, CaseFile[]> = {}; // teacherId -> cases[]
+
+                                // Grupla
+                                dayCases.forEach(c => {
+                                  if (c.backupBonus && c.assignedTo) {
+                                    if (!uniqueBonusMap[c.assignedTo]) uniqueBonusMap[c.assignedTo] = [];
+                                    uniqueBonusMap[c.assignedTo].push(c);
+                                  } else if (c.absencePenalty && c.assignedTo) {
+                                    if (!uniquePenaltyMap[c.assignedTo]) uniquePenaltyMap[c.assignedTo] = [];
+                                    uniquePenaltyMap[c.assignedTo].push(c);
+                                  }
+                                });
+
+                                // Temizle
+                                const idsToRemove = new Set<string>();
+
+                                // Bonus temizliği: En yüksek puanlıyı tut
+                                Object.values(uniqueBonusMap).forEach(list => {
+                                  if (list.length > 1) {
+                                    // Puanı en yüksek olanı bul (eğer eşitse en son ekleneni)
+                                    list.sort((a, b) => b.score - a.score);
+                                    const keep = list[0];
+                                    // Diğerlerini silinecekler listesine ekle
+                                    list.slice(1).forEach(rem => idsToRemove.add(rem.id));
+                                    removedCount += (list.length - 1);
+                                  }
+                                });
+
+                                // Ceza temizliği: En düşük puanlıyı (en büyük negatif) tut? 
+                                // Ceza genelde -3 gibi sabittir veya hesaplanmıştır. 
+                                // Mantık: En son hesaplanan (en doğru olan) genelde listenin sonundadır ama ID random.
+                                // Biz "En düşük puan - Ceza" hesapladık. Yani skoru en düşük olan en "büyük" ceza yemiş olandır.
+                                // Ama burada skor negatif. Ör: -5 mi daha iyi -10 mu? 
+                                // Kullanıcı "sadece alttaki (son hesaplanan) gerçek" dedi. Son hesaplanan muhtemelen en doğru olandır.
+                                // Yeni mantıkta ceza = MinScore - 3. Eski mantıkta -3.
+                                // MinScore >= 0 olduğu sürece (MinScore - 3) >= -3.
+                                // Yani yeni hesaplanan skor daha YÜKSEK (veya eşit) olur.
+                                // Doğru olan (yeni) kaydı tutmak için en yüksek skoru seçmeliyiz.
+                                Object.values(uniquePenaltyMap).forEach(list => {
+                                  if (list.length > 1) {
+                                    // Skoru en yüksek olanı tut (yani yeni formüle göre hesaplananı)
+                                    list.sort((a, b) => b.score - a.score); // Büyükten küçüğe
+                                    const keep = list[0];
+                                    list.slice(1).forEach(rem => idsToRemove.add(rem.id));
+                                    removedCount += (list.length - 1);
+                                  }
+                                });
+
+                                if (idsToRemove.size > 0) {
+                                  newHistory[date] = dayCases.filter(c => !idsToRemove.has(c.id));
+                                }
+                              });
+
+                              if (removedCount > 0) {
+                                setHistory(newHistory);
+                                toast(`✅ Toplam ${removedCount} adet yinelenen kayıt temizlendi.`);
+                              } else {
+                                toast("ℹ️ Temizlenecek yinelenen kayıt bulunamadı.");
+                              }
+                            }}
+                          >
+                            🧹 Yinelenen Kayıtları Temizle
                           </Button>
                         </CardContent>
                       </Card>
