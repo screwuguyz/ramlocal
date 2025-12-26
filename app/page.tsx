@@ -4400,10 +4400,22 @@ export default function DosyaAtamaApp() {
                               // 2. Yedek bonusu uygula
                               const backupTeacher = teachers.find(t => t.backupDay === currentSimDate);
                               if (backupTeacher) {
+                                // Bugünün en yüksek puanını hesapla
+                                let maxScoreToday = 0;
+                                teachers.forEach(t => {
+                                  if (t.id === backupTeacher.id) return; // Kendisini hariç tut
+                                  const score = todayCases
+                                    .filter(c => c.assignedTo === t.id)
+                                    .reduce((acc, c) => acc + c.score, 0);
+                                  if (score > maxScoreToday) maxScoreToday = score;
+                                });
+
+                                const bonusAmount = maxScoreToday + settings.backupBonusAmount;
+
                                 const bonusCase: CaseFile = {
                                   id: uid(),
                                   student: `${backupTeacher.name} - Yedek Bonus`,
-                                  score: settings.backupBonusAmount,
+                                  score: bonusAmount,
                                   createdAt: currentSimDate + "T23:59:00.000Z",
                                   assignedTo: backupTeacher.id,
                                   type: "DESTEK",
@@ -4411,7 +4423,7 @@ export default function DosyaAtamaApp() {
                                   diagCount: 0,
                                   isTest: false,
                                   backupBonus: true,
-                                  assignReason: "Yedek başkan bonusu"
+                                  assignReason: `Yedek başkan bonusu (En yüksek ${maxScoreToday} + ${settings.backupBonusAmount})`
                                 };
                                 setHistory(prev => ({
                                   ...prev,
