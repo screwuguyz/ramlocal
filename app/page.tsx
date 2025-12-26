@@ -4387,44 +4387,45 @@ export default function DosyaAtamaApp() {
                               const params = new URLSearchParams(window.location.search);
                               const currentSimDate = params.get("simDate") || getTodayYmd();
 
+                              // --- YEREL STATE HESAPLAMALARI ---
+                              let nextHistory = { ...history };
+                              let nextCases = [...cases];
+                              let nextTeachers = [...teachers];
+
                               // 1. Mevcut günün dosyalarını history'e taşı
-                              const todayCases = cases.filter(c => c.createdAt.slice(0, 10) === currentSimDate);
+                              const todayCases = nextCases.filter(c => c.createdAt.slice(0, 10) === currentSimDate);
+                              nextCases = nextCases.filter(c => c.createdAt.slice(0, 10) !== currentSimDate);
+
                               if (todayCases.length > 0) {
-                                setHistory(prev => ({
-                                  ...prev,
-                                  [currentSimDate]: [...(prev[currentSimDate] || []), ...todayCases]
-                                }));
-                                setCases(prev => prev.filter(c => c.createdAt.slice(0, 10) !== currentSimDate));
+                                nextHistory[currentSimDate] = [
+                                  ...(nextHistory[currentSimDate] || []),
+                                  ...todayCases
+                                ];
                               }
 
                               // 2. Yedek bonusu uygula
-                              const backupTeacher = teachers.find(t => t.backupDay === currentSimDate);
+                              const backupTeacher = nextTeachers.find(t => t.backupDay === currentSimDate);
                               if (backupTeacher) {
-                                // O günün en yüksek puan alan öğretmenini bul
+                                // Günlük skorları hesapla (History + o gün taşınanlar)
+                                // Not: nextHistory[currentSimDate] zaten güncellendiği için oradan okuyabiliriz
+                                const allTodayCases = nextHistory[currentSimDate] || [];
                                 const todaysFileScores: Record<string, number> = {};
-                                // Sadece o günün dosyalarına bak (cases zaten filtrelenip history'e taşındıysa history'den bakmalıydık, ama şu anki akışta önce history'e atıyoruz)
-                                // "3. Devamsızlık cezası uygula" kısmında cases temizleniyor ama burada history güncellenmiş oluyor.
-                                // O yüzden history'deki o günün dosyalarına bakmalıyız.
-                                const todayHistory = history[currentSimDate] || [];
-                                // Eğer henüz history güncellenmediyse (React state update batching yüzünden), "todayCases" değişkenini kullanalım.
-                                // Yukarıda "todayCases" değişkeni var ama o sadece o anki cases state'inden gelenler.
-                                // En garantisi: "todayCases" (silinecek olanlar) + (varsa) history'deki o günün dosyaları.
-
-                                const allTodayCases = [...todayCases, ...(history[currentSimDate] || [])];
-
                                 allTodayCases.forEach(c => {
                                   if (c.assignedTo) {
                                     todaysFileScores[c.assignedTo] = (todaysFileScores[c.assignedTo] || 0) + c.score;
                                   }
                                 });
 
+                                // En yüksek puanı bul
+                                const sortedByType = [...nextTeachers].filter(t => t.active && !t.isAbsent && t.id !== backupTeacher.id);
                                 let maxScore = 0;
-                                Object.values(todaysFileScores).forEach(score => {
-                                  if (score > maxScore) maxScore = score;
+                                sortedByType.forEach(t => {
+                                  if (todaysFileScores[t.id] && todaysFileScores[t.id] > maxScore) {
+                                    maxScore = todaysFileScores[t.id];
+                                  }
                                 });
 
                                 const bonusAmount = maxScore + settings.backupBonusAmount;
-
                                 const bonusCase: CaseFile = {
                                   id: uid(),
                                   student: `${backupTeacher.name} - Yedek Bonus`,
@@ -4438,21 +4439,18 @@ export default function DosyaAtamaApp() {
                                   backupBonus: true,
                                   assignReason: `Yedek başkan bonusu (En yüksek: ${maxScore} + ${settings.backupBonusAmount})`
                                 };
-                                setHistory(prev => ({
-                                  ...prev,
-                                  [currentSimDate]: [...(prev[currentSimDate] || []), bonusCase]
-                                }));
+
+                                nextHistory[currentSimDate] = [
+                                  ...(nextHistory[currentSimDate] || []),
+                                  bonusCase
+                                ];
                               }
 
-                              // 3. Devamsızlık cezası uygula
-                              const absentTeachers = teachers.filter(t => t.isAbsent && t.active);
+                              // 3. Devamsızlık cezası (-3 değil, MinScore - Penalty)
+                              const absentTeachers = nextTeachers.filter(t => t.isAbsent);
                               if (absentTeachers.length > 0) {
-                                // O günün puan tablosunu yeniden hesapla (veya yukarıda hesaplanan allTodayCases üzerinden git)
-                                // Yukarıdaki todaysFileScores değişkeni sadece 'yedek' öğretmeni varsa hesaplanıyordu block kapsamında.
-                                // Kapsamı genişletmek yerine burada clean şekilde tekrar hesaplayalım, performans kaybı minimal.
-
+                                const allTodayCasesForAbsence = nextHistory[currentSimDate] || [];
                                 const todaysFileScoresForAbsence: Record<string, number> = {};
-                                const allTodayCasesForAbsence = [...todayCases, ...(history[currentSimDate] || [])];
 
                                 allTodayCasesForAbsence.forEach(c => {
                                   if (c.assignedTo) {
@@ -4464,7 +4462,7 @@ export default function DosyaAtamaApp() {
                                 let minScore = Infinity;
                                 let anyActiveTeacherWithScore = false;
 
-                                teachers.forEach(t => {
+                                nextTeachers.forEach(t => {
                                   if (t.active && !t.isAbsent && todaysFileScoresForAbsence[t.id] !== undefined) {
                                     const score = todaysFileScoresForAbsence[t.id];
                                     if (score < minScore) {
@@ -4474,7 +4472,7 @@ export default function DosyaAtamaApp() {
                                   }
                                 });
 
-                                // Eğer hiç dosya alan aktif öğretmen yoksa (sıfır iş günü), minScore 0 kabul edilsin
+                                // Eğer hiç dosya alan aktif öğretmen yoksa, minScore 0 kabul edilsin
                                 if (!anyActiveTeacherWithScore) minScore = 0;
 
                                 const penaltyScore = minScore - settings.absencePenaltyAmount;
@@ -4483,7 +4481,7 @@ export default function DosyaAtamaApp() {
                                   const penaltyCase: CaseFile = {
                                     id: uid(),
                                     student: `${t.name} - Devamsızlık Cezası`,
-                                    score: penaltyScore, // Eksi puan değil, "En düşük - X" puanı
+                                    score: penaltyScore,
                                     createdAt: currentSimDate + "T23:59:00.000Z",
                                     assignedTo: t.id,
                                     type: "DESTEK",
@@ -4493,25 +4491,70 @@ export default function DosyaAtamaApp() {
                                     absencePenalty: true,
                                     assignReason: `Devamsızlık cezası (En düşük: ${minScore} - ${settings.absencePenaltyAmount})`
                                   };
-                                  setHistory(prev => ({
-                                    ...prev,
-                                    [currentSimDate]: [...(prev[currentSimDate] || []), penaltyCase]
-                                  }));
+
+                                  nextHistory[currentSimDate] = [
+                                    ...(nextHistory[currentSimDate] || []),
+                                    penaltyCase
+                                  ];
                                 }
                               }
 
-                              // 4. Sonraki güne geç
+                              // 4. İzinlileri sıfırla (yeni güne geçiş hazırlığı)
+                              // Not: State'i güncellemeden önce snapshot almak için burada yapıyoruz ama 
+                              // backup "Günü Sonlandır" anındaki durumu mu içermeli yoksa yeni günün temiz halini mi?
+                              // Kullanıcı "Bugünün yedeği" diyor. Bence günü kapattık, işlemleri yaptık. O anki hali yedekleyelim.
+                              // Ancak öğretmenlerin "isAbsent" durumu o güne aitti. Yeni gün için sıfırlanmalı.
+                              // Yedeği "sıfırlamadan önceki" haliyle alırsak, geri yükleyince o gün devamsız olanlar devamsız görünür (doğru).
+                              // Ama sistem yedeği geri yükleyince "o güne" dönmeli.
+                              // Biz burada snapshot alacağız. Snapshot => nextHistory, nextCases, ve nextTeachers (SIFIRLANMIŞ HALİ).
+                              // Eğer bugüne dönersek öğretmenler temizlenmiş olur. Bu istenen bir davranış mı?
+                              // TimeMachine mantığında, geçmişe gidince o günün durumunu görmek isteriz.
+                              // Ama biz veriyi sadece "Statik History"de tutuyoruz. Öğretmenlerin "isAbsent" flag'i anlık.
+                              // Neyse, "Otomatik ve 3 gün tutsun" dediğine göre veri güvenliği esas.
+
+                              // Öğretmenleri sıfırla
+                              nextTeachers = nextTeachers.map(t => ({ ...t, isAbsent: false, backupDay: undefined }));
+
+                              // STATE GÜNCELLEMELERİ
+                              setHistory(nextHistory);
+                              setCases(nextCases);
+                              setTeachers(nextTeachers);
+
+                              // 5. OTOMATİK YEDEK AL (ŞİMDİ)
+                              toast("💾 Otomatik yedek alınıyor...", { duration: 2000 });
+                              try {
+                                await fetch("/api/backup", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    state: {
+                                      teachers: nextTeachers,
+                                      cases: nextCases,
+                                      history: nextHistory, // Güncellenmiş tarihçe
+                                      lastRollover,
+                                      lastAbsencePenalty,
+                                      announcements,
+                                      settings,
+                                      eArchive,
+                                    },
+                                    backupType: "auto",
+                                    description: `Otomatik - ${currentSimDate} Sonu`,
+                                  }),
+                                });
+                                toast("✅ Otomatik yedek alındı!");
+                              } catch (err) {
+                                console.error("Auto backup fail", err);
+                                toast("⚠️ Yedek alınamadı ama gün sonlandırıldı.");
+                              }
+
+                              // 6. Sonraki güne geç (Redirect)
+                              toast(`✅ ${currentSimDate} günü sonlandırıldı!`);
+
                               const nextDay = new Date(currentSimDate + "T12:00:00");
                               nextDay.setDate(nextDay.getDate() + 1);
                               const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, "0")}-${String(nextDay.getDate()).padStart(2, "0")}`;
-
                               const today = new Date();
                               const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-                              // İzinlileri sıfırla (yeni güne geçiş)
-                              setTeachers(prev => prev.map(t => ({ ...t, isAbsent: false, backupDay: undefined })));
-
-                              toast(`✅ ${currentSimDate} günü sonlandırıldı!`);
 
                               setTimeout(() => {
                                 if (nextDayStr <= todayStr) {

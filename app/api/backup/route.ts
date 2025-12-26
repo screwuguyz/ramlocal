@@ -29,18 +29,18 @@ export async function GET(req: NextRequest) {
 
   try {
     const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
-    
+
     // Önce tablo var mı kontrol et, yoksa oluştur
     const { error: tableCheckError } = await client
       .from(TABLE_NAME)
       .select("id")
       .limit(1);
-    
+
     if (tableCheckError?.code === "42P01") {
       // Tablo yok, oluştur
       // Not: Bu sadece bilgi amaçlı, Supabase'de tablo manuel oluşturulmalı
-      return NextResponse.json({ 
-        backups: [], 
+      return NextResponse.json({
+        backups: [],
         warning: "Yedekleme tablosu henüz oluşturulmamış. Supabase dashboard'dan 'app_backups' tablosu oluşturun.",
         tableSchema: `
           CREATE TABLE app_backups (
@@ -90,14 +90,14 @@ export async function POST(req: NextRequest) {
 
     const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
 
-    // Eski yedekleri temizle (30 günden eski olanları sil)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+    // Eski yedekleri temizle (3 günden eski olanları sil) - Kullanıcı isteği: 3 gün
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
     await client
       .from(TABLE_NAME)
       .delete()
-      .lt("created_at", thirtyDaysAgo.toISOString());
+      .lt("created_at", threeDaysAgo.toISOString());
 
     // Yeni yedek oluştur
     const { data, error } = await client
@@ -112,10 +112,10 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ 
-      ok: true, 
+    return NextResponse.json({
+      ok: true,
       backup: data,
-      message: "Yedek başarıyla oluşturuldu" 
+      message: "Yedek başarıyla oluşturuldu"
     });
   } catch (err: any) {
     console.error("backup POST error", err);
@@ -165,10 +165,10 @@ export async function PUT(req: NextRequest) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ 
-      ok: true, 
+    return NextResponse.json({
+      ok: true,
       state: backup.state_snapshot,
-      message: "Yedek başarıyla geri yüklendi" 
+      message: "Yedek başarıyla geri yüklendi"
     });
   } catch (err: any) {
     console.error("backup PUT error", err);
