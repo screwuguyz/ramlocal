@@ -4651,6 +4651,23 @@ export default function DosyaAtamaApp() {
               teacherName={teacherName}
               caseDesc={caseDesc}
               settings={settings}
+              onRemove={(id, date) => {
+                setHistory(prev => {
+                  const dayCases = prev[date];
+                  if (!dayCases) return prev;
+                  return {
+                    ...prev,
+                    [date]: dayCases.filter(c => c.id !== id)
+                  };
+                });
+
+                // Eğer o günün cases'i içindeyse (bugün)
+                if (date === ymdLocal(new Date())) {
+                  setCases(prev => prev.filter(c => c.id !== id));
+                }
+
+                toast("✅ Arşiv kaydı silindi.");
+              }}
             />
           ) : (
             <AssignedArchiveSingleDayView

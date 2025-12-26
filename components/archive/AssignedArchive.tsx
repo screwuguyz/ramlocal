@@ -30,12 +30,14 @@ export default function AssignedArchive({
   teacherName,
   caseDesc,
   settings,
+  onRemove,
 }: {
   history: Record<string, CaseFile[]>;
   cases: CaseFile[];
   teacherName: (id?: string) => string;
   caseDesc: (c: CaseFile) => string;
   settings: Settings;
+  onRemove?: (id: string, date: string) => void;
 }) {
   const days = useMemo(() => {
     const set = new Set<string>(Object.keys(history));
@@ -125,6 +127,7 @@ export default function AssignedArchive({
                 <th className="p-2 text-left">Atanan</th>
                 <th className="p-2 text-left">Test</th>
                 <th className="p-2 text-left">Açıklama</th>
+                {onRemove && <th className="p-2 text-center w-10">Sil</th>}
               </tr>
             </thead>
             <tbody>
@@ -140,11 +143,27 @@ export default function AssignedArchive({
                     {c.absencePenalty ? "Hayır (Denge)" : c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}
                   </td>
                   <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
+                  {onRemove && (
+                    <td className="p-2 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          if (confirm("Bu arşiv kaydını silmek istediğinize emin misiniz?")) {
+                            onRemove(c.id, day);
+                          }
+                        }}
+                      >
+                        🗑️
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {list.length === 0 && (
                 <tr>
-                  <td className="p-8 text-center" colSpan={6}>
+                  <td className="p-8 text-center" colSpan={onRemove ? 7 : 6}>
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                       <Inbox className="h-10 w-10 mb-2 text-slate-400" />
                       <p className="text-sm font-medium">Bu günde kayıt yok</p>
