@@ -4621,6 +4621,37 @@ export default function DosyaAtamaApp() {
                   </Card>
                 </div>
               )}
+
+              {/* Arşiv Görüntüleyici (Silme İşlemleri İçin) */}
+              {adminTab === "timemachine" && (
+                <div className="mt-4">
+                  <AssignedArchiveView
+                    history={history}
+                    cases={cases}
+                    teacherName={teacherName}
+                    caseDesc={caseDesc}
+                    settings={settings}
+                    onRemove={(id, date) => {
+                      setHistory(prev => {
+                        const dayCases = prev[date];
+                        if (!dayCases) return prev;
+                        return {
+                          ...prev,
+                          [date]: dayCases.filter(c => c.id !== id)
+                        };
+                      });
+
+                      // Eğer o günün cases'i içindeyse (bugün)
+                      const todayYmd = new Date().toISOString().slice(0, 10);
+                      if (date === todayYmd) {
+                        setCases(prev => prev.filter(c => c.id !== id));
+                      }
+
+                      toast("✅ Arşiv kaydı silindi.");
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </Card>
         )}
