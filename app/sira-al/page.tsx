@@ -74,9 +74,10 @@ export default function SiraAlPage() {
                 setPrintTicket(newTicket);
                 setLoading(false); // Reset loading after successful ticket creation
 
+                // Daha uzun bekle - Supabase'e yazma işleminin tamamlanmasını sağla
                 setTimeout(() => {
                     fetchCentralState();
-                }, 500);
+                }, 1500);
             } else {
                 throw new Error(data.error || "Sıra alınamadı");
             }
