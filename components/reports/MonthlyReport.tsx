@@ -3,22 +3,46 @@ import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Teacher } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/lib/types";
 
 function getMonths() {
   return ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
 }
 
-export default function MonthlyReport({ teachers }: { teachers: Teacher[] }) {
+type Props = {
+  teachers: Teacher[];
+  cases?: CaseFile[];
+  history?: Record<string, CaseFile[]>;
+};
+
+export default function MonthlyReport({ teachers, cases = [], history = {} }: Props) {
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
   const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
   const months = getMonths();
+
+  // Tüm dosyaları al (cases + history)
+  const allCases = useMemo(() => {
+    const fromHistory = Object.values(history).flat();
+    const fromToday = cases || [];
+    return [...fromHistory, ...fromToday];
+  }, [cases, history]);
+
+  // Her öğretmen için aylık puanları hesapla (Daily Report ile aynı mantık)
   const rows = useMemo(() => teachers.map((t) => {
-    const byMonth = months.map((m) => t.monthly?.[`${year}-${m}`] || 0);
+    const byMonth = months.map((m) => {
+      const ym = `${year}-${m}`;
+      // Bu ay bu öğretmene atanmış dosyaların puanlarını topla
+      const monthCases = allCases.filter(c =>
+        c.assignedTo === t.id &&
+        c.createdAt.slice(0, 7) === ym
+      );
+      const total = monthCases.reduce((sum, c) => sum + c.score, 0);
+      return total;
+    });
     const total = byMonth.reduce((a, b) => a + b, 0);
     return { id: t.id, name: t.name, byMonth, total };
-  }), [teachers, months, year]);
+  }), [teachers, months, year, allCases]);
 
   const colTotals = months.map((_, i) => rows.reduce((a, r) => a + r.byMonth[i], 0));
   const grand = rows.reduce((a, r) => a + r.total, 0);
