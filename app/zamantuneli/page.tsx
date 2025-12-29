@@ -126,6 +126,8 @@ export default function TimeMachinePage() {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === "Ataber.12") {
+            // Set admin cookie for API authorization
+            document.cookie = "ram_admin=1; path=/; max-age=86400"; // 1 day
             setIsAuthenticated(true);
         } else {
             alert("Hatalı şifre!");
