@@ -70,7 +70,9 @@ export default function SiraAlPage() {
             const data = await res.json();
             if (data.ok && data.ticket) {
                 const newTicket = data.ticket as QueueTicket;
-                setQueue([...queue, newTicket]);
+                // Store'dan güncel queue'yu al ve güncelle (stale closure önleme)
+                const currentQueue = useAppStore.getState().queue;
+                setQueue([...currentQueue, newTicket]);
                 setPrintTicket(newTicket);
                 setLoading(false); // Reset loading after successful ticket creation
 
