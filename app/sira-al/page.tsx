@@ -74,12 +74,9 @@ export default function SiraAlPage() {
                 const currentQueue = useAppStore.getState().queue;
                 setQueue([...currentQueue, newTicket]);
                 setPrintTicket(newTicket);
-                setLoading(false); // Reset loading after successful ticket creation
-
-                // Daha uzun bekle - Supabase'e yazma işleminin tamamlanmasını sağla
-                setTimeout(() => {
-                    fetchCentralState();
-                }, 1500);
+                setLoading(false);
+                // NOT: fetchCentralState kaldırıldı çünkü eski veriyi getirip queue'yu eziyordu
+                // Queue zaten /api/queue tarafından Supabase'e yazıldı
             } else {
                 throw new Error(data.error || "Sıra alınamadı");
             }
