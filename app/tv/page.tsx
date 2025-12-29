@@ -1,88 +1,31 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useAppStore } from "@/stores/useAppStore";
+import { useQueueSync } from "@/hooks/useQueueSync";
 import { useAudioFeedback } from "@/hooks/useAudioFeedback";
-import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { QueueTicket } from "@/types";
 import { format } from "date-fns";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 export default function TvDisplayPage() {
-    const queue = useAppStore(s => s.queue);
+    // YENİ: Dedicated queue sync hook kullan
+    const { waitingTickets, calledTickets, currentTicket } = useQueueSync();
     const { playDingDong } = useAudioFeedback();
 
-    // Sync hook'unu aktif et (data fetch + realtime sub)
-    const { fetchCentralState } = useSupabaseSync();
-
     const [lastAnnouncedId, setLastAnnouncedId] = useState<string | null>(null);
-    const [currentTicket, setCurrentTicket] = useState<QueueTicket | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const hasInteractedRef = useRef(false);
 
-    // Periyodik olarak queue'yu güncelle (backup for realtime) - hızlı interval
+    // Yeni bilet çağrılınca anons et
     useEffect(() => {
-        // İlk yükleme
-        fetchCentralState();
+        console.log("[TV] Current ticket changed:", currentTicket?.no);
 
-        // Periyodik güncelleme - 2 saniyede bir (hızlı sync için)
-        const interval = setInterval(() => {
-            fetchCentralState();
-        }, 2000); // Her 2 saniyede bir güncelle
-        return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run once on mount
-
-    // Son çağrılan bileti bul
-    useEffect(() => {
-        console.log("[TV] Queue state changed, total tickets:", queue.length);
-        console.log("[TV] Full queue:", JSON.stringify(queue, null, 2));
-
-        // En son update edilen ve called olanı bul - güvenli array check
-        if (!Array.isArray(queue)) {
-            console.warn("[TV] Queue is not an array:", queue);
-            setCurrentTicket(null);
-            return;
+        if (currentTicket && currentTicket.id !== lastAnnouncedId) {
+            console.log("[TV] 🎉 NEW TICKET CALLED:", currentTicket.no, currentTicket.name);
+            setLastAnnouncedId(currentTicket.id);
+            announceTicket(currentTicket);
         }
-
-        const calledTickets = queue
-            .filter(t => t && t.status === 'called')
-            .sort((a, b) => {
-                const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-                const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-                return bTime - aTime;
-            });
-
-        const latest = calledTickets[0];
-
-        console.log("[TV] Queue analysis:", {
-            totalQueue: queue.length,
-            calledTickets: calledTickets.length,
-            waitingTickets: queue.filter(t => t.status === 'waiting').length,
-            doneTickets: queue.filter(t => t.status === 'done').length,
-            latestTicket: latest ? {
-                no: latest.no,
-                name: latest.name,
-                id: latest.id,
-                status: latest.status,
-                updatedAt: latest.updatedAt
-            } : null,
-            lastAnnouncedId,
-            allCalledTickets: calledTickets.map(t => ({ no: t.no, name: t.name, id: t.id }))
-        });
-
-        setCurrentTicket(latest || null);
-
-        if (latest && latest.id !== lastAnnouncedId) {
-            console.log("[TV] 🎉 NEW TICKET CALLED:", latest.no, latest.name);
-            setLastAnnouncedId(latest.id);
-            announceTicket(latest);
-        } else if (latest && latest.id === lastAnnouncedId) {
-            console.log("[TV] Same ticket still active:", latest.no);
-        } else {
-            console.log("[TV] No called tickets found");
-        }
-    }, [queue, lastAnnouncedId]);
+    }, [currentTicket, lastAnnouncedId]);
 
     const announceTicket = (ticket: QueueTicket) => {
         // 1. Ding Dong
@@ -131,13 +74,7 @@ export default function TvDisplayPage() {
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
-    // Bekleyen sıralar - güvenli array check
-    const waitingTickets = Array.isArray(queue)
-        ? queue
-            .filter(t => t && t.status === 'waiting')
-            .sort((a, b) => (a.no || 0) - (b.no || 0))
-            .slice(0, 10) // İlk 10 bekleyen
-        : [];
+    // waitingTickets zaten useQueueSync hook'tan geliyor (satır 12)
 
     return (
         <div
@@ -242,13 +179,8 @@ export default function TvDisplayPage() {
             <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:block w-64 z-10">
                 <h3 className="text-slate-400 font-bold mb-4 uppercase tracking-wider text-sm border-b border-slate-700 pb-2">Geçmiş Çağrılar</h3>
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {Array.isArray(queue) && queue
-                        .filter(t => t && t.status === 'called' && (!currentTicket || t.id !== currentTicket.id))
-                        .sort((a, b) => {
-                            const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-                            const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-                            return bTime - aTime;
-                        })
+                    {calledTickets
+                        .filter(t => !currentTicket || t.id !== currentTicket.id)
                         .slice(0, 8)
                         .map((t, idx) => (
                             <div
@@ -260,7 +192,7 @@ export default function TvDisplayPage() {
                                 <span className="text-sm truncate max-w-[100px]">{String(t.name || "Misafir")}</span>
                             </div>
                         ))}
-                    {(!Array.isArray(queue) || queue.filter(t => t && t.status === 'called' && (!currentTicket || t.id !== currentTicket.id)).length === 0) && (
+                    {calledTickets.filter(t => !currentTicket || t.id !== currentTicket.id).length === 0 && (
                         <div className="text-slate-500 text-sm text-center py-8">Henüz çağrı yok</div>
                     )}
                 </div>

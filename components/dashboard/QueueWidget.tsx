@@ -1,112 +1,48 @@
 "use client";
 
-import { useMemo, useCallback, useEffect } from "react";
-import { useAppStore } from "@/stores/useAppStore";
-import { useSupabaseSync } from "@/hooks/useSupabaseSync";
+import { useCallback } from "react";
+import { useQueueSync } from "@/hooks/useQueueSync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Check, RefreshCw, Trash2, Megaphone, Printer } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { formatTime } from "@/lib/date";
 
 export default function QueueWidget() {
-    const queue = useAppStore(s => s.queue);
-    const callQueueTicket = useAppStore(s => s.callQueueTicket);
-    const updateQueueTicketStatus = useAppStore(s => s.updateQueueTicketStatus);
-    const resetQueue = useAppStore(s => s.resetQueue);
-    const { syncToServer, fetchCentralState } = useSupabaseSync();
+    // YENİ: Dedicated queue sync hook kullan
+    const {
+        waitingTickets,
+        calledTickets,
+        currentTicket: activeTicket,
+        callTicket,
+        completeTicket,
+        clearAll,
+        refresh
+    } = useQueueSync();
 
-    // Polling interval - her 3 saniyede sırayı güncelle (realtime backup)
-    useEffect(() => {
-        const interval = setInterval(() => {
-            fetchCentralState();
-        }, 3000);
-        return () => clearInterval(interval);
-    }, [fetchCentralState]);
-
-    // Aktif Bilet (En son çağrılan ve henüz tamamlanmayan) - Memoize et
-    const calledTickets = useMemo(() => {
-        if (!Array.isArray(queue)) return [];
-        return queue
-            .filter(t => t && t.status === 'called')
-            .sort((a, b) => {
-                const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-                const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-                return bTime - aTime;
-            });
-    }, [queue]);
-
-    const activeTicket = useMemo(() => calledTickets[0] || null, [calledTickets]);
-
-    const waitingTickets = useMemo(() => {
-        if (!Array.isArray(queue)) return [];
-        return queue
-            .filter(t => t && t.status === 'waiting')
-            .sort((a, b) => (a.no || 0) - (b.no || 0));
-    }, [queue]);
-
-    // Bilet çağırma - useCallback ile memoize et
+    // Bilet çağırma
     const handleCall = useCallback(async (id: string) => {
-        const currentQueue = useAppStore.getState().queue;
-        const ticket = currentQueue.find(t => t.id === id);
+        console.log("[QueueWidget] Calling ticket:", id);
+        await callTicket(id, "admin");
+    }, [callTicket]);
 
-        if (!ticket) {
-            console.warn("[QueueWidget] Ticket not found:", id);
-            return;
-        }
-
-        if (ticket.status === 'called') {
-            console.log("[QueueWidget] Ticket already called:", id);
-            return;
-        }
-
-        console.log("[QueueWidget] Calling ticket:", ticket);
-
-        // State'i güncelle - optimistic update
-        callQueueTicket(id, "admin");
-
-        // Hemen sync et - await ile bekle
-        try {
-            console.log("[QueueWidget] Syncing to server...");
-            await syncToServer();
-            console.log("[QueueWidget] Sync completed successfully");
-        } catch (error) {
-            console.error("[QueueWidget] Sync failed:", error);
-            // Hata durumunda state'i geri al (rollback)
-            // Bu durumda realtime update gelecek ve düzeltecek
-        }
-    }, [callQueueTicket, syncToServer]);
-
-    // Tekrar anons - useCallback ile memoize et
+    // Tekrar anons
     const handleRecall = useCallback(async () => {
-        const currentActiveTicket = useAppStore.getState().queue
-            .filter(t => t && t.status === 'called')
-            .sort((a, b) => {
-                const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-                const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-                return bTime - aTime;
-            })[0];
-
-        if (currentActiveTicket) {
-            callQueueTicket(currentActiveTicket.id, currentActiveTicket.calledBy);
-            await syncToServer();
-            setTimeout(() => syncToServer(), 200);
+        if (activeTicket) {
+            await callTicket(activeTicket.id, activeTicket.calledBy);
         }
-    }, [callQueueTicket, syncToServer]);
+    }, [activeTicket, callTicket]);
 
-    // Tamamla - useCallback ile memoize et
+    // Tamamla
     const handleComplete = useCallback(async (id: string) => {
-        updateQueueTicketStatus(id, 'done');
-        await syncToServer();
-        setTimeout(() => syncToServer(), 200);
-    }, [updateQueueTicketStatus, syncToServer]);
+        await completeTicket(id);
+    }, [completeTicket]);
 
-    // Reset queue - useCallback ile memoize et
-    const handleResetQueue = useCallback(() => {
-        resetQueue();
-        setTimeout(() => syncToServer(), 50);
-    }, [resetQueue, syncToServer]);
+    // Sıfırla
+    const handleResetQueue = useCallback(async () => {
+        if (confirm("Tüm sıra silinecek. Emin misiniz?")) {
+            await clearAll();
+        }
+    }, [clearAll]);
 
     return (
         <Card className="h-full border-l-4 border-l-purple-500 shadow-sm">

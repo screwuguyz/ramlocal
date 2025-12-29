@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAppStore } from "@/stores/useAppStore";
+import { useQueueSync } from "@/hooks/useQueueSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Printer, Ticket } from "lucide-react";
 import { QueueTicket } from "@/types";
 
 export default function SiraAlPage() {
-    const { queue, setQueue } = useAppStore();
-    // NOT: fetchCentralState ve polling kaldırıldı!
-    // Bu sayfa sadece bilet OLUŞTURUR, okumaya ihtiyacı YOK.
-    // Polling eski veriyi getirip queue'yu siliyordu.
+    // YENİ: Dedicated queue sync hook kullan
+    const { waitingTickets, addTicket } = useQueueSync();
 
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
@@ -50,39 +48,24 @@ export default function SiraAlPage() {
         const nameInput = name.trim() || "Misafir";
 
         try {
-            const res = await fetch("/api/queue", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "add", name: nameInput })
-            });
+            // YENİ: useQueueSync hook'un addTicket fonksiyonunu kullan
+            const newTicket = await addTicket(nameInput);
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || "Sıra alınamadı");
-            }
-
-            const data = await res.json();
-            if (data.ok && data.ticket) {
-                const newTicket = data.ticket as QueueTicket;
-                // Store'dan güncel queue'yu al ve güncelle (stale closure önleme)
-                const currentQueue = useAppStore.getState().queue;
-                setQueue([...currentQueue, newTicket]);
+            if (newTicket) {
                 setPrintTicket(newTicket);
-                setLoading(false);
-                // NOT: fetchCentralState kaldırıldı çünkü eski veriyi getirip queue'yu eziyordu
-                // Queue zaten /api/queue tarafından Supabase'e yazıldı
             } else {
-                throw new Error(data.error || "Sıra alınamadı");
+                throw new Error("Sıra alınamadı");
             }
         } catch (err: any) {
             console.error("Queue error:", err);
             const errorMessage = err?.message || "Sıra alınırken bir hata oluştu.";
             alert(errorMessage);
+        } finally {
             setLoading(false);
         }
     };
 
-    const totalWaiting = queue.filter(t => t.status === 'waiting').length;
+    const totalWaiting = waitingTickets.length;
 
     return (
         <>
