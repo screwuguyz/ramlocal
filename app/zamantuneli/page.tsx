@@ -570,7 +570,6 @@ export default function TimeMachinePage() {
                             caseDesc={caseDesc}
                             settings={settings}
                             onRemove={async (id, date) => {
-                                if (!confirm("Silinsin mi?")) return;
                                 const newDateCases = (history[date] || []).filter(c => c.id !== id);
                                 const newHistory = { ...history, [date]: newDateCases };
                                 setHistory(newHistory);
