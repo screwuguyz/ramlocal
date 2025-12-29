@@ -151,12 +151,21 @@ export function useSupabaseSync(): SupabaseSyncHook {
                 setAbsenceRecords(s.absenceRecords);
             }
 
-            // Load Queue
-            if (Array.isArray(s.queue)) {
-                console.log("[fetchCentralState] Loading queue:", s.queue.length, "tickets");
-                setQueue(s.queue);
+            // Load Queue - KORUMA: Local queue dolu, remote boş ise üzerine yazma!
+            const localQueue = useAppStore.getState().queue;
+            const remoteQueue = Array.isArray(s.queue) ? s.queue : [];
+
+            if (remoteQueue.length > 0) {
+                // Remote'da queue varsa, güncelle
+                console.log("[fetchCentralState] Loading queue from remote:", remoteQueue.length, "tickets");
+                setQueue(remoteQueue);
+            } else if (localQueue.length > 0) {
+                // Remote boş ama local dolu - KORU! (Race condition önleme)
+                console.log("[fetchCentralState] Keeping local queue (remote empty):", localQueue.length, "tickets");
+                // setQueue çağırma - local'i koru
             } else {
-                console.log("[fetchCentralState] No queue in state or not an array");
+                // Her ikisi de boş
+                console.log("[fetchCentralState] Queue is empty");
             }
 
             console.log(
@@ -194,12 +203,12 @@ export function useSupabaseSync(): SupabaseSyncHook {
             // Check if user is admin before syncing
             const sessionRes = await fetch("/api/session");
             const sessionData = sessionRes.ok ? await sessionRes.json() : { isAdmin: false };
-            
+
             if (!sessionData.isAdmin) {
                 console.log("[syncToServer] Skipping sync - user is not admin");
                 return;
             }
-            
+
             // Get latest state from store to avoid closure issues
             const currentQueue = useAppStore.getState().queue;
             const currentTeachers = useAppStore.getState().teachers;
@@ -209,10 +218,10 @@ export function useSupabaseSync(): SupabaseSyncHook {
             const currentEArchive = useAppStore.getState().eArchive;
             const currentAnnouncements = useAppStore.getState().announcements;
             const currentAbsenceRecords = useAppStore.getState().absenceRecords;
-            
+
             console.log("[syncToServer] Syncing queue:", currentQueue.length, "tickets");
             console.log("[syncToServer] Called tickets:", currentQueue.filter(t => t.status === 'called').length);
-            
+
             const payload = {
                 teachers: currentTeachers,
                 cases: currentCases,
