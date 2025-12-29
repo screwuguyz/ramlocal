@@ -430,6 +430,104 @@ export default function TimeMachinePage() {
                         </Button>
                     </div>
 
+                    {/* Manuel Kayıt Ekleme */}
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="text-md font-semibold text-green-800 mb-3">➕ Manuel Kayıt Ekle</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                                <Label className="text-green-700">Öğretmen</Label>
+                                <select
+                                    id="manualTeacher"
+                                    className="w-full p-2 border rounded mt-1"
+                                    defaultValue=""
+                                >
+                                    <option value="">Seçiniz...</option>
+                                    {teachers.filter(t => t.active).map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <Label className="text-green-700">Puan</Label>
+                                <Input
+                                    id="manualScore"
+                                    type="number"
+                                    placeholder="Örn: 5 veya -3"
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-green-700">Açıklama</Label>
+                                <Input
+                                    id="manualDesc"
+                                    type="text"
+                                    placeholder="Örn: Manuel düzeltme"
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <Button
+                                    variant="default"
+                                    className="w-full bg-green-600 hover:bg-green-700"
+                                    onClick={async () => {
+                                        const teacherSelect = document.getElementById("manualTeacher") as HTMLSelectElement;
+                                        const scoreInput = document.getElementById("manualScore") as HTMLInputElement;
+                                        const descInput = document.getElementById("manualDesc") as HTMLInputElement;
+
+                                        const teacherId = teacherSelect?.value;
+                                        const score = Number(scoreInput?.value);
+                                        const desc = descInput?.value || "Manuel ekleme";
+
+                                        if (!teacherId) {
+                                            alert("Lütfen öğretmen seçin!");
+                                            return;
+                                        }
+                                        if (isNaN(score) || score === 0) {
+                                            alert("Geçerli bir puan girin!");
+                                            return;
+                                        }
+
+                                        const teacher = teachers.find(t => t.id === teacherId);
+                                        const newEntry: CaseFile = {
+                                            id: uid_local(),
+                                            student: `${teacher?.name || "?"} - ${desc}`,
+                                            score: score,
+                                            createdAt: currentSimDate + "T12:00:00.000Z",
+                                            assignedTo: teacherId,
+                                            type: "DESTEK",
+                                            isNew: false,
+                                            diagCount: 0,
+                                            isTest: false,
+                                            assignReason: desc
+                                        };
+
+                                        const newHistory = {
+                                            ...history,
+                                            [currentSimDate]: [...(history[currentSimDate] || []), newEntry]
+                                        };
+                                        setHistory(newHistory);
+
+                                        // Save to backend
+                                        await fetch("/api/state", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ history: newHistory })
+                                        });
+
+                                        // Reset form
+                                        teacherSelect.value = "";
+                                        scoreInput.value = "";
+                                        descInput.value = "";
+
+                                        alert("✅ Kayıt eklendi!");
+                                    }}
+                                >
+                                    Ekle
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="mt-8">
                         <h3 className="text-lg font-bold mb-4">{currentSimDate} - Arşiv Kayıtları</h3>
                         <AssignedArchiveView
