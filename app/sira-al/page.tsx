@@ -177,65 +177,71 @@ export default function SiraAlPage() {
             {/* PRINT RECEIPT - Küçük fiş için */}
             {printTicket && (
                 <>
-                    {/* Print Styles - A4'te bile küçük kalacak */}
+                    {/* Print Styles - A6 boyutu (105mm x 148mm) */}
                     <style jsx global>{`
                         @media print {
                             @page {
-                                size: A4;
-                                margin: 10mm;
+                                size: A6;
+                                margin: 5mm;
                             }
-                            body {
+                            html, body {
+                                margin: 0 !important;
+                                padding: 0 !important;
                                 -webkit-print-color-adjust: exact !important;
                                 print-color-adjust: exact !important;
                             }
                             .print-ticket {
-                                width: 80mm !important;
-                                max-width: 80mm !important;
+                                width: 95mm !important;
+                                height: 138mm !important;
                                 margin: 0 !important;
-                                padding: 5mm !important;
-                                border: 1px dashed #000 !important;
-                                page-break-after: avoid !important;
+                                padding: 8mm !important;
+                                box-sizing: border-box !important;
+                                display: flex !important;
+                                flex-direction: column !important;
+                                justify-content: space-between !important;
                             }
                         }
                     `}</style>
 
                     <div ref={printRef} className="hidden print:block">
-                        <div className="print-ticket text-center" style={{ width: "80mm", maxWidth: "80mm", padding: "5mm", border: "1px dashed #000" }}>
+                        <div className="print-ticket text-center" style={{
+                            width: "95mm",
+                            height: "138mm",
+                            padding: "8mm",
+                            boxSizing: "border-box",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between"
+                        }}>
                             {/* Header */}
-                            <div style={{ borderBottom: "2px dashed #000", paddingBottom: "3mm", marginBottom: "4mm" }}>
-                                <h1 style={{ fontSize: "18pt", fontWeight: "900", margin: 0 }}>RAM</h1>
-                                <p style={{ fontSize: "8pt", margin: "2mm 0 0 0" }}>Karşıyaka Özel Eğitim</p>
+                            <div style={{ borderBottom: "2px dashed #000", paddingBottom: "5mm" }}>
+                                <h1 style={{ fontSize: "28pt", fontWeight: "900", margin: 0 }}>RAM</h1>
+                                <p style={{ fontSize: "11pt", margin: "3mm 0 0 0" }}>Karşıyaka Özel Eğitim Bölümü</p>
                             </div>
 
-                            {/* Sıra No - Büyük */}
-                            <div style={{ padding: "5mm 0" }}>
-                                <p style={{ fontSize: "10pt", fontWeight: "bold", margin: "0 0 2mm 0" }}>SIRA NO</p>
-                                <div style={{ fontSize: "48pt", fontWeight: "900", lineHeight: 1 }}>
+                            {/* Sıra No - Ortada, Çok Büyük */}
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                                <p style={{ fontSize: "16pt", fontWeight: "bold", margin: "0 0 5mm 0", letterSpacing: "3px" }}>SIRA NO</p>
+                                <div style={{ fontSize: "80pt", fontWeight: "900", lineHeight: 1 }}>
                                     {printTicket.no}
                                 </div>
-                            </div>
-
-                            {/* İsim */}
-                            {printTicket.name && printTicket.name !== "Misafir" && (
-                                <div style={{ borderTop: "1px dashed #000", paddingTop: "3mm", marginTop: "3mm" }}>
-                                    <p style={{ fontSize: "9pt", margin: 0 }}>{printTicket.name}</p>
-                                </div>
-                            )}
-
-                            {/* Tarih/Saat */}
-                            <div style={{ borderTop: "1px dashed #000", paddingTop: "3mm", marginTop: "3mm", fontSize: "8pt" }}>
-                                {new Date(printTicket.createdAt).toLocaleString('tr-TR', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
+                                {printTicket.name && printTicket.name !== "Misafir" && (
+                                    <p style={{ fontSize: "14pt", marginTop: "8mm" }}>{printTicket.name}</p>
+                                )}
                             </div>
 
                             {/* Alt Bilgi */}
-                            <div style={{ borderTop: "2px dashed #000", paddingTop: "3mm", marginTop: "3mm", fontSize: "8pt" }}>
-                                <p style={{ margin: 0 }}>Lütfen sıranızı bekleyiniz</p>
+                            <div style={{ borderTop: "2px dashed #000", paddingTop: "5mm" }}>
+                                <p style={{ fontSize: "11pt", margin: "0 0 3mm 0" }}>
+                                    {new Date(printTicket.createdAt).toLocaleString('tr-TR', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </p>
+                                <p style={{ fontSize: "13pt", fontWeight: "bold", margin: 0 }}>Lütfen sıranızı bekleyiniz</p>
                             </div>
                         </div>
                     </div>
