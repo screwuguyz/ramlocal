@@ -21,22 +21,28 @@ export async function POST(req: NextRequest) {
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
         if (!url || !serviceKey) {
+            console.error("[api/queue] Missing env vars: URL=", !!url, "SERVICE_KEY=", !!serviceKey);
             return NextResponse.json({ ok: false, error: "Server config error" }, { status: 500 });
         }
 
-        const adminMs = createClient(url, serviceKey);
+        const adminClient = createClient(url, serviceKey);
 
-        // 1. Mevcut state'i oku
-        const { data: currentData, error: fetchError } = await adminMs
+        // 1. Mevcut state'i oku - maybeSingle kullan (row yoksa null döner)
+        const { data: currentData, error: fetchError } = await adminClient
             .from("app_state")
             .select("state")
             .eq("id", "global")
-            .single();
+            .maybeSingle();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+            console.error("[api/queue] Fetch error:", fetchError);
+            throw fetchError;
+        }
 
         const state = currentData?.state || {};
         const queue = Array.isArray(state.queue) ? state.queue : [];
+
+        console.log("[api/queue] Current queue length:", queue.length);
 
         // 2. Yeni bilet oluştur
         const maxNo = queue.length > 0 ? Math.max(...queue.map((t: any) => t.no || 0)) : 0;
@@ -51,8 +57,8 @@ export async function POST(req: NextRequest) {
 
         const newQueue = [...queue, newTicket];
 
-        // 3. State'i güncelle
-        const { error: updateError } = await adminMs
+        // 3. State'i güncelle - .eq() kaldırıldı, upsert id ile çalışır
+        const { error: updateError } = await adminClient
             .from("app_state")
             .upsert({
                 id: "global",
@@ -62,8 +68,7 @@ export async function POST(req: NextRequest) {
                     updatedAt: new Date().toISOString()
                 },
                 updated_at: new Date().toISOString()
-            })
-            .eq("id", "global");
+            });
 
         if (updateError) {
             console.error("[api/queue] Update error:", updateError);
