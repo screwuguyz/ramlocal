@@ -144,30 +144,30 @@ export default function TvDisplayPage() {
                 )}
             </div>
 
-            {/* Sol: Bekleyen Sıralar */}
-            <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden xl:block w-72 z-10">
-                <h3 className="text-purple-300 font-bold mb-4 uppercase tracking-wider text-sm border-b border-purple-500/30 pb-2 flex items-center justify-between">
-                    <span>Bekleyen Sıralar</span>
-                    <span className="bg-purple-500/20 px-2 py-1 rounded text-xs">{waitingTickets.length}</span>
+            {/* Sol: Bekleyen Sıralar - TV için büyütülmüş */}
+            <div className="absolute left-8 top-24 bottom-24 hidden xl:flex flex-col w-80 z-10">
+                <h3 className="text-purple-300 font-bold mb-6 uppercase tracking-wider text-xl border-b-2 border-purple-500/30 pb-3 flex items-center justify-between">
+                    <span>BEKLEYEN SIRALAR</span>
+                    <span className="bg-purple-500/30 px-4 py-2 rounded-lg text-2xl font-black">{waitingTickets.length}</span>
                 </h3>
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                     {waitingTickets.length === 0 ? (
-                        <div className="text-slate-500 text-sm text-center py-8">Sırada kimse yok</div>
+                        <div className="text-slate-500 text-xl text-center py-12">Sırada kimse yok</div>
                     ) : (
                         waitingTickets.map((t, idx) => (
                             <div
                                 key={t.id}
-                                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 flex justify-between items-center transition-all animate-in slide-in-from-left duration-300"
+                                className="bg-white/10 hover:bg-white/15 p-4 rounded-xl border border-white/20 flex justify-between items-center transition-all animate-in slide-in-from-left duration-300"
                                 style={{ animationDelay: `${idx * 50}ms` }}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-purple-500/20 text-purple-300 font-bold w-10 h-10 flex items-center justify-center rounded-full text-lg border border-purple-500/30">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-purple-500/30 text-purple-200 font-black w-16 h-16 flex items-center justify-center rounded-full text-3xl border-2 border-purple-400/50">
                                         {String(t.no || '')}
                                     </div>
-                                    <span className="text-sm truncate max-w-[120px] text-white/80">{String(t.name || "Misafir")}</span>
+                                    <span className="text-xl font-medium truncate max-w-[150px] text-white">{String(t.name || "Misafir")}</span>
                                 </div>
-                                <div className="text-xs text-slate-400">
-                                    {idx === 0 && <span className="text-purple-300 font-bold">Sırada</span>}
+                                <div className="text-lg text-slate-400">
+                                    {idx === 0 && <span className="text-green-400 font-bold animate-pulse">SIRADA</span>}
                                 </div>
                             </div>
                         ))
