@@ -1,11 +1,25 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useQueueSync } from "@/hooks/useQueueSync";
 import { useAudioFeedback } from "@/hooks/useAudioFeedback";
 import { QueueTicket } from "@/types";
 import { format } from "date-fns";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, Music, Volume2, VolumeX } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+// YouTube video ID çıkarma
+function extractYouTubeId(url: string): string | null {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+}
 
 export default function TvDisplayPage() {
     // YENİ: Dedicated queue sync hook kullan
@@ -15,6 +29,103 @@ export default function TvDisplayPage() {
     const [lastAnnouncedId, setLastAnnouncedId] = useState<string | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const hasInteractedRef = useRef(false);
+
+    // Müzik state'leri
+    const [musicUrl, setMusicUrl] = useState<string>("");
+    const [musicPlaying, setMusicPlaying] = useState(false);
+    const [musicVideoId, setMusicVideoId] = useState<string | null>(null);
+    const [musicMuted, setMusicMuted] = useState(false);
+    const playerRef = useRef<any>(null);
+    const isAnnouncingRef = useRef(false);
+
+    // YouTube API yükleme
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !(window as any).YT) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+        }
+    }, []);
+
+    // Supabase realtime - müzik durumunu dinle
+    useEffect(() => {
+        const channel = supabase.channel('music_state');
+
+        channel
+            .on('broadcast', { event: 'music_update' }, (payload: any) => {
+                console.log("[TV] Music update received:", payload);
+                const { url, playing } = payload.payload;
+                if (url !== undefined) {
+                    setMusicUrl(url);
+                    const videoId = extractYouTubeId(url);
+                    setMusicVideoId(videoId);
+                }
+                if (playing !== undefined) {
+                    setMusicPlaying(playing);
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    // YouTube player oluşturma
+    useEffect(() => {
+        if (!musicVideoId || !hasInteractedRef.current) return;
+
+        const initPlayer = () => {
+            if ((window as any).YT && (window as any).YT.Player) {
+                playerRef.current = new (window as any).YT.Player('youtube-player', {
+                    height: '0',
+                    width: '0',
+                    videoId: musicVideoId,
+                    playerVars: {
+                        autoplay: musicPlaying ? 1 : 0,
+                        loop: 1,
+                        playlist: musicVideoId,
+                    },
+                    events: {
+                        onReady: (event: any) => {
+                            if (musicPlaying && !isAnnouncingRef.current) {
+                                event.target.playVideo();
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        if ((window as any).YT) {
+            initPlayer();
+        } else {
+            (window as any).onYouTubeIframeAPIReady = initPlayer;
+        }
+
+        return () => {
+            if (playerRef.current?.destroy) {
+                playerRef.current.destroy();
+                playerRef.current = null;
+            }
+        };
+    }, [musicVideoId, hasInteractedRef.current]);
+
+    // Müzik çal/durdur
+    useEffect(() => {
+        if (!playerRef.current) return;
+
+        try {
+            if (musicPlaying && !isAnnouncingRef.current) {
+                playerRef.current.playVideo?.();
+            } else {
+                playerRef.current.pauseVideo?.();
+            }
+        } catch (e) {
+            console.log("[TV] Player control error:", e);
+        }
+    }, [musicPlaying]);
 
     // Yeni bilet çağrılınca anons et
     useEffect(() => {
@@ -28,6 +139,12 @@ export default function TvDisplayPage() {
     }, [currentTicket, lastAnnouncedId]);
 
     const announceTicket = (ticket: QueueTicket) => {
+        // Müziği duraklat
+        isAnnouncingRef.current = true;
+        if (playerRef.current?.pauseVideo) {
+            playerRef.current.pauseVideo();
+        }
+
         // 1. Ding Dong
         playDingDong();
 
@@ -39,8 +156,27 @@ export default function TvDisplayPage() {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = "tr-TR";
                 utterance.rate = 0.9;
+
+                utterance.onend = () => {
+                    // Anons bitti, müziği devam ettir
+                    setTimeout(() => {
+                        isAnnouncingRef.current = false;
+                        if (musicPlaying && playerRef.current?.playVideo) {
+                            playerRef.current.playVideo();
+                        }
+                    }, 1000);
+                };
+
                 window.speechSynthesis.speak(utterance);
             }, 1500);
+        } else {
+            // TTS yoksa 5 saniye sonra müziği devam ettir
+            setTimeout(() => {
+                isAnnouncingRef.current = false;
+                if (musicPlaying && playerRef.current?.playVideo) {
+                    playerRef.current.playVideo();
+                }
+            }, 5000);
         }
     };
 
@@ -49,6 +185,11 @@ export default function TvDisplayPage() {
         if (!hasInteractedRef.current) {
             hasInteractedRef.current = true;
             playDingDong(); // Test sesi
+            // Eğer müzik aktifse başlat
+            if (musicPlaying && musicVideoId) {
+                // Player'ı yeniden oluştur
+                setMusicVideoId(prev => prev);
+            }
         }
     };
 
@@ -201,6 +342,17 @@ export default function TvDisplayPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Hidden YouTube Player */}
+            <div id="youtube-player" className="hidden"></div>
+
+            {/* Müzik Göstergesi */}
+            {musicPlaying && (
+                <div className="fixed bottom-4 right-4 z-50 bg-green-600/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 animate-pulse">
+                    <Music className="w-4 h-4" />
+                    <span className="text-sm font-medium">Müzik çalıyor</span>
+                </div>
+            )}
         </div>
     );
 }
