@@ -176,19 +176,19 @@ export default function TvDisplayPage() {
             </div>
 
             {/* Sağ: Gerekli Evraklar Bilgisi */}
-            <div className="absolute right-8 top-24 bottom-24 hidden xl:flex flex-col w-96 z-10">
-                <h3 className="text-amber-300 font-bold mb-6 uppercase tracking-wider text-xl border-b-2 border-amber-500/30 pb-3 flex items-center gap-3">
+            <div className="absolute right-8 top-24 bottom-24 hidden xl:flex flex-col w-[420px] z-10">
+                <h3 className="text-amber-300 font-bold mb-6 uppercase tracking-wider text-lg border-b-2 border-amber-500/30 pb-3 flex items-center gap-3">
                     <span className="text-2xl">📋</span>
-                    <span>GEREKLİ EVRAKLAR</span>
+                    <span>RANDEVUSU BULUNAN BİREYLER İÇİN GEREKLİ EVRAKLAR</span>
                 </h3>
                 <div className="flex-1 space-y-3 overflow-y-auto pr-2">
                     {[
-                        { no: 1, text: "Veli ve öğrenci kimlik asılları" },
-                        { no: 2, text: "Veli ve öğrenci kimlik fotokopileri" },
-                        { no: 3, text: "Okul çağında ise: Okulundan Eğitsel Değerlendirme ve İstek Formu (online olarak okul tarafından gönderilmesi)" },
-                        { no: 4, text: "Okul çağı dışında ise: Geçerli ikametgah belgesi" },
-                        { no: 5, text: "Hastane raporu (ÇÖZGER, erişkinler için Sağlık Kurulu, Durum Bildirir vb.)" },
-                        { no: 6, text: "Velayet durumunda: Velayet belgesi" },
+                        { no: 1, text: "VELİ VE ÖĞRENCİ KİMLİK ASILLARI" },
+                        { no: 2, text: "VELİ VE ÖĞRENCİ KİMLİK FOTOKOPİLERİ" },
+                        { no: 3, text: "OKUL ÇAĞINDA İSE: OKULUNDAN EĞİTSEL DEĞERLENDİRME VE İSTEK FORMU (ONLİNE OLARAK OKUL TARAFINDAN GÖNDERİLMESİ)" },
+                        { no: 4, text: "OKUL ÇAĞI DIŞINDA İSE: GEÇERLİ İKAMETGAH BELGESİ" },
+                        { no: 5, text: "HASTANE RAPORU (ÇÖZGER, ERİŞKİNLER İÇİN SAĞLIK KURULU, DURUM BİLDİRİR VB.)" },
+                        { no: 6, text: "VELAYET DURUMUNDA: VELAYET BELGESİ" },
                     ].map((item, idx) => (
                         <div
                             key={item.no}
@@ -198,7 +198,7 @@ export default function TvDisplayPage() {
                             <div className="bg-amber-500/20 text-amber-300 font-black w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-xl border border-amber-400/30">
                                 {item.no}
                             </div>
-                            <span className="text-lg text-white/90 leading-relaxed">{item.text}</span>
+                            <span className="text-base font-medium text-white/90 leading-relaxed">{item.text}</span>
                         </div>
                     ))}
                 </div>
