@@ -219,6 +219,8 @@ type Settings = {
   backupBonusAmount: number;                   // X değeri (varsayılan 3)
   // Devamsızlık cezası ayarları (her zaman en düşük - X)
   absencePenaltyAmount: number;                // Devamsızlık ceza miktarı (en düşük - X)
+  musicUrl?: string;
+  musicPlaying?: boolean;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -230,6 +232,8 @@ const DEFAULT_SETTINGS: Settings = {
   scoreTypeI: 3,
   backupBonusAmount: 3,
   absencePenaltyAmount: 3,
+  musicUrl: "",
+  musicPlaying: false,
 };
 
 // Günlük Randevular Kartı (Bileşen)
@@ -3611,6 +3615,39 @@ export default function DosyaAtamaApp() {
                 >
                   💾 Yedekleme
                 </Button>
+
+                {/* Müzik Kontrolü */}
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-300">
+                  <span className="text-xs text-slate-500">🎵</span>
+                  <input
+                    type="text"
+                    placeholder="YouTube URL"
+                    value={settings.musicUrl || ""}
+                    onChange={(e) => setSettings(prev => ({ ...prev, musicUrl: e.target.value }))}
+                    className="h-8 w-48 px-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                  <Button
+                    size="sm"
+                    variant={settings.musicPlaying ? "destructive" : "default"}
+                    onClick={async () => {
+                      const newPlaying = !settings.musicPlaying;
+                      setSettings(prev => ({ ...prev, musicPlaying: newPlaying }));
+                      try {
+                        const channel = supabase.channel('music_state');
+                        await channel.send({
+                          type: 'broadcast',
+                          event: 'music_update',
+                          payload: { url: settings.musicUrl, playing: newPlaying }
+                        });
+                      } catch (err) {
+                        console.error("[Admin] Music update error:", err);
+                      }
+                    }}
+                    className="h-8 min-w-16"
+                  >
+                    {settings.musicPlaying ? "⏸️" : "▶️"}
+                  </Button>
+                </div>
 
               </div>
             </div>

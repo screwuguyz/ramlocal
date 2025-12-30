@@ -45,6 +45,8 @@ type Settings = {
   scoreTypeY: number;
   scoreTypeD: number;
   scoreTypeI: number;
+  musicUrl?: string;
+  musicPlaying?: boolean;
 };
 type ThemeSettings = {
   themeMode: "light" | "dark" | "auto";
