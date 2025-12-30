@@ -176,12 +176,12 @@ export default function TvDisplayPage() {
             </div>
 
             {/* Sağ: Gerekli Evraklar Bilgisi */}
-            <div className="absolute right-8 top-24 bottom-24 hidden xl:flex flex-col w-[420px] z-10">
-                <h3 className="text-amber-300 font-bold mb-6 uppercase tracking-wider text-lg border-b-2 border-amber-500/30 pb-3 flex items-center gap-3">
-                    <span className="text-2xl">📋</span>
+            <div className="absolute right-6 top-20 bottom-16 hidden xl:flex flex-col w-[380px] z-10">
+                <h3 className="text-amber-300 font-bold mb-3 uppercase tracking-wider text-base border-b border-amber-500/30 pb-2 flex items-center gap-2">
+                    <span>📋</span>
                     <span>RANDEVUSU BULUNAN BİREYLER İÇİN GEREKLİ EVRAKLAR</span>
                 </h3>
-                <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+                <div className="flex-1 space-y-2">
                     {[
                         { no: 1, text: "VELİ VE ÖĞRENCİ KİMLİK ASILLARI" },
                         { no: 2, text: "VELİ VE ÖĞRENCİ KİMLİK FOTOKOPİLERİ" },
@@ -192,13 +192,13 @@ export default function TvDisplayPage() {
                     ].map((item, idx) => (
                         <div
                             key={item.no}
-                            className="bg-white/5 hover:bg-white/10 p-4 rounded-xl border border-amber-500/20 flex items-start gap-4 transition-all animate-in slide-in-from-right duration-500"
+                            className="bg-white/5 p-2.5 rounded-lg border border-amber-500/20 flex items-start gap-3 animate-in slide-in-from-right duration-500"
                             style={{ animationDelay: `${idx * 100}ms` }}
                         >
-                            <div className="bg-amber-500/20 text-amber-300 font-black w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-xl border border-amber-400/30">
+                            <div className="bg-amber-500/20 text-amber-300 font-bold w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full text-sm border border-amber-400/30">
                                 {item.no}
                             </div>
-                            <span className="text-base font-medium text-white/90 leading-relaxed">{item.text}</span>
+                            <span className="text-sm font-medium text-white/90 leading-snug">{item.text}</span>
                         </div>
                     ))}
                 </div>
