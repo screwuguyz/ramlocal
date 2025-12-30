@@ -85,13 +85,13 @@ export default function TvDisplayPage() {
 
     return (
         <div
-            className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden cursor-pointer"
+            className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-fuchsia-900 text-white overflow-hidden cursor-pointer"
             onClick={handleInteract}
         >
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5">
+            <div className="absolute inset-0 opacity-10">
                 <div className="absolute inset-0" style={{
-                    backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+                    backgroundImage: `radial-gradient(circle at 2px 2px, cyan 1px, transparent 0)`,
                     backgroundSize: '40px 40px'
                 }}></div>
             </div>
@@ -125,10 +125,10 @@ export default function TvDisplayPage() {
             <div className="h-screen pt-20 pb-4 px-4 grid grid-cols-1 xl:grid-cols-12 gap-4">
 
                 {/* SOL SÜTUN - Bekleyen Sıralar */}
-                <div className="hidden xl:flex xl:col-span-3 flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-4 overflow-hidden">
-                    <h3 className="text-purple-300 font-bold uppercase tracking-wider text-lg border-b border-purple-500/30 pb-3 mb-4 flex items-center justify-between">
+                <div className="hidden xl:flex xl:col-span-3 flex-col bg-gradient-to-b from-cyan-900/30 to-blue-900/20 backdrop-blur-sm rounded-2xl border border-cyan-500/30 p-4 overflow-hidden">
+                    <h3 className="text-cyan-300 font-bold uppercase tracking-wider text-lg border-b border-cyan-500/40 pb-3 mb-4 flex items-center justify-between">
                         <span>BEKLEYEN SIRALAR</span>
-                        <span className="bg-purple-500/30 px-3 py-1 rounded-lg text-xl font-black">{waitingTickets.length}</span>
+                        <span className="bg-cyan-500/30 px-3 py-1 rounded-lg text-xl font-black text-cyan-200">{waitingTickets.length}</span>
                     </h3>
                     <div className="flex-1 space-y-2 overflow-y-auto">
                         {waitingTickets.length === 0 ? (
@@ -140,11 +140,11 @@ export default function TvDisplayPage() {
                                     className="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center gap-3 transition-all animate-in slide-in-from-left duration-300"
                                     style={{ animationDelay: `${idx * 50}ms` }}
                                 >
-                                    <div className="bg-purple-500/30 text-purple-200 font-black w-12 h-12 flex items-center justify-center rounded-full text-xl border-2 border-purple-400/50">
+                                    <div className="bg-cyan-500/30 text-cyan-100 font-black w-12 h-12 flex items-center justify-center rounded-full text-xl border-2 border-cyan-400/60">
                                         {String(t.no || '')}
                                     </div>
                                     <span className="text-lg font-medium truncate flex-1 text-white">{String(t.name || "Misafir")}</span>
-                                    {idx === 0 && <span className="text-green-400 font-bold text-sm animate-pulse">SIRADA</span>}
+                                    {idx === 0 && <span className="text-lime-400 font-bold text-sm animate-pulse">SIRADA</span>}
                                 </div>
                             ))
                         )}
@@ -152,14 +152,14 @@ export default function TvDisplayPage() {
                 </div>
 
                 {/* ORTA SÜTUN - Sıradaki Numara */}
-                <div className="xl:col-span-5 flex flex-col items-center justify-center bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
-                    <h1 className="text-3xl lg:text-4xl font-light tracking-[0.15em] text-purple-300 uppercase mb-4">
+                <div className="xl:col-span-5 flex flex-col items-center justify-center bg-gradient-to-b from-fuchsia-900/40 to-purple-900/30 backdrop-blur-sm rounded-2xl border border-fuchsia-500/30 p-8">
+                    <h1 className="text-3xl lg:text-4xl font-light tracking-[0.15em] text-fuchsia-300 uppercase mb-4">
                         SIRADAKİ NUMARA
                     </h1>
 
                     {currentTicket ? (
                         <div className="text-center animate-in zoom-in duration-500">
-                            <div className="text-[10rem] lg:text-[14rem] font-black leading-none tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white to-purple-200 drop-shadow-[0_0_40px_rgba(168,85,247,0.6)]">
+                            <div className="text-[10rem] lg:text-[14rem] font-black leading-none tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-fuchsia-200 to-cyan-200 drop-shadow-[0_0_50px_rgba(236,72,153,0.7)]">
                                 {String(currentTicket.no || '')}
                             </div>
                             {currentTicket.name && currentTicket.name !== "Misafir" && (
@@ -167,7 +167,7 @@ export default function TvDisplayPage() {
                                     {String(currentTicket.name || '')}
                                 </div>
                             )}
-                            <div className="mt-6 inline-block px-8 py-3 bg-green-500/20 text-green-300 rounded-full text-xl font-bold border border-green-500/30 animate-pulse">
+                            <div className="mt-6 inline-block px-8 py-3 bg-lime-500/20 text-lime-300 rounded-full text-xl font-bold border border-lime-500/40 animate-pulse shadow-lg shadow-lime-500/20">
                                 ✓ GÖRÜŞME ODASINA GEÇİNİZ
                             </div>
                         </div>
