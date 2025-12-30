@@ -175,26 +175,32 @@ export default function TvDisplayPage() {
                 </div>
             </div>
 
-            {/* Sağ: Geçmiş Çağrılar */}
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:block w-64 z-10">
-                <h3 className="text-slate-400 font-bold mb-4 uppercase tracking-wider text-sm border-b border-slate-700 pb-2">Geçmiş Çağrılar</h3>
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {calledTickets
-                        .filter(t => !currentTicket || t.id !== currentTicket.id)
-                        .slice(0, 8)
-                        .map((t, idx) => (
-                            <div
-                                key={t.id || idx}
-                                className="bg-white/5 p-3 rounded-lg border border-white/5 flex justify-between items-center opacity-70 hover:opacity-100 transition-opacity animate-in slide-in-from-right duration-300"
-                                style={{ animationDelay: `${idx * 50}ms` }}
-                            >
-                                <span className="font-bold text-2xl text-green-400">{String(t.no || '')}</span>
-                                <span className="text-sm truncate max-w-[100px]">{String(t.name || "Misafir")}</span>
+            {/* Sağ: Gerekli Evraklar Bilgisi */}
+            <div className="absolute right-8 top-24 bottom-24 hidden xl:flex flex-col w-96 z-10">
+                <h3 className="text-amber-300 font-bold mb-6 uppercase tracking-wider text-xl border-b-2 border-amber-500/30 pb-3 flex items-center gap-3">
+                    <span className="text-2xl">📋</span>
+                    <span>GEREKLİ EVRAKLAR</span>
+                </h3>
+                <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+                    {[
+                        { no: 1, text: "Veli ve öğrenci kimlik asılları" },
+                        { no: 2, text: "Veli ve öğrenci kimlik fotokopileri" },
+                        { no: 3, text: "Okul çağında ise: Okulundan Eğitsel Değerlendirme ve İstek Formu (online olarak okul tarafından gönderilmesi)" },
+                        { no: 4, text: "Okul çağı dışında ise: Geçerli ikametgah belgesi" },
+                        { no: 5, text: "Hastane raporu (ÇÖZGER, erişkinler için Sağlık Kurulu, Durum Bildirir vb.)" },
+                        { no: 6, text: "Velayet durumunda: Velayet belgesi" },
+                    ].map((item, idx) => (
+                        <div
+                            key={item.no}
+                            className="bg-white/5 hover:bg-white/10 p-4 rounded-xl border border-amber-500/20 flex items-start gap-4 transition-all animate-in slide-in-from-right duration-500"
+                            style={{ animationDelay: `${idx * 100}ms` }}
+                        >
+                            <div className="bg-amber-500/20 text-amber-300 font-black w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-xl border border-amber-400/30">
+                                {item.no}
                             </div>
-                        ))}
-                    {calledTickets.filter(t => !currentTicket || t.id !== currentTicket.id).length === 0 && (
-                        <div className="text-slate-500 text-sm text-center py-8">Henüz çağrı yok</div>
-                    )}
+                            <span className="text-lg text-white/90 leading-relaxed">{item.text}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
