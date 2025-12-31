@@ -174,10 +174,15 @@ export default function TvDisplayPage() {
     }, [currentTicket, lastAnnouncedId]);
 
     const announceTicket = (ticket: QueueTicket) => {
-        // Müziği duraklat
+        // Müziği duraklat VE sesini kapat (çift güvenlik)
         isAnnouncingRef.current = true;
-        if (playerRef.current?.pauseVideo) {
-            playerRef.current.pauseVideo();
+        if (playerRef.current) {
+            try {
+                playerRef.current.pauseVideo?.();
+                playerRef.current.mute?.(); // Sesini de kapat
+            } catch (e) {
+                console.log("[TV] Player control error:", e);
+            }
         }
 
         // 1. Ding Dong
@@ -191,14 +196,19 @@ export default function TvDisplayPage() {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = "tr-TR";
                 utterance.rate = 0.9;
-                utterance.volume = volume; // Ses seviyesi ayarlardan
+                utterance.volume = 1.0; // TTS her zaman tam ses
 
                 utterance.onend = () => {
                     // Anons bitti, müziği devam ettir
                     setTimeout(() => {
                         isAnnouncingRef.current = false;
-                        if (musicPlaying && playerRef.current?.playVideo) {
-                            playerRef.current.playVideo();
+                        if (musicPlaying && playerRef.current) {
+                            try {
+                                playerRef.current.unMute?.(); // Sesi aç
+                                playerRef.current.playVideo?.();
+                            } catch (e) {
+                                console.log("[TV] Player resume error:", e);
+                            }
                         }
                     }, 1000);
                 };
@@ -209,8 +219,13 @@ export default function TvDisplayPage() {
             // TTS yoksa 5 saniye sonra müziği devam ettir
             setTimeout(() => {
                 isAnnouncingRef.current = false;
-                if (musicPlaying && playerRef.current?.playVideo) {
-                    playerRef.current.playVideo();
+                if (musicPlaying && playerRef.current) {
+                    try {
+                        playerRef.current.unMute?.();
+                        playerRef.current.playVideo?.();
+                    } catch (e) {
+                        console.log("[TV] Player resume error:", e);
+                    }
                 }
             }, 5000);
         }
