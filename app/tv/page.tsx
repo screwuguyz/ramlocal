@@ -47,21 +47,37 @@ export default function TvDisplayPage() {
         }
     }, [fontScale]);
 
-    // Ses seviyesi state (0-1 arası)
-    const [volume, setVolume] = useState<number>(() => {
+    // Müzik ses seviyesi (0-1 arası)
+    const [musicVolume, setMusicVolume] = useState<number>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('tv_volume');
-            return saved ? parseFloat(saved) : 1.0; // Varsayılan tam ses
+            const saved = localStorage.getItem('tv_music_volume');
+            return saved ? parseFloat(saved) : 0.5; // Müzik varsayılan %50
+        }
+        return 0.5;
+    });
+
+    // Anons ses seviyesi (0-1 arası)
+    const [announcementVolume, setAnnouncementVolume] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('tv_announcement_volume');
+            return saved ? parseFloat(saved) : 1.0; // Anons varsayılan %100
         }
         return 1.0;
     });
 
-    // Ses seviyesini kaydet
+    // Ses seviyelerini kaydet
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('tv_volume', String(volume));
+            localStorage.setItem('tv_music_volume', String(musicVolume));
         }
-    }, [volume]);
+    }, [musicVolume]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('tv_announcement_volume', String(announcementVolume));
+        }
+    }, [announcementVolume]);
+
 
 
     // Müzik state'leri
@@ -157,10 +173,12 @@ export default function TvDisplayPage() {
             } else {
                 playerRef.current.pauseVideo?.();
             }
+            // Ses seviyesi ayarla (0-100 arası)
+            playerRef.current.setVolume?.(Math.round(musicVolume * 100));
         } catch (e) {
             console.log("[TV] Player control error:", e);
         }
-    }, [musicPlaying]);
+    }, [musicPlaying, musicVolume]);
 
     // Yeni bilet çağrılınca anons et
     useEffect(() => {
@@ -196,7 +214,7 @@ export default function TvDisplayPage() {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = "tr-TR";
                 utterance.rate = 0.9;
-                utterance.volume = 1.0; // TTS her zaman tam ses
+                utterance.volume = announcementVolume; // Anons ses seviyesi ayarlardan
 
                 utterance.onend = () => {
                     // Anons bitti, müziği devam ettir
@@ -342,28 +360,40 @@ export default function TvDisplayPage() {
                             </div>
                         </div>
 
-                        {/* Ses Seviyesi */}
+                        {/* Müzik Ses Seviyesi */}
                         <div>
                             <label className="text-sm text-slate-300 block mb-2">
-                                🔊 Ses Seviyesi: {Math.round(volume * 100)}%
+                                🎵 Müzik Sesi: {Math.round(musicVolume * 100)}%
                             </label>
                             <input
                                 type="range"
                                 min="0"
                                 max="1"
                                 step="0.1"
-                                value={volume}
-                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                value={musicVolume}
+                                onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+                                className="w-full accent-blue-500"
+                            />
+                        </div>
+
+                        {/* Anons Ses Seviyesi */}
+                        <div>
+                            <label className="text-sm text-slate-300 block mb-2">
+                                📢 Anons Sesi: {Math.round(announcementVolume * 100)}%
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={announcementVolume}
+                                onChange={(e) => setAnnouncementVolume(parseFloat(e.target.value))}
                                 className="w-full accent-green-500"
                             />
-                            <div className="flex justify-between text-xs text-slate-500 mt-1">
-                                <span>🔇 Kapalı</span>
-                                <span>🔊 Tam</span>
-                            </div>
                         </div>
 
                         <button
-                            onClick={() => { setFontScale(1); setVolume(0.8); }}
+                            onClick={() => { setFontScale(1); setMusicVolume(0.5); setAnnouncementVolume(1.0); }}
                             className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm"
                         >
                             Varsayılana Sıfırla
