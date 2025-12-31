@@ -18,10 +18,10 @@ function getWeekDates(year: number, weekNumber: number): string[] {
   // Yılın ilk gününü bul
   const jan1 = new Date(year, 0, 1);
   const daysOffset = (jan1.getDay() + 6) % 7; // Pazartesi = 0
-  
+
   // Hafta numarasına göre tarihi hesapla
   const weekStart = new Date(year, 0, 1 + (weekNumber - 1) * 7 - daysOffset);
-  
+
   const dates: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
@@ -66,7 +66,7 @@ export default function WeeklyReport({ teachers, cases, history }: Props) {
 
   // Seçili hafta verileri
   const weekDates = useMemo(() => getWeekDates(year, weekNumber), [year, weekNumber]);
-  const weekCases = useMemo(() => 
+  const weekCases = useMemo(() =>
     allCases.filter(c => weekDates.includes(c.createdAt.slice(0, 10))),
     [allCases, weekDates]
   );
@@ -120,13 +120,13 @@ export default function WeeklyReport({ teachers, cases, history }: Props) {
     };
   }, [weekCases]);
 
-  const weekStartFormatted = new Date(weekDates[0]).toLocaleDateString("tr-TR", { 
-    day: "numeric", 
+  const weekStartFormatted = new Date(weekDates[0]).toLocaleDateString("tr-TR", {
+    day: "numeric",
     month: "long",
     year: "numeric"
   });
-  const weekEndFormatted = new Date(weekDates[6]).toLocaleDateString("tr-TR", { 
-    day: "numeric", 
+  const weekEndFormatted = new Date(weekDates[6]).toLocaleDateString("tr-TR", {
+    day: "numeric",
     month: "long",
     year: "numeric"
   });
@@ -161,19 +161,33 @@ export default function WeeklyReport({ teachers, cases, history }: Props) {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Label>Yıl</Label>
-              <Input
-                className="w-24"
-                type="number"
-                value={year}
-                onChange={(e) => {
-                  const newYear = Number(e.target.value);
-                  if (newYear >= 2020 && newYear <= 2100) {
+              <div className="flex items-center border rounded-md">
+                <button
+                  className="px-2 py-1 hover:bg-slate-100 rounded-l-md"
+                  onClick={() => {
+                    const newYear = Math.max(2020, year - 1);
                     setYear(newYear);
                     const maxW = getWeeksInYear(newYear);
                     if (weekNumber > maxW) setWeekNumber(maxW);
-                  }
-                }}
-              />
+                  }}
+                  type="button"
+                >
+                  ◀
+                </button>
+                <span className="px-3 py-1 font-medium min-w-[60px] text-center">{year}</span>
+                <button
+                  className="px-2 py-1 hover:bg-slate-100 rounded-r-md"
+                  onClick={() => {
+                    const newYear = Math.min(2100, year + 1);
+                    setYear(newYear);
+                    const maxW = getWeeksInYear(newYear);
+                    if (weekNumber > maxW) setWeekNumber(maxW);
+                  }}
+                  type="button"
+                >
+                  ▶
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Label>Hafta</Label>
@@ -241,7 +255,7 @@ export default function WeeklyReport({ teachers, cases, history }: Props) {
             <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
               <CardContent className="pt-4">
                 <div className="text-3xl font-bold">
-                  {weekCases.length > 0 
+                  {weekCases.length > 0
                     ? (weekCases.reduce((sum, c) => sum + c.score, 0) / weekCases.length).toFixed(1)
                     : 0}
                 </div>

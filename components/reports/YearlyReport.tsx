@@ -168,32 +168,20 @@ export default function YearlyReport({ teachers, cases, history }: Props) {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Label>Yıl</Label>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setYear(prev => prev - 1)}
+              <div className="flex items-center border rounded-md bg-white">
+                <button
+                  className="px-3 py-2 hover:bg-slate-100 rounded-l-md border-r transition-colors"
+                  onClick={() => setYear(prev => Math.max(2020, prev - 1))}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Input
-                  className="w-24"
-                  type="number"
-                  value={year}
-                  onChange={(e) => {
-                    const newYear = Number(e.target.value);
-                    if (newYear >= 2020 && newYear <= 2100) {
-                      setYear(newYear);
-                    }
-                  }}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setYear(prev => prev + 1)}
+                  <ChevronLeft className="h-4 w-4 text-slate-600" />
+                </button>
+                <span className="px-2 py-1 font-medium min-w-[70px] text-center text-slate-800">{year}</span>
+                <button
+                  className="px-3 py-2 hover:bg-slate-100 rounded-r-md border-l transition-colors"
+                  onClick={() => setYear(prev => Math.min(2100, prev + 1))}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <ChevronRight className="h-4 w-4 text-slate-600" />
+                </button>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -294,8 +282,8 @@ export default function YearlyReport({ teachers, cases, history }: Props) {
                           )}
                           {compareYear && (
                             <td className={`p-2 text-right font-medium ${change && change > 0 ? "text-green-600" :
-                                change && change < 0 ? "text-red-600" :
-                                  "text-slate-600"
+                              change && change < 0 ? "text-red-600" :
+                                "text-slate-600"
                               }`}>
                               {change !== null
                                 ? `${change > 0 ? "+" : ""}${change} (${changePercent}%)`
