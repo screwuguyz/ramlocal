@@ -88,9 +88,19 @@ export function findBestTeacher(
         forTestCase?: boolean;
     }
 ): Teacher | null {
-    const activeTeachers = teachers.filter((t) => {
+    // Bugünün tarihi (yedek günü kontrolü için)
+    const todayYmd = new Date().toISOString().slice(0, 10);
+
+    // Son atanan öğretmeni bul (rotasyon için)
+    const sortedCases = [...cases].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const lastAssignedId = sortedCases.find(c => c.assignedTo)?.assignedTo;
+
+    let activeTeachers = teachers.filter((t) => {
         if (!t.active) return false;
         if (t.isAbsent) return false;
+        if (t.backupDay === todayYmd) return false; // Yedek günü olanları hariç tut
         if (options?.excludeIds?.includes(t.id)) return false;
         if (options?.forTestCase && !t.isTester) return false;
         return true;
@@ -98,17 +108,41 @@ export function findBestTeacher(
 
     if (activeTeachers.length === 0) return null;
 
-    // Sort by yearly load (ascending)
+    // 🔄 ZORUNLU ROTASYON: Son atanan kişiyi listeden çıkar (birden fazla aday varsa)
+    if (activeTeachers.length > 1 && lastAssignedId) {
+        activeTeachers = activeTeachers.filter(t => t.id !== lastAssignedId);
+    }
+
+    // Bugünkü cases'lerden öğretmen başına toplam skorları hesapla
+    const todayScores: Record<string, number> = {};
+    const todayCounts: Record<string, number> = {};
+    cases.forEach(c => {
+        if (c.assignedTo) {
+            todayScores[c.assignedTo] = (todayScores[c.assignedTo] || 0) + (c.score || 0);
+            todayCounts[c.assignedTo] = (todayCounts[c.assignedTo] || 0) + 1;
+        }
+    });
+
+    // Gerçek yıllık yük = yearlyLoad + bugünkü skorlar
+    const getEffectiveLoad = (t: Teacher): number => {
+        return t.yearlyLoad + (todayScores[t.id] || 0);
+    };
+
+    // Bugün aldığı dosya sayısı
+    const getTodayCount = (t: Teacher): number => {
+        return todayCounts[t.id] || 0;
+    };
+
+    // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan
     const sorted = [...activeTeachers].sort((a, b) => {
-        const loadA = a.yearlyLoad;
-        const loadB = b.yearlyLoad;
-        return loadA - loadB;
+        const byLoad = getEffectiveLoad(a) - getEffectiveLoad(b);
+        if (byLoad !== 0) return byLoad;
+        return getTodayCount(a) - getTodayCount(b);
     });
 
     // Filter out teachers who hit daily limit
     const available = sorted.filter((t) => {
-        const dailyLoad = getTeacherDailyLoad(t, cases);
-        return dailyLoad < settings.dailyLimit;
+        return getTodayCount(t) < settings.dailyLimit;
     });
 
     return available[0] || null;
