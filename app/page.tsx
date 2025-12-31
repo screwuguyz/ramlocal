@@ -1412,6 +1412,26 @@ export default function DosyaAtamaApp() {
   function autoAssign(newCase: CaseFile): Teacher | null {
     const todayYmd = getTodayYmd();
     const lastTid = lastAssignedTeacherToday();
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+
+    // 🆕 YENİ YIL İLK ATAMA: Bu yıl hiç atama yoksa, geçen yılın en düşük puanlısına ver
+    const isFirstOfYear = !cases.some(c => c.createdAt.startsWith(String(currentYear)) && c.assignedTo);
+
+    // Geçen yılın toplam puanını hesapla
+    function getPreviousYearLoad(tid: string): number {
+      let total = 0;
+      Object.entries(history).forEach(([date, dayCases]) => {
+        if (date.startsWith(String(previousYear))) {
+          dayCases.forEach(c => {
+            if (c.assignedTo === tid) {
+              total += c.score;
+            }
+          });
+        }
+      });
+      return total;
+    }
 
     // Test dosyasıysa: sadece testörler ve bugün test almamış olanlar
     if (newCase.isTest) {
@@ -1425,14 +1445,19 @@ export default function DosyaAtamaApp() {
         testers = testers.filter(t => t.id !== lastTid);
       }
 
-      // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
-      testers.sort((a, b) => {
-        const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
-        if (byLoad !== 0) return byLoad;
-        const byCount = countCasesToday(a.id) - countCasesToday(b.id);
-        if (byCount !== 0) return byCount;
-        return Math.random() - 0.5;
-      });
+      // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
+      if (isFirstOfYear) {
+        testers.sort((a, b) => getPreviousYearLoad(a.id) - getPreviousYearLoad(b.id));
+      } else {
+        // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
+        testers.sort((a, b) => {
+          const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
+          if (byLoad !== 0) return byLoad;
+          const byCount = countCasesToday(a.id) - countCasesToday(b.id);
+          if (byCount !== 0) return byCount;
+          return Math.random() - 0.5;
+        });
+      }
 
       const chosen = testers[0];
 
@@ -1465,14 +1490,19 @@ export default function DosyaAtamaApp() {
       available = available.filter(t => t.id !== lastTid);
     }
 
-    // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
-    available.sort((a, b) => {
-      const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
-      if (byLoad !== 0) return byLoad;
-      const byCount = countCasesToday(a.id) - countCasesToday(b.id);
-      if (byCount !== 0) return byCount;
-      return Math.random() - 0.5;
-    });
+    // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
+    if (isFirstOfYear) {
+      available.sort((a, b) => getPreviousYearLoad(a.id) - getPreviousYearLoad(b.id));
+    } else {
+      // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
+      available.sort((a, b) => {
+        const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
+        if (byLoad !== 0) return byLoad;
+        const byCount = countCasesToday(a.id) - countCasesToday(b.id);
+        if (byCount !== 0) return byCount;
+        return Math.random() - 0.5;
+      });
+    }
 
     const chosen = available[0];
 
