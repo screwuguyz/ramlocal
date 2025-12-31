@@ -205,17 +205,21 @@ export default function TeacherPerformanceReport({ teachers, cases, history }: P
           <div className="flex items-center gap-4 flex-wrap p-4 bg-slate-50 rounded-lg">
             <div className="flex items-center gap-2">
               <Label>Yıl</Label>
-              <Input
-                className="w-24"
-                type="number"
-                value={selectedYear}
-                onChange={(e) => {
-                  const newYear = Number(e.target.value);
-                  if (newYear >= 2020 && newYear <= 2100) {
-                    setSelectedYear(newYear);
-                  }
-                }}
-              />
+              <div className="flex items-center border rounded-md">
+                <button
+                  className="px-2 py-1 hover:bg-slate-100 rounded-l-md"
+                  onClick={() => setSelectedYear(prev => Math.max(2020, prev - 1))}
+                >
+                  ◀
+                </button>
+                <span className="px-3 py-1 font-medium min-w-[60px] text-center">{selectedYear}</span>
+                <button
+                  className="px-2 py-1 hover:bg-slate-100 rounded-r-md"
+                  onClick={() => setSelectedYear(prev => Math.min(2100, prev + 1))}
+                >
+                  ▶
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Label>Ay</Label>
