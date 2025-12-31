@@ -51,9 +51,9 @@ export default function TvDisplayPage() {
     const [volume, setVolume] = useState<number>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('tv_volume');
-            return saved ? parseFloat(saved) : 0.8;
+            return saved ? parseFloat(saved) : 1.0; // Varsayılan tam ses
         }
-        return 0.8;
+        return 1.0;
     });
 
     // Ses seviyesini kaydet
