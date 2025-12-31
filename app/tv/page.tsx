@@ -47,6 +47,23 @@ export default function TvDisplayPage() {
         }
     }, [fontScale]);
 
+    // Ses seviyesi state (0-1 arası)
+    const [volume, setVolume] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('tv_volume');
+            return saved ? parseFloat(saved) : 0.8;
+        }
+        return 0.8;
+    });
+
+    // Ses seviyesini kaydet
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('tv_volume', String(volume));
+        }
+    }, [volume]);
+
+
     // Müzik state'leri
     const [musicUrl, setMusicUrl] = useState<string>("");
     const [musicPlaying, setMusicPlaying] = useState(false);
@@ -174,6 +191,7 @@ export default function TvDisplayPage() {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = "tr-TR";
                 utterance.rate = 0.9;
+                utterance.volume = volume; // Ses seviyesi ayarlardan
 
                 utterance.onend = () => {
                     // Anons bitti, müziği devam ettir
@@ -309,8 +327,28 @@ export default function TvDisplayPage() {
                             </div>
                         </div>
 
+                        {/* Ses Seviyesi */}
+                        <div>
+                            <label className="text-sm text-slate-300 block mb-2">
+                                🔊 Ses Seviyesi: {Math.round(volume * 100)}%
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={volume}
+                                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                className="w-full accent-green-500"
+                            />
+                            <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>🔇 Kapalı</span>
+                                <span>🔊 Tam</span>
+                            </div>
+                        </div>
+
                         <button
-                            onClick={() => setFontScale(1)}
+                            onClick={() => { setFontScale(1); setVolume(0.8); }}
                             className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm"
                         >
                             Varsayılana Sıfırla
