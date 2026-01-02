@@ -1,179 +1,44 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-/* ===== MODERN COLOR PALETTE ===== */
-:root {
-  color-scheme: light;
-
-  /* Vibrant Teal/Emerald Primary */
-  --primary: #0d9488;       /* Teal 600 */
-  --primary-dark: #0f766e;  /* Teal 700 */
-  --primary-light: #2dd4bf; /* Teal 400 */
-  --primary-glow: rgba(45, 212, 191, 0.5);
-
-  /* Warm Accent (Orange/Amber) */
-  --accent: #f97316;        /* Orange 500 */
-  --accent-dark: #ea580c;   /* Orange 600 */
-  --accent-light: #fdba74;  /* Orange 300 */
-  --accent-glow: rgba(249, 115, 22, 0.4);
-
-  /* Modern Backgrounds */
-  --bg-base: #f8fafc;       /* Slate 50 */
-  --bg-glass: rgba(255, 255, 255, 0.7);
-  --bg-card: rgba(255, 255, 255, 0.9);
-  
-  /* Text */
-  --text-main: #0f172a;     /* Slate 900 */
-  --text-muted: #64748b;    /* Slate 500 */
-  --text-light: #94a3b8;    /* Slate 400 */
-
-  /* Status Colors */
-  --success: #10b981;       /* Emerald 500 */
-  --warning: #f59e0b;       /* Amber 500 */
-  --danger: #ef4444;        /* Red 500 */
-  --info: #3b82f6;          /* Blue 500 */
-}
-
-.dark, [data-theme="dark"] {
-  color-scheme: dark;
-
-  /* Neon/Cyberpunk-ish Dark Mode */
-  --primary: #2dd4bf;       /* Teal 400 */
-  --primary-dark: #14b8a6;  /* Teal 500 */
-  --primary-light: #99f6e4; /* Teal 200 */
-  --primary-glow: rgba(45, 212, 191, 0.4);
-
-  --accent: #fb923c;        /* Orange 400 */
-  --accent-dark: #f97316;   /* Orange 500 */
-  --accent-light: #fed7aa;  /* Orange 200 */
-
-  --bg-base: #020617;       /* Slate 950 */
-  --bg-glass: rgba(15, 23, 42, 0.6);
-  --bg-card: rgba(30, 41, 59, 0.7);
-
-  --text-main: #f8fafc;     /* Slate 50 */
-  --text-muted: #94a3b8;    /* Slate 400 */
-  --text-light: #64748b;    /* Slate 500 */
-}
-
-/* ===== BASE STYLES ===== */
 @theme {
-  --font-sans: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Primary Colors */
+  --color-primary: #0d9488;
+  --color-primary-foreground: #ffffff;
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 body {
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
-  background-color: var(--bg-base);
-  color: var(--text-main);
   min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
+  /* Subtle Pattern Background */
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-/* Animated Mesh Gradient Background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: 
-    radial-gradient(at 0% 0%, rgba(45, 212, 191, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
-  filter: blur(40px);
-  animation: bg-pulse 15s ease-in-out infinite alternate;
-}
-
-@keyframes bg-pulse {
-  0% { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 1; transform: scale(1.1); }
-}
-
-/* ===== COMPONENTS ===== */
-
-/* Glassmorphism Card */
-.card, .bg-white, .bg-slate-50 {
-  @apply backdrop-blur-md border border-white/20 shadow-xl;
-  background-color: var(--bg-card) !important;
-  border-radius: 1rem; /* Rounded-2xl looks */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-light);
-}
-
-/* Modern Buttons */
-button, .btn {
-  @apply transition-all duration-300 active:scale-95 font-medium tracking-wide;
-  border-radius: 0.75rem; /* Rounded-xl */
-}
-
-/* Primary Button Glow */
-[class*="bg-emerald"], [class*="bg-teal"], .bg-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
-  box-shadow: 0 4px 14px 0 var(--primary-glow);
-  color: white !important;
-}
-
-[class*="bg-emerald"]:hover, [class*="bg-teal"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(45, 212, 191, 0.6);
-  filter: brightness(110%);
-}
-
-/* Inputs with Focus Glow */
-input, select, textarea {
-  @apply transition-all duration-200;
-  border-radius: 0.75rem !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
-  background-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px var(--primary-glow) !important;
-  background-color: white !important;
-}
-
-/* Modern Tables */
-table {
-  @apply w-full border-collapse;
-}
-
-thead tr {
-  background: linear-gradient(135deg, var(--bg-base) 0%, rgba(255,255,255,0.5) 100%);
-  border-bottom: 2px solid var(--primary-light);
-}
-
-th {
-  @apply py-4 px-4 font-semibold text-slate-600 tracking-wider text-xs uppercase;
-}
-
-tbody tr {
-  @apply transition-colors duration-150 border-b border-slate-100;
-}
-
-tbody tr:hover {
-  background-color: rgba(45, 212, 191, 0.05) !important;
-}
-
-/* Scrollbar */
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--text-light);
-  border-radius: 4px;
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+
+/* Utility for Gradient Text */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-emerald-600;
 }

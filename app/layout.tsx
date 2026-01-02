@@ -89,7 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }
         `}</style>
       </head>
-      <body className="antialiased selection:bg-teal-200 selection:text-teal-900">
+      <body className="min-h-screen bg-slate-50 antialiased selection:bg-teal-200 selection:text-teal-900">
         <ThemeProvider>
           <div className="relative z-10">{children}</div>
         </ThemeProvider>

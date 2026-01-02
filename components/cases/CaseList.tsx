@@ -104,12 +104,12 @@ export default function CaseList() {
                 />
             </div>
 
-            <Card className="border-none shadow-xl bg-white/80">
-                <CardHeader className="bg-gradient-to-r from-teal-50 to-orange-50 pb-3 border-b border-teal-100">
-                    <CardTitle className="text-teal-800 flex items-center gap-2">
-                        <span>📋</span>
+            <Card className="border-0 shadow-lg bg-white overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-teal-600 to-emerald-600 py-4">
+                    <CardTitle className="text-white flex items-center gap-2 text-lg">
+                        <span className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">📋</span>
                         <span>Atanan Dosyalar (Bugün)</span>
-                        <span className="ml-auto text-sm font-normal text-slate-500">
+                        <span className="ml-auto text-sm font-medium text-emerald-50 bg-white/10 px-3 py-1 rounded-full">
                             Toplam: {filteredCases.length}
                         </span>
                     </CardTitle>
@@ -118,15 +118,15 @@ export default function CaseList() {
                     {/* Desktop Table */}
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-teal-100/50 text-teal-900 font-semibold border-b border-teal-200">
+                            <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="p-3 text-left">Öğrenci</th>
-                                    <th className="p-3 text-right">Puan</th>
-                                    <th className="p-3 text-left">Saat</th>
-                                    <th className="p-3 text-left">Atanan</th>
-                                    <th className="p-3 text-left">Test</th>
-                                    <th className="p-3 text-left">Açıklama</th>
-                                    <th className="p-3 text-right">İşlem</th>
+                                    <th className="p-4 text-left">Öğrenci</th>
+                                    <th className="p-4 text-right">Puan</th>
+                                    <th className="p-4 text-left">Saat</th>
+                                    <th className="p-4 text-left">Atanan</th>
+                                    <th className="p-4 text-left">Test</th>
+                                    <th className="p-4 text-left">Açıklama</th>
+                                    <th className="p-4 text-right">İşlem</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -142,9 +142,9 @@ export default function CaseList() {
                                 ) : (
                                     filteredCases.map((c) => (
                                         <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
-                                            <td className="p-3 font-medium text-slate-700">{c.student}</td>
-                                            <td className="p-3 text-right font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">+{c.score}</td>
-                                            <td className="p-3 text-slate-500">
+                                            <td className="p-4 font-semibold text-slate-800">{c.student}</td>
+                                            <td className="p-4 text-right font-bold text-emerald-600">+{c.score}</td>
+                                            <td className="p-4 text-slate-600 font-medium">
                                                 {new Date(c.createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                                             </td>
                                             <td className="p-3">
