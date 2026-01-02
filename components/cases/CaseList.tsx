@@ -104,8 +104,8 @@ export default function CaseList() {
                 />
             </div>
 
-            <Card className="border-teal-200 shadow-sm">
-                <CardHeader className="bg-teal-50/50 pb-3">
+            <Card className="border-none shadow-xl bg-white/80">
+                <CardHeader className="bg-gradient-to-r from-teal-50 to-orange-50 pb-3 border-b border-teal-100">
                     <CardTitle className="text-teal-800 flex items-center gap-2">
                         <span>📋</span>
                         <span>Atanan Dosyalar (Bugün)</span>
@@ -142,8 +142,8 @@ export default function CaseList() {
                                 ) : (
                                     filteredCases.map((c) => (
                                         <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
-                                            <td className="p-3 font-medium text-slate-900">{c.student}</td>
-                                            <td className="p-3 text-right font-semibold text-emerald-600">+{c.score}</td>
+                                            <td className="p-3 font-medium text-slate-700">{c.student}</td>
+                                            <td className="p-3 text-right font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">+{c.score}</td>
                                             <td className="p-3 text-slate-500">
                                                 {new Date(c.createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                                             </td>

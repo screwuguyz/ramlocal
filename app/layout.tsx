@@ -38,7 +38,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#0d9488" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f766e" },
+    { media: "(prefers-color-scheme: dark)", color: "#2dd4bf" },
   ],
 };
 
@@ -89,7 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }
         `}</style>
       </head>
-      <body className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900 antialiased">
+      <body className="antialiased selection:bg-teal-200 selection:text-teal-900">
         <ThemeProvider>
           <div className="relative z-10">{children}</div>
         </ThemeProvider>
