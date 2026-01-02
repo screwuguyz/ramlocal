@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 
 function getMonths() {
   return ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];

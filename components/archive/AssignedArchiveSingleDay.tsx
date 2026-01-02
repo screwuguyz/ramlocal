@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Inbox, X } from "lucide-react";
-import type { CaseFile, Teacher } from "@/lib/types";
+import type { CaseFile, Teacher } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || ""; // e.g. https://ram-dosya-atama.vercel.app
 const USE_PROXY = !!API_BASE; // localde doluysa proxy, Vercel'de boş bırak
@@ -189,7 +189,7 @@ export default function AssignedArchiveSingleDay({
                                 let lastIndex = 0;
                                 const regex = /\*\*(.+?)\*\*/g;
                                 let match;
-                                
+
                                 while ((match = regex.exec(text)) !== null) {
                                   // Önceki kısmı ekle
                                   if (match.index > lastIndex) {
@@ -209,7 +209,7 @@ export default function AssignedArchiveSingleDay({
                                 }
                                 return parts.length > 0 ? parts : text;
                               };
-                              
+
                               return (
                                 <div key={idx} className={m.role === "user" ? "text-slate-800" : "text-emerald-800"}>
                                   <span className="text-xs uppercase font-semibold mr-2">{m.role === "user" ? "Siz" : "Asistan"}</span>
@@ -264,7 +264,7 @@ export default function AssignedArchiveSingleDay({
                                   }),
                                 });
                                 let text = "";
-                                try { text = await res.text(); } catch {}
+                                try { text = await res.text(); } catch { }
                                 let answer = "";
                                 let details = "";
                                 if (text) {

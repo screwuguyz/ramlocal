@@ -1,161 +1,110 @@
-// ============================================
-// RAM Dosya Atama - Tip Tanımları
-// ============================================
-
-/**
- * Öğretmen bilgileri
- */
-export interface Teacher {
-  id: string;
-  name: string;
-  isAbsent: boolean;
-  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD)
-  yearlyLoad: number;
-  monthly?: Record<string, number>;
-  active: boolean;
-  pushoverKey?: string;
-  isTester: boolean;
-  backupDay?: string;
-  birthDate?: string; // Doğum tarihi (MM-DD formatında, örn: "02-15")
-}
-
-/**
- * Duyuru
- */
-export interface Announcement {
-  id: string;
-  text: string;
-  createdAt: string;
-}
-
-/**
- * PDF'den okunan randevu bilgisi
- */
-export interface PdfAppointment {
-  id: string;
-  time: string;
-  name: string;
-  fileNo: string;
-  extra?: string;
-}
-
-/**
- * Dosya/Vaka bilgisi
- */
-export interface CaseFile {
-  id: string;
-  student: string;
-  fileNo?: string;
-  score: number;
-  createdAt: string; // ISO
-  assignedTo?: string; // teacher.id
-  type: "YONLENDIRME" | "DESTEK" | "IKISI";
-  isNew: boolean;
-  diagCount: number;
-  isTest: boolean;
-  assignReason?: string;
-  absencePenalty?: boolean;
-  backupBonus?: boolean;
-  sourcePdfEntry?: PdfAppointment;
-}
-
-/**
- * Dosya türü
- */
 export type CaseType = "YONLENDIRME" | "DESTEK" | "IKISI";
 
-/**
- * E-Arşiv kaydı
- */
-export interface EArchiveEntry {
-  id: string;
-  student: string;
-  fileNo?: string;
-  assignedToName: string;
-  createdAt: string;
-}
+export type Teacher = {
+    id: string;
+    name: string;
+    isAbsent: boolean;
+    yearlyLoad: number;
+    monthly?: Record<string, number>;
+    active: boolean;
+    pushoverKey?: string;
+    isTester: boolean;
+    backupDay?: string;
+    birthDate?: string;
+};
 
-/**
- * Uygulama ayarları
- */
-export interface Settings {
-  dailyLimit: number;
-  scoreTest: number;
-  scoreNewBonus: number;
-  scoreTypeY: number;
-  scoreTypeD: number;
-  scoreTypeI: number;
-  backupBonusAmount: number;
-  absencePenaltyAmount: number;
-}
+export type CaseFile = {
+    id: string;
+    student: string;
+    fileNo?: string;
+    score: number;
+    createdAt: string;      // ISO
+    assignedTo?: string;    // teacher.id
+    type: CaseType;
+    isNew: boolean;
+    diagCount: number;
+    isTest: boolean;
+    assignReason?: string;
+    absencePenalty?: boolean;
+    backupBonus?: boolean;
+    sourcePdfEntry?: PdfAppointment; // Link to the PDF entry (if any)
+};
 
-/**
- * Devamsızlık kaydı
- */
-export interface AbsenceRecord {
-  teacherId: string;
-  date: string;
-}
+export type PdfAppointment = {
+    id: string;
+    time: string;
+    name: string;
+    fileNo?: string;
+    extra?: string;
+};
 
-/**
- * Toast bildirimi
- */
-export interface Toast {
-  id: string;
-  text: string;
-}
+export type Announcement = {
+    id: string;
+    text: string;
+    createdAt: string;
+};
 
-/**
- * Atama popup bilgisi
- */
-export interface AssignmentPopup {
-  teacherName: string;
-  studentName: string;
-  score: number;
-}
+export type EArchiveEntry = {
+    id: string;
+    studentName: string;
+    fileNo?: string;
+    teacherName: string; // or teacherId? Usage seems to be name for display or ID. Let's assume name for now, or check usage more.
+    date: string; // YYYY-MM-DD
+    type?: string;
+};
 
-/**
- * Canlı bağlantı durumu
- */
+export type AbsenceRecord = {
+    teacherId: string;
+    date: string;
+};
+
+export type Toast = {
+    id: string;
+    text: string;
+};
+
+export type AssignmentPopup = {
+    teacherName: string;
+    studentName: string;
+    score: number;
+};
+
 export type LiveStatus = "connecting" | "online" | "offline";
 
-/**
- * Tema modu
- */
-export type ThemeMode = "light" | "dark" | "auto";
+export type QueueTicket = {
+    id: string;
+    no: number;
+    name?: string;
+    status: 'waiting' | 'called' | 'done';
+    createdAt: string;
+    updatedAt: string;
+    calledBy?: string;
+};
 
-/**
- * Renk şeması
- */
-export interface ColorScheme {
-  name: string;
-  primary: string;
-  primaryDark: string;
-  primaryLight: string;
-  accent: string;
-  accentDark: string;
-  accentLight: string;
-  bgBase: string;
-  bgWarm: string;
-  bgCard: string;
-  textMain: string;
-  textMuted: string;
-  textLight: string;
-  success: string;
-  warning: string;
-  danger: string;
-  info: string;
-}
+export type Settings = {
+    dailyLimit: number;
+    scoreTest: number;
+    scoreNewBonus: number;
+    scoreTypeY: number;
+    scoreTypeD: number;
+    scoreTypeI: number;
+    backupBonusAmount: number;
+    absencePenaltyAmount: number;
+    musicUrl: string;
+    musicPlaying: boolean;
+};
 
-/**
- * Sıramatik bileti
- */
-export interface QueueTicket {
-  id: string;
-  no: number;
-  name?: string;
-  status: 'waiting' | 'called' | 'done';
-  calledBy?: string; // Teacher ID
-  createdAt: string;
-  updatedAt: string;
-}
+export type ThemeMode = "light" | "dark" | "system";
+export type ColorScheme = "zinc" | "slate" | "stone" | "gray" | "neutral" | "red" | "rose" | "orange" | "green" | "blue" | "yellow" | "violet";
+
+export type ThemeSettings = {
+    mode: ThemeMode;
+    colorScheme: ColorScheme;
+    customColors?: {
+        primary: string;
+        secondary: string;
+        accent: string;
+        background: string;
+        foreground: string;
+    };
+};

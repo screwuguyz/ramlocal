@@ -5,92 +5,22 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 
 // Optional: allow insecure TLS for local corporate proxies (development only)
-if (process.env.ALLOW_INSECURE_TLS === "1") {
+// ⚠️ SECURITY: Only allow in development, never in production
+if (process.env.NODE_ENV === "development" && process.env.ALLOW_INSECURE_TLS === "1") {
   console.warn("[api/state] ALLOW_INSECURE_TLS=1 → Disabling TLS verification for local dev");
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
-type Teacher = {
-  id: string;
-  name: string;
-  isAbsent: boolean;
-  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD)
-  yearlyLoad: number;
-  monthly?: Record<string, number>;
-  active: boolean;
-  pushoverKey?: string;
-  isTester: boolean;
-  backupDay?: string;
-};
-type CaseFile = {
-  id: string;
-  student: string;
-  fileNo?: string;
-  score: number;
-  createdAt: string;
-  assignedTo?: string;
-  type: "YONLENDIRME" | "DESTEK" | "IKISI";
-  isNew: boolean;
-  diagCount: number;
-  isTest: boolean;
-  assignReason?: string;
-  absencePenalty?: boolean;
-  backupBonus?: boolean;
-};
-type Announcement = { id: string; text: string; createdAt: string };
-type Settings = {
-  dailyLimit: number;
-  scoreTest: number;
-  scoreNewBonus: number;
-  scoreTypeY: number;
-  scoreTypeD: number;
-  scoreTypeI: number;
-  musicUrl?: string;
-  musicPlaying?: boolean;
-};
-type ThemeSettings = {
-  themeMode: "light" | "dark" | "auto";
-  colorScheme: string; // "default" | "blue" | "green" | "purple" | "red" | "custom"
-  customColors?: {
-    name: string;
-    primary: string;
-    primaryDark: string;
-    primaryLight: string;
-    accent: string;
-    accentDark: string;
-    accentLight: string;
-    bgBase: string;
-    bgWarm: string;
-    bgCard: string;
-    textMain: string;
-    textMuted: string;
-    textLight: string;
-    success: string;
-    warning: string;
-    danger: string;
-    info: string;
-  };
-};
-type EArchiveEntry = {
-  id: string;
-  student: string;
-  fileNo?: string;
-  assignedToName: string;
-  createdAt: string;
-};
-type AbsenceRecord = {
-  teacherId: string;
-  date: string; // YYYY-MM-DD
-};
-type QueueTicket = {
-  id: string;
-  no: number;
-  name?: string;
-  status: 'waiting' | 'called' | 'done';
-  calledBy?: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import type {
+  Teacher,
+  CaseFile,
+  Announcement,
+  Settings,
+  ThemeSettings,
+  EArchiveEntry,
+  AbsenceRecord,
+  QueueTicket
+} from "@/types";
 
 type StateShape = {
   teachers: Teacher[];

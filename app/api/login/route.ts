@@ -1,8 +1,13 @@
 // app/api/login/route.ts
 import { NextResponse, NextRequest } from "next/server";
 
-const ENV_EMAIL = (process.env.ADMIN_EMAIL || "admin@example.com").toLowerCase();
-const ENV_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
+const ENV_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
+const ENV_PASSWORD = process.env.ADMIN_PASSWORD || "";
+
+// Production'da şifre zorunlu olmalı
+if (process.env.NODE_ENV === "production" && (!ENV_EMAIL || !ENV_PASSWORD)) {
+  throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in production");
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({} as any));

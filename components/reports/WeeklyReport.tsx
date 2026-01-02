@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 import { exportToPDF } from "@/lib/pdfExport";
 
 function getTodayYmd() {

@@ -1,26 +1,13 @@
-// ============================================
-// Mini Dashboard Widget'ları
-// ============================================
-
 "use client";
 
 import React, { useMemo } from "react";
-import { Users, FileText, Calendar, TrendingUp, AlertCircle, Clock } from "lucide-react";
-import { CaseFile, Teacher, PdfAppointment } from "@/types";
+import { Users, Clock, TrendingUp } from "lucide-react";
 import { findBestTeacher } from "@/lib/scoring";
 import { useAppStore } from "@/stores/useAppStore";
 import QueueWidget from "./QueueWidget";
 
-interface MiniWidgetsProps {
-    teachers: Teacher[];
-    cases: CaseFile[];
-    pdfEntries: PdfAppointment[];
-    history: Record<string, CaseFile[]>;
-    isAdmin?: boolean;
-}
-
-export default function MiniWidgets({ teachers, cases, pdfEntries, history, isAdmin = false }: MiniWidgetsProps) {
-    const settings = useAppStore((state) => state.settings);
+export default function MiniWidgets() {
+    const { settings, teachers, cases, pdfEntries, history, isAdmin } = useAppStore();
 
     // 1. Öğretmen Özeti
     const teacherStats = useMemo(() => {

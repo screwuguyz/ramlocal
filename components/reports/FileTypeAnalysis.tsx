@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 import { exportToPDF } from "@/lib/pdfExport";
 
 const MONTHS_TR = [
@@ -64,7 +64,7 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
       const byMonth = MONTHS_TR.map((_, monthIdx) => {
         const month = monthIdx + 1;
         const monthDates = getMonthDates(year, month);
-        const monthCases = typeCases.filter(c => 
+        const monthCases = typeCases.filter(c =>
           monthDates.includes(c.createdAt.slice(0, 10))
         );
 
@@ -72,8 +72,8 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
           month,
           count: monthCases.length,
           totalPoints: monthCases.reduce((sum, c) => sum + c.score, 0),
-          avgPoints: monthCases.length > 0 
-            ? monthCases.reduce((sum, c) => sum + c.score, 0) / monthCases.length 
+          avgPoints: monthCases.length > 0
+            ? monthCases.reduce((sum, c) => sum + c.score, 0) / monthCases.length
             : 0,
         };
       });
@@ -84,8 +84,8 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
         color: type.color,
         totalCount: typeCases.length,
         totalPoints: typeCases.reduce((sum, c) => sum + c.score, 0),
-        avgPoints: typeCases.length > 0 
-          ? typeCases.reduce((sum, c) => sum + c.score, 0) / typeCases.length 
+        avgPoints: typeCases.length > 0
+          ? typeCases.reduce((sum, c) => sum + c.score, 0) / typeCases.length
           : 0,
         byMonth,
       };
@@ -102,8 +102,8 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
     return {
       totalCount: allYearCases.length,
       totalPoints: allYearCases.reduce((sum, c) => sum + c.score, 0),
-      avgPoints: allYearCases.length > 0 
-        ? allYearCases.reduce((sum, c) => sum + c.score, 0) / allYearCases.length 
+      avgPoints: allYearCases.length > 0
+        ? allYearCases.reduce((sum, c) => sum + c.score, 0) / allYearCases.length
         : 0,
     };
   }, [allCases, year]);
@@ -275,9 +275,8 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
                   return (
                     <Card
                       key={type.type}
-                      className={`border-2 cursor-pointer transition-all hover:shadow-lg ${
-                        selectedType === type.type ? `border-${type.color}-500` : ""
-                      }`}
+                      className={`border-2 cursor-pointer transition-all hover:shadow-lg ${selectedType === type.type ? `border-${type.color}-500` : ""
+                        }`}
                       onClick={() => setSelectedType(selectedType === type.type ? null : type.type)}
                     >
                       <CardContent className="pt-4">
@@ -329,7 +328,7 @@ export default function FileTypeAnalysis({ teachers, cases, history }: Props) {
                     </thead>
                     <tbody>
                       {selectedTypeDetail.byMonth.map((month, idx) => {
-                        const monthlyTotal = yearlyTypeData.reduce((sum, t) => 
+                        const monthlyTotal = yearlyTypeData.reduce((sum, t) =>
                           sum + t.byMonth[idx].count, 0
                         );
                         const monthlyPercentage = monthlyTotal > 0

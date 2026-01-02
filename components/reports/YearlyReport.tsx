@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 import { exportToPDF } from "@/lib/pdfExport";
 
 const MONTHS_TR = [

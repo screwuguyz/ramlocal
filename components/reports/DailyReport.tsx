@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 
 function daysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();

@@ -52,6 +52,8 @@ export const DEFAULT_SETTINGS: Settings = {
     scoreTypeI: 3,
     backupBonusAmount: 3,
     absencePenaltyAmount: 3,
+    musicUrl: "",
+    musicPlaying: false,
 };
 
 // ---- Dosya Türü Etiketleri

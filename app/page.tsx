@@ -31,397 +31,91 @@ import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
 import { Calendar as CalendarIcon, Trash2, Search, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer, Loader2, Inbox, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 
+
 // === YENİ MODÜLER BİLEŞENLER ===
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionModal from "@/components/modals/VersionModal";
 import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
+import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCard";
 import { useAppStore } from "@/stores/useAppStore";
+// Merkezi tipler ve utility'ler
+import type { Teacher, CaseFile, EArchiveEntry, Announcement, PdfAppointment, Settings } from "@/types";
+import { uid, humanType, csvEscape } from "@/lib/utils";
+import { nowISO, getTodayYmd, ymdLocal, ymOf, daysInMonth } from "@/lib/date";
+import { LS_KEYS, APP_VERSION, CHANGELOG, DEFAULT_SETTINGS } from "@/lib/constants";
+import TeacherList from "@/components/teachers/TeacherList";
+import CaseList from "@/components/cases/CaseList";
+import { logger } from "@/lib/logger";
+import { notifyTeacher } from "@/lib/notifications";
+import { caseDescription } from "@/lib/scoring";
 
 
 
 
 
-// --- Tipler
-export type Teacher = {
-  id: string;
-  name: string;
-  isAbsent: boolean;
-  absentDay?: string; // Devamsızlık tarihi (YYYY-MM-DD) - rollover için gerekli
-  yearlyLoad: number;
-  monthly?: Record<string, number>;
-  active: boolean;
-  pushoverKey?: string;
-  isTester: boolean; // <-- YENİ: Testör
-  backupDay?: string;
-};
-type Announcement = { id: string; text: string; createdAt: string };
-type PdfAppointment = {
-  id: string;
-  time: string;
-  name: string;
-  fileNo: string;
-  extra?: string;
-};
+// Utility fonksiyonları artık lib'den import ediliyor
+// Alias for backward compatibility
+const caseDesc = caseDescription;
 
-export type CaseFile = {
-  id: string;
-  student: string;
-  fileNo?: string;
-  score: number;
-  createdAt: string;      // ISO
-  assignedTo?: string;    // teacher.id
-  type: "YONLENDIRME" | "DESTEK" | "IKISI";
-  isNew: boolean;
-  diagCount: number;
-  isTest: boolean;
-  assignReason?: string;
-  absencePenalty?: boolean;
-  backupBonus?: boolean;
-  sourcePdfEntry?: PdfAppointment; // Randevu listesinden geldiyse, geri yükleme için
-}
+// LocalStorage anahtarları için alias'lar (geriye uyumluluk için)
+const LS_TEACHERS = LS_KEYS.TEACHERS;
+const LS_CASES = LS_KEYS.CASES;
+const LS_HISTORY = LS_KEYS.HISTORY;
+const LS_LAST_ROLLOVER = LS_KEYS.LAST_ROLLOVER;
+const LS_ANNOUNCEMENTS = LS_KEYS.ANNOUNCEMENTS;
+const LS_SETTINGS = LS_KEYS.SETTINGS;
+const LS_PDF_ENTRIES = LS_KEYS.PDF_ENTRIES;
+const LS_PDF_DATE = LS_KEYS.PDF_DATE;
+const LS_PDF_DATE_ISO = LS_KEYS.PDF_DATE_ISO;
+const LS_E_ARCHIVE = LS_KEYS.E_ARCHIVE;
+const LS_LAST_ABSENCE_PENALTY = LS_KEYS.LAST_ABSENCE_PENALTY;
+const LS_LAST_SEEN_VERSION = LS_KEYS.LAST_SEEN_VERSION;
+// Utility fonksiyonları artık lib/utils.ts ve lib/date.ts'den import ediliyor
 
-// E-Arşiv için tip
-export type EArchiveEntry = {
-  id: string; // case.id
-  student: string;
-  fileNo?: string;
-  assignedToName: string;
-  createdAt: string; // ISO
-};
-function caseDesc(c: CaseFile) {
-  if (c.absencePenalty) {
-    return c.assignReason || "Devamsızlık sonrası denge puanı (otomatik)";
-  }
-  let s = `Tür: ${humanType(c.type)} • Yeni: ${c.isNew ? "Evet" : "Hayır"} • Tanı: ${c.diagCount ?? 0}`;
-  if (c.isTest) s += " • Test";
-  if (c.assignReason) s += ` • Neden: ${c.assignReason}`;
-  return s;
-}
-async function notifyTeacher(userKey: string, title: string, message: string) {
-  if (!userKey) return; // key yoksa deneme
-  try {
-    const res = await fetch("/api/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userKey,
-        title: title || "Yeni Dosya Atandı",
-        message: message || "",
-        priority: 0, // normal bildirim (tekrar yok)
-      }),
-    });
-    // Hata olursa console'a yaz (opsiyonel)
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
-      console.warn("notify failed", j);
-    }
-  } catch (e) {
-    console.warn("notify error", e);
-  }
-}
+// Settings tipi ve DEFAULT_SETTINGS artık @/types ve @/lib/constants'dan import ediliyor
 
-// ---- Yerel depolama anahtarları
-const LS_TEACHERS = "dosya_atama_teachers_v2";
-const LS_CASES = "dosya_atama_cases_v2";
-const LS_HISTORY = "dosya_atama_history_v1";      // YYYY-MM-DD -> CaseFile[]
-const LS_LAST_ROLLOVER = "dosya_atama_last_rollover";
-const LS_ANNOUNCEMENTS = "dosya_atama_announcements_v1";
-const LS_SETTINGS = "dosya_atama_settings_v1";
-const LS_PDF_ENTRIES = "dosya_atama_pdf_entries_v1";
-const LS_PDF_DATE = "dosya_atama_pdf_date_v1";
-const LS_PDF_DATE_ISO = "dosya_atama_pdf_date_iso_v1";
-const LS_E_ARCHIVE = "dosya_atama_e_archive_v1"; // YENİ E-ARŞİV
-const LS_LAST_ABSENCE_PENALTY = "dosya_atama_last_absence_penalty";
-const LS_LAST_SEEN_VERSION = "dosya_atama_last_seen_version";
+// DailyAppointmentsCard bileşeni @/components/appointments/DailyAppointmentsCard.tsx dosyasına taşındı.
 
-// ---- Versiyon ve Changelog
-const APP_VERSION = "2.1.0";
-const CHANGELOG: Record<string, string[]> = {
-  "2.1.0": [
-    "Landing page animasyonları eklendi",
-    "Dosya atama bildirimi popup'ı eklendi",
-    "Versiyon bildirimi sistemi eklendi"
-  ],
-  "2.0.0": [
-    "Yedek başkan ve devamsızlık için ayarlanabilir puan sistemi",
-    "Günlük raporda canlı puan gösterimi",
-    "Next.js 15.5.7 güvenlik güncellemesi"
-  ]
-};
-// ---- Tarih yardımcıları
-function daysInMonth(year: number, month: number) { // month: 1-12
-  return new Date(year, month, 0).getDate();
-}
-function ymOf(dateIso: string) {
-  return dateIso.slice(0, 7); // YYYY-MM
-}
-function nowISO() {
-  // Simülasyon modunda simüle edilen tarihi kullan
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    const simDate = params.get("simDate");
-    if (simDate && /^\d{4}-\d{2}-\d{2}$/.test(simDate)) {
-      const now = new Date();
-      return `${simDate}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}.000Z`;
-    }
-  }
-  return new Date().toISOString();
-}
-function ymdLocal(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-// ---- SİMÜLASYON: URL'de ?simDate=2025-12-06 ile tarih override
-function getSimulatedDate(): Date {
-  if (typeof window === "undefined") return new Date();
-  const params = new URLSearchParams(window.location.search);
-  const simDate = params.get("simDate");
-  if (simDate && /^\d{4}-\d{2}-\d{2}$/.test(simDate)) {
-    return new Date(simDate + "T12:00:00");
-  }
-  return new Date();
-}
-function getTodayYmd(): string {
-  return ymdLocal(getSimulatedDate());
-}
-function csvEscape(v: string | number) {
-  const s = String(v ?? "");
-  if (s.includes(",") || s.includes("\n") || s.includes("\"")) {
-    return '"' + s.replaceAll('"', '""') + '"';
-  }
-  return s;
-}
-
-// Küçük benzersiz id üretici
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
-// İnsan okunur dosya türü
-function humanType(v?: "YONLENDIRME" | "DESTEK" | "IKISI") {
-  return v === "YONLENDIRME" ? "Yönlendirme" : v === "DESTEK" ? "Destek" : v === "IKISI" ? "İkisi" : "—";
-}
-
-// ---- Ayarlar: günlük limit ve puan ağırlıkları
-type Settings = {
-  dailyLimit: number;       // öğretmen başına günlük dosya
-  scoreTest: number;        // test dosyası puanı
-  scoreNewBonus: number;    // yeni dosya bonusu
-  scoreTypeY: number;       // yönlendirme
-  scoreTypeD: number;       // destek
-  scoreTypeI: number;       // ikisi
-  // Yedek başkan bonus ayarları (her zaman en yüksek + X)
-  backupBonusAmount: number;                   // X değeri (varsayılan 3)
-  // Devamsızlık cezası ayarları (her zaman en düşük - X)
-  absencePenaltyAmount: number;                // Devamsızlık ceza miktarı (en düşük - X)
-  musicUrl?: string;
-  musicPlaying?: boolean;
-};
-
-const DEFAULT_SETTINGS: Settings = {
-  dailyLimit: 5,
-  scoreTest: 10,
-  scoreNewBonus: 1,
-  scoreTypeY: 1,
-  scoreTypeD: 2,
-  scoreTypeI: 3,
-  backupBonusAmount: 3,
-  absencePenaltyAmount: 3,
-  musicUrl: "",
-  musicPlaying: false,
-};
-
-// Günlük Randevular Kartı (Bileşen)
-function DailyAppointmentsCard({
-  pdfDate,
-  pdfLoading,
-  pdfEntries,
-  selectedPdfEntryId,
-  onShowDetails,
-  isAdmin,
-  onApplyEntry,
-  onRemoveEntry,
-  onPrint,
-  onClearAll,
-  cases,
-  history,
-}: {
-  pdfDate: string | null;
-  pdfLoading: boolean;
-  pdfEntries: PdfAppointment[];
-  selectedPdfEntryId: string | null;
-  onShowDetails: (date?: Date) => void;
-  isAdmin?: boolean;
-  onApplyEntry?: (entry: PdfAppointment) => void;
-  onRemoveEntry?: (id: string) => void;
-  onPrint?: () => void;
-  onClearAll?: () => void;
-  cases?: CaseFile[];
-  history?: Record<string, CaseFile[]>;
-}) {
-  return (
-    <Card className="border border-emerald-200 bg-emerald-50/70">
-      <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <CardTitle>
-          📆 Günlük RAM Randevuları
-          {pdfDate && <span className="ml-2 text-sm text-emerald-700 font-normal">({pdfDate})</span>}
-        </CardTitle>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className="w-[240px] justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {pdfDate ? pdfDate : <span>Tarih seç</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" onSelect={(date) => onShowDetails(date)} initialFocus />
-          </PopoverContent>
-        </Popover>
-        <div className="flex items-center gap-2">
-          {onClearAll && (
-            <Button size="sm" variant="destructive" onClick={onClearAll} disabled={pdfEntries.length === 0}>
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              PDF'yi Temizle
-            </Button>
-          )}
-          {onPrint && (
-            <Button size="sm" variant="outline" onClick={onPrint} disabled={pdfEntries.length === 0}>
-              <Printer className="h-4 w-4 mr-1.5" />
-              Yazdır
-            </Button>
-          )}
-          <Button size="sm" variant="outline" onClick={() => onShowDetails()}>
-            Detaylı Gör
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {pdfLoading ? (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-600">
-            <Loader2 className="h-8 w-8 animate-spin mb-3 text-emerald-600" />
-            <p className="text-sm">Randevular yükleniyor...</p>
-          </div>
-        ) : pdfEntries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Inbox className="h-12 w-12 mb-3 text-slate-400" />
-            <p className="text-sm font-medium">Henüz PDF içe aktarılmadı</p>
-            <p className="text-xs text-slate-400 mt-1">Randevu listesi boş</p>
-          </div>
-        ) : (
-          <div className="overflow-auto border rounded-md max-h-64">
-            <table className="min-w-full text-xs md:text-sm">
-              <thead className="bg-emerald-100 text-emerald-900">
-                <tr>
-                  <th className="p-2 text-left">Saat</th>
-                  <th className="p-2 text-left">Ad Soyad</th>
-                  <th className="p-2 text-left">Dosya No</th>
-                  <th className="p-2 text-left">Açıklama</th>
-                  {isAdmin && <th className="p-2 text-right">İşlem</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {pdfEntries.map((entry) => {
-                  // Bu randevunun atanıp atanmadığını kontrol et
-                  let isAssigned = false;
-                  if (cases || history) {
-                    // Eşleştirme fonksiyonu: ID veya saat+isim+dosyaNo kombinasyonu
-                    const matchesEntry = (sourceEntry: PdfAppointment | undefined) => {
-                      if (!sourceEntry) return false;
-                      // Önce ID'ye göre kontrol et (hızlı)
-                      if (sourceEntry.id === entry.id) return true;
-                      // ID eşleşmezse, saat + isim + dosya numarasına göre kontrol et
-                      // (PDF geri yüklendiğinde ID'ler değişebilir ama bu alanlar aynı kalır)
-                      return (
-                        sourceEntry.time === entry.time &&
-                        sourceEntry.name === entry.name &&
-                        (sourceEntry.fileNo || "") === (entry.fileNo || "")
-                      );
-                    };
-
-                    // cases içinde kontrol et
-                    const inCases = cases?.some(c => matchesEntry(c.sourcePdfEntry)) || false;
-                    // history içinde kontrol et
-                    const inHistory = history ? Object.values(history).some(dayCases =>
-                      dayCases.some(c => matchesEntry(c.sourcePdfEntry))
-                    ) : false;
-                    isAssigned = inCases || inHistory;
-                  }
-
-                  return (
-                    <tr
-                      key={entry.id}
-                      className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "relative opacity-75" : ""}`}
-                    >
-                      {isAssigned && (
-                        <div className="absolute inset-0 pointer-events-none z-10">
-                          <div className="absolute top-1/2 left-0 right-0 h-1 bg-red-500 transform -translate-y-1/2 shadow-sm"></div>
-                        </div>
-                      )}
-                      <td className={`p-2 font-semibold relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.time}</td>
-                      <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.name}</td>
-                      <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.fileNo || "-"}</td>
-                      <td className={`p-2 text-xs text-slate-600 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.extra || "-"}</td>
-                      {isAdmin && onApplyEntry && onRemoveEntry && (
-                        <td className="p-2 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" variant="outline" onClick={() => onApplyEntry(entry)}>
-                              Forma Aktar
-                            </Button>
-                            <Button size="icon" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => onRemoveEntry(entry.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function DosyaAtamaApp() {
   // Queue state from store
-  const { queue, setQueue } = useAppStore();
+  const {
+    queue, setQueue,
+    teachers, setTeachers, addTeacher, updateTeacher, removeTeacher,
+    cases, setCases, addCase: addCaseAction, updateCase, removeCase: removeCaseAction,
+    history, setHistory,
+    eArchive, setEArchive, addToEArchive,
+    absenceRecords, setAbsenceRecords,
+    announcements, setAnnouncements, addAnnouncement, removeAnnouncement,
+    pdfEntries, setPdfEntries,
+    pdfDate, setPdfDate,
+    pdfDateIso, setPdfDateIso,
+    selectedPdfEntryId, setSelectedPdfEntryId,
+    settings, setSettings, updateSettings,
+    liveStatus: live, setLiveStatus: setLive,
+    soundOn, setSoundOn,
+    toasts, addToast: toast, removeToast,
+    assignmentPopup, showAssignmentPopup, hideAssignmentPopup,
+    isAdmin, setIsAdmin,
+    hydrated, setHydrated
+  } = useAppStore();
 
-  // ---- Öğretmenler
-  const [teachers, setTeachers] = useState<Teacher[]>([])
+  // ---- ARŞİV ve DİĞERLERİ (Store'da var ama yerel türevler olabilir)
+  const lastRollover = useAppStore(s => s.lastRollover);
+  const setLastRollover = useAppStore(s => s.setLastRollover);
+  const lastAbsencePenalty = useAppStore(s => s.lastAbsencePenalty);
+  const setLastAbsencePenalty = useAppStore(s => s.setLastAbsencePenalty);
 
-  // ---- Dosyalar (BUGÜN)
-  const [cases, setCases] = useState<CaseFile[]>([]);
-
-  // ---- ARŞİV (günlük)
-  const [history, setHistory] = useState<Record<string, CaseFile[]>>({});
-  const [lastRollover, setLastRollover] = useState<string>("");
-  const [lastAbsencePenalty, setLastAbsencePenalty] = useState<string>("");
-  // ---- E-ARŞİV (sürekli)
-  const [eArchive, setEArchive] = useState<EArchiveEntry[]>([]);
-  // ---- DEVAMSIZLIK KAYITLARI (Supabase'de saklanır)
-  const [absenceRecords, setAbsenceRecords] = useState<Array<{ teacherId: string; date: string }>>([]);
-
-  // --- Canlı yayın (Supabase) - Broadcast kaldırıldı, sadece postgres_changes kullanılıyor
-  // const clientId = React.useMemo(() => uid(), []); // Broadcast kaldırıldı, artık gerekli değil
-  // const channelRef = React.useRef<RealtimeChannel | null>(null); // Broadcast kaldırıldı
-  const lastAppliedAtRef = React.useRef<string>("") // fetchCentralState'te kullanılıyor
+  // Refler ve Local UI State
+  const lastAppliedAtRef = React.useRef<string>("")
   const teachersRef = React.useRef<Teacher[]>([]);
   const casesRef = React.useRef<CaseFile[]>([]);
   const lastAbsencePenaltyRef = React.useRef<string>("");
-  const supabaseTeacherCountRef = React.useRef<number>(0); // Koruma: Supabase'deki öğretmen sayısı
-  const [live, setLive] = useState<"connecting" | "online" | "offline">("connecting");
+  const supabaseTeacherCountRef = React.useRef<number>(0);
   const studentRef = React.useRef<HTMLInputElement | null>(null);
+
   // ---- Öneri/Şikayet modal durumu
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [fbName, setFbName] = useState("");
@@ -434,53 +128,44 @@ export default function DosyaAtamaApp() {
   const [fileNo, setFileNo] = useState("");
   const [type, setType] = useState<"YONLENDIRME" | "DESTEK" | "IKISI">("YONLENDIRME");
   const [isNew, setIsNew] = useState(false);
-  const [diagCount, setDiagCount] = useState(0); // 0-6
-  const [isTestCase, setIsTestCase] = useState(false); // <-- YENİ: Test dosyası
-  const [customDate, setCustomDate] = useState(""); // <-- YENİ: Geçmiş tarih için
-  const [newTeacherName, setNewTeacherName] = useState(""); // <-- yeni öğretmen ekleme
-  const [newTeacherBirthDate, setNewTeacherBirthDate] = useState(""); // <-- doğum tarihi (MM-DD)
-  // Geçici Pushover User Key girişleri (öğretmen başına)
+  const [diagCount, setDiagCount] = useState(0);
+  const [isTestCase, setIsTestCase] = useState(false);
+  const [customDate, setCustomDate] = useState("");
+  const [newTeacherName, setNewTeacherName] = useState("");
+  const [newTeacherBirthDate, setNewTeacherBirthDate] = useState("");
+
+  // Geçici Pushover User Key girişleri
   const [editPushover, setEditPushover] = useState<Record<string, string>>({});
-  // Pushover input görünürlüğü (öğretmen başına)
   const [editKeyOpen, setEditKeyOpen] = useState<Record<string, boolean>>({});
+
   // Admin manuel atama alanları
   const [manualTeacherId, setManualTeacherId] = useState<string>("");
   const [manualReason, setManualReason] = useState<string>("");
-  // Manuel atama alanı (ref gerekirse ileride kullanırız)
+
   const manualAssignRef = React.useRef<HTMLDivElement | null>(null);
   const pdfInputRef = React.useRef<HTMLInputElement | null>(null);
-  // Duyurular (gün içinde gösterilir, gece sıfırlanır)
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [pdfEntries, setPdfEntries] = useState<PdfAppointment[]>([]);
 
+  // Duyuru ve PDF UI State (Data store'dan geliyor)
+  const [announcementText, setAnnouncementText] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfUploadError, setPdfUploadError] = useState<string | null>(null);
-  const [selectedPdfEntryId, setSelectedPdfEntryId] = useState<string | null>(null);
-  const [pdfDate, setPdfDate] = useState<string | null>(null);
-  const [pdfDateIso, setPdfDateIso] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const activePdfEntry = useMemo(() => pdfEntries.find(e => e.id === selectedPdfEntryId) || null, [pdfEntries, selectedPdfEntryId]);
-  // Atanmamış randevuları say (kırmızı çizilmemiş olanlar)
+
+  // Pending Appointments Count calculation
   const pendingAppointmentsCount = useMemo(() => {
-    // Eşleştirme fonksiyonu: ID veya saat+isim+dosyaNo kombinasyonu
     const isEntryAssigned = (entry: PdfAppointment) => {
-      // cases içinde kontrol et
       const inCases = cases.some((c: CaseFile) => {
         const source = c.sourcePdfEntry;
         if (!source) return false;
-        // Önce ID'ye göre kontrol et
         if (source.id === entry.id) return true;
-        // ID eşleşmezse, saat + isim + dosya numarasına göre kontrol et
         return (
           source.time === entry.time &&
           source.name === entry.name &&
           (source.fileNo || "") === (entry.fileNo || "")
         );
       });
-
-      // history içinde kontrol et
       const inHistory = Object.values(history).some((dayCases: CaseFile[]) =>
         dayCases.some((c: CaseFile) => {
           const source = c.sourcePdfEntry;
@@ -493,56 +178,31 @@ export default function DosyaAtamaApp() {
           );
         })
       );
-
       return inCases || inHistory;
     };
-
-    // Toplam randevu sayısından atananları çıkar
     return pdfEntries.filter(entry => !isEntryAssigned(entry)).length;
   }, [cases, history, pdfEntries]);
-  const [isDragging, setIsDragging] = useState(false); // Sürükle-bırak durumu
-  // Persist hydration guard: LS'den ilk yükleme bitene kadar yazma yapma
-  const [hydrated, setHydrated] = useState(false);
+
+  const [isDragging, setIsDragging] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"general" | "theme" | "widgets">("general");
-  // Ayarlar (persist)
-  const [settings, setSettings] = useState<Settings>(() => {
-    try {
-      const raw = localStorage.getItem(LS_SETTINGS);
-      if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } as Settings;
-    } catch { }
-    return DEFAULT_SETTINGS;
-  });
-  useEffect(() => {
-    try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch { }
-  }, [settings]);
-  // Basit toast altyapısı
-  const [toasts, setToasts] = useState<Array<{ id: string; text: string }>>([]);
-  function toast(text: string) {
-    const id = uid();
-    setToasts((prev) => [...prev, { id, text }]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
-  }
 
-  // Dosya atama bildirimi (büyük animasyonlu popup)
-  const [assignmentPopup, setAssignmentPopup] = useState<{ teacherName: string; studentName: string; score: number } | null>(null);
-  function showAssignmentPopup(teacherName: string, studentName: string, score: number) {
-    setAssignmentPopup({ teacherName, studentName, score });
-    window.setTimeout(() => {
-      setAssignmentPopup(null);
-    }, 3000);
-  }
-  const [soundOn, setSoundOn] = useState<boolean>(() => {
-    try { return localStorage.getItem("sound_on") !== "0"; } catch { return true; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("sound_on", soundOn ? "1" : "0"); } catch { }
-    if (soundOn) resumeAudioIfNeeded();
-  }, [soundOn]);
-  // Keep a ref in sync with soundOn to avoid stale closures in long-lived listeners
+  // Sound On Ref (Store'dan gelen değeri ref'te tutmak için)
   const soundOnRef = React.useRef(soundOn);
+
+  // Login Modal State
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginRemember, setLoginRemember] = useState(true);
+  const [showVersionPopup, setShowVersionPopup] = useState(false);
+
+  // Sound Effect
+  useEffect(() => {
+    // Sound on logic managed by store or here? Store has soundOn.
+    // Logic to resume audio context
+  }, [soundOn]);
+
   useEffect(() => { soundOnRef.current = soundOn; }, [soundOn]);
   // Keep a ref in sync with settings to avoid stale closures in callbacks
   const settingsRef = React.useRef(settings);
@@ -690,7 +350,7 @@ export default function DosyaAtamaApp() {
     if (!text) return;
     const createdAt = nowISO();
     const a: Announcement = { id: uid(), text, createdAt };
-    setAnnouncements(prev => [...prev, a]);
+    addAnnouncement(a);
     setAnnouncementText("");
     toast("Duyuru eklendi");
     // Tüm pushoverKey'i olan öğretmenlere gönder
@@ -706,9 +366,7 @@ export default function DosyaAtamaApp() {
     }
   }
 
-  function removeAnnouncement(id: string) {
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
-  }
+
 
   const fetchPdfEntriesFromServer = React.useCallback(async (date?: Date) => {
     setPdfLoading(true);
@@ -731,7 +389,7 @@ export default function DosyaAtamaApp() {
       setPdfDate(json?.date || null);
       setPdfDateIso(json?.dateIso || null);
     } catch (err) {
-      console.warn("pdf fetch failed", err);
+      logger.warn("pdf fetch failed", err);
       setPdfEntries([]);
       setPdfDate(null);
       setPdfDateIso(null);
@@ -744,26 +402,26 @@ export default function DosyaAtamaApp() {
     try {
       const res = await fetch(`/api/state?ts=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) {
-        console.error("[fetchCentralState] HTTP error:", res.status);
+        logger.error("[fetchCentralState] HTTP error:", res.status);
         return;
       }
       const s = await res.json();
       // Supabase hatası varsa logla
       if (s._error) {
-        console.error("[fetchCentralState] Supabase error:", s._error);
+        logger.error("[fetchCentralState] Supabase error:", s._error);
         toast(`Supabase bağlantı hatası: ${s._error}`);
       }
 
       // Supabase'den gelen öğretmen sayısını kaydet (koruma için)
       const supabaseTeacherCount = s.teachers?.length || 0;
       supabaseTeacherCountRef.current = supabaseTeacherCount;
-      console.log("[fetchCentralState] Supabase teacher count:", supabaseTeacherCount);
+      logger.debug("[fetchCentralState] Supabase teacher count:", supabaseTeacherCount);
 
       const incomingTs = Date.parse(String(s.updatedAt || 0));
       const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
       // Eğer gelen veri daha eskiyse veya aynıysa, güncelleme yapma (race condition önleme)
       if (!isNaN(incomingTs) && incomingTs <= currentTs) {
-        console.log("[fetchCentralState] Skipping update - incoming data is older or same");
+        logger.debug("[fetchCentralState] Skipping update - incoming data is older or same");
         return;
       }
       lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
@@ -776,10 +434,10 @@ export default function DosyaAtamaApp() {
       // Eğer localStorage henüz yüklenmemişse ve Supabase'de öğretmen yoksa, öğretmenleri güncelleme
       // (localStorage yüklemesi tamamlanana kadar bekle)
       if (!hydrated && supabaseTeachers.length === 0) {
-        console.log("[fetchCentralState] localStorage henüz yüklenmedi, öğretmenleri güncellemiyoruz.");
+        logger.debug("[fetchCentralState] localStorage henüz yüklenmedi, öğretmenleri güncellemiyoruz.");
         // Öğretmenleri güncelleme, sadece diğer verileri güncelle
       } else if (supabaseTeachers.length === 0 && currentTeachers.length > 0) {
-        console.warn("[fetchCentralState] Supabase'de öğretmen yok ama mevcut state'te var. Mevcut state'i koruyoruz.");
+        logger.warn("[fetchCentralState] Supabase'de öğretmen yok ama mevcut state'te var. Mevcut state'i koruyoruz.");
         // Öğretmenleri güncelleme, sadece diğer verileri güncelle
       } else if (supabaseTeachers.length > 0) {
         // Supabase'de öğretmen varsa, onları kullan
@@ -795,7 +453,7 @@ export default function DosyaAtamaApp() {
         const today = getTodayYmd();
         setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
       }
-      if (s.settings) setSettings((prev) => ({ ...prev, ...s.settings }));
+      if (s.settings) updateSettings(s.settings);
       // Tema ayarlarını Supabase'den yükle
       if (s.themeSettings) {
         loadThemeFromSupabase(s.themeSettings);
@@ -827,7 +485,7 @@ export default function DosyaAtamaApp() {
         const localCalledTime = latestLocalCalled.updatedAt ? new Date(latestLocalCalled.updatedAt).getTime() : 0;
         const now = Date.now();
         if (now - localCalledTime < 2000) {
-          console.log("[fetchCentralState] Keeping local queue - recent call detected");
+          logger.debug("[fetchCentralState] Keeping local queue - recent call detected");
           // Local queue'yu koru, Supabase'e sync olmasını bekle
           return;
         }
@@ -836,23 +494,23 @@ export default function DosyaAtamaApp() {
       // Normal durum: Supabase'de queue varsa onu kullan
       if (Array.isArray(s.queue)) {
         if (s.queue.length > 0) {
-          console.log("[fetchCentralState] Loading queue from Supabase:", s.queue.length, "tickets");
+          logger.debug("[fetchCentralState] Loading queue from Supabase:", s.queue.length, "tickets");
           setQueue(s.queue);
         } else {
-          console.log("[fetchCentralState] Supabase queue is empty array");
+          logger.debug("[fetchCentralState] Supabase queue is empty array");
           setQueue([]);
         }
       } else {
-        console.log("[fetchCentralState] No queue property in Supabase state");
+        logger.debug("[fetchCentralState] No queue property in Supabase state");
         if (Array.isArray(currentLocalQueue) && currentLocalQueue.length > 0) {
-          console.log("[fetchCentralState] Keeping local queue:", currentLocalQueue.length, "tickets");
+          logger.debug("[fetchCentralState] Keeping local queue:", currentLocalQueue.length, "tickets");
         } else {
           setQueue([]);
         }
       }
-      console.log("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0, "queue:", s.queue?.length || 0);
+      logger.debug("[fetchCentralState] Loaded, teachers:", s.teachers?.length || 0, "eArchive:", s.eArchive?.length || 0, "absenceRecords:", s.absenceRecords?.length || 0, "queue:", s.queue?.length || 0);
     } catch (err) {
-      console.error("[fetchCentralState] Network error:", err);
+      logger.error("[fetchCentralState] Network error:", err);
     } finally {
       setCentralLoaded(true);
     }
@@ -890,7 +548,7 @@ export default function DosyaAtamaApp() {
       if (pdfInputRef.current) pdfInputRef.current.value = "";
       toast("PDF başarıyla içe aktarıldı");
     } catch (err) {
-      console.warn("pdf upload failed", err);
+      logger.warn("pdf upload failed", err);
       setPdfUploadError("Sunucuya ulaşılamadı.");
     } finally {
       setPdfUploading(false);
@@ -920,7 +578,7 @@ export default function DosyaAtamaApp() {
       if (pdfInputRef.current) pdfInputRef.current.value = "";
       toast("PDF kayıtları temizlendi");
     } catch (err) {
-      console.warn("pdf clear failed", err);
+      logger.warn("pdf clear failed", err);
       toast("PDF kayıtları silinemedi");
     }
   }
@@ -934,11 +592,11 @@ export default function DosyaAtamaApp() {
         if (!silent) toast(json?.error || "Kayıt silinemedi");
         return;
       }
-      setPdfEntries(prev => prev.filter(entry => entry.id !== id));
+      setPdfEntries(pdfEntries.filter(entry => entry.id !== id));
       if (selectedPdfEntryId === id) setSelectedPdfEntryId(null);
       if (!silent) toast("Kayıt silindi");
     } catch (err) {
-      console.warn("pdf delete failed", err);
+      logger.warn("pdf delete failed", err);
       if (!silent) toast("Kayıt silinemedi");
     }
   }
@@ -967,13 +625,11 @@ export default function DosyaAtamaApp() {
   const [reportMode, setReportMode] = useState<"none" | "monthly" | "daily" | "archive" | "e-archive" | "statistics" | "weekly" | "yearly" | "teacher-performance" | "file-type-analysis" | "calendar">("none");
 
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
-  // Admin oturum durumu
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  // Admin oturum durumu (Store'dan geliyor: isAdmin)
+
   const [centralLoaded, setCentralLoaded] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginRemember, setLoginRemember] = useState(true); // Beni hatırla
+  // Login modal durumu (Yukarıda tanımlı)
+
   const [viewMode, setViewMode] = useState<"landing" | "main" | "teacher-tracking" | "archive">("landing");
   const [archivePassword, setArchivePassword] = useState("");
   const [archiveAuthenticated, setArchiveAuthenticated] = useState(false);
@@ -983,8 +639,8 @@ export default function DosyaAtamaApp() {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(0);
   const [showPdfPanel, setShowPdfPanel] = useState<boolean | Date>(false);
   const [showRules, setShowRules] = useState(false);
-  // Versiyon bildirimi (admin olmayan kullanıcılar için)
-  const [showVersionPopup, setShowVersionPopup] = useState(false);
+  // Versiyon bildirimi (Yukarıda tanımlı)
+
   // Admin panel tab sistemi
   const [adminTab, setAdminTab] = useState<"files" | "teachers" | "reports" | "announcements" | "backup" | "timemachine">("files");
 
@@ -1008,7 +664,7 @@ export default function DosyaAtamaApp() {
           id: t.id,
           name: t.name,
           isAbsent: !!t.isAbsent,
-          absentDay: t.absentDay, // Devamsızlık tarihi
+
           yearlyLoad: Number(t.yearlyLoad || 0),
           monthly: t.monthly ?? {},
           active: t.active ?? true,
@@ -1123,7 +779,7 @@ export default function DosyaAtamaApp() {
       // Ctrl+Enter veya Cmd+Enter: Dosya ekle (admin ise)
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && isAdmin && student.trim()) {
         e.preventDefault();
-        addCase();
+        handleAddCase();
       }
     }
 
@@ -1209,7 +865,7 @@ export default function DosyaAtamaApp() {
     // KORUMA: Eğer Supabase'de öğretmen varsa ama local'de yoksa, yazma!
     // Bu, yeni tarayıcı/boş localStorage'ın Supabase verisini silmesini önler
     if (supabaseTeacherCountRef.current > 0 && teachers.length === 0) {
-      console.warn("[state POST] BLOCKED: Supabase has", supabaseTeacherCountRef.current, "teachers but local has 0. Refusing to overwrite.");
+      logger.warn("[state POST] BLOCKED: Supabase has", supabaseTeacherCountRef.current, "teachers but local has 0. Refusing to overwrite.");
       return;
     }
 
@@ -1220,7 +876,7 @@ export default function DosyaAtamaApp() {
     const currentQueue = useAppStore.getState().queue;
     if (!Array.isArray(currentQueue) || currentQueue.length === 0) {
       // Queue boş, Supabase'e yazma (queue sadece /api/queue veya admin panelinde değişiklik yapıldığında yazılmalı)
-      console.log("[state POST] Skipping queue sync - queue is empty (will be written by /api/queue endpoint)");
+      logger.debug("[state POST] Skipping queue sync - queue is empty (will be written by /api/queue endpoint)");
     }
 
     const ctrl = new AbortController();
@@ -1267,15 +923,15 @@ export default function DosyaAtamaApp() {
         .then(async (res) => {
           if (!res.ok) {
             const json = await res.json().catch(() => ({}));
-            console.error("[state POST] Error:", json);
+            logger.error("[state POST] Error:", json);
             toast(`Supabase kayıt hatası: ${json?.error || res.status}`);
           } else {
-            console.log("[state POST] Success, teachers:", teachers.length, "queue:", currentQueue.length);
+            logger.debug("[state POST] Success, teachers:", teachers.length, "queue:", currentQueue.length);
           }
         })
         .catch((err) => {
           if (err.name !== "AbortError") {
-            console.error("[state POST] Network error:", err);
+            logger.error("[state POST] Network error:", err);
           }
         });
     }, 300);
@@ -1312,7 +968,7 @@ export default function DosyaAtamaApp() {
           updatedAt: nowTs,
         }),
       }).catch((err) => {
-        console.error("[theme sync] Failed:", err);
+        logger.error("[theme sync] Failed:", err);
       });
     });
   }, [isAdmin, hydrated, teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords]);
@@ -1460,19 +1116,12 @@ export default function DosyaAtamaApp() {
       }
 
       const chosen = testers[0];
-
       const ym = ymOf(newCase.createdAt);
-      setTeachers((prev) =>
-        prev.map((t) =>
-          t.id === chosen.id
-            ? {
-              ...t,
-              yearlyLoad: t.yearlyLoad + newCase.score,
-              monthly: { ...(t.monthly || {}), [ym]: (t.monthly?.[ym] || 0) + newCase.score },
-            }
-            : t
-        )
-      );
+
+      updateTeacher(chosen.id, {
+        yearlyLoad: chosen.yearlyLoad + newCase.score,
+        monthly: { ...(chosen.monthly || {}), [ym]: (chosen.monthly?.[ym] || 0) + newCase.score },
+      });
 
       newCase.assignedTo = chosen.id;
       notifyAssigned(chosen, newCase);
@@ -1485,7 +1134,6 @@ export default function DosyaAtamaApp() {
     );
     if (!available.length) return null;
 
-    // 🔄 ZORUNLU ROTASYON: Son atanan kişiyi listeden ÇIKAR (birden fazla aday varsa)
     if (available.length > 1 && lastTid) {
       available = available.filter(t => t.id !== lastTid);
     }
@@ -1494,7 +1142,7 @@ export default function DosyaAtamaApp() {
     if (isFirstOfYear) {
       available.sort((a, b) => getPreviousYearLoad(a.id) - getPreviousYearLoad(b.id));
     } else {
-      // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
+      // Sıralama
       available.sort((a, b) => {
         const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
         if (byLoad !== 0) return byLoad;
@@ -1505,19 +1153,12 @@ export default function DosyaAtamaApp() {
     }
 
     const chosen = available[0];
-
     const ym = ymOf(newCase.createdAt);
-    setTeachers((prev) =>
-      prev.map((t) =>
-        t.id === chosen.id
-          ? {
-            ...t,
-            yearlyLoad: t.yearlyLoad + newCase.score,
-            monthly: { ...(t.monthly || {}), [ym]: (t.monthly?.[ym] || 0) + newCase.score },
-          }
-          : t
-      )
-    );
+
+    updateTeacher(chosen.id, {
+      yearlyLoad: chosen.yearlyLoad + newCase.score,
+      monthly: { ...(chosen.monthly || {}), [ym]: (chosen.monthly?.[ym] || 0) + newCase.score },
+    });
 
     newCase.assignedTo = chosen.id;
     notifyAssigned(chosen, newCase);
@@ -1526,7 +1167,7 @@ export default function DosyaAtamaApp() {
 
   const [triedAdd, setTriedAdd] = useState(false);
 
-  function addCase() {
+  function handleAddCase() {
     setTriedAdd(true);
     if (!student.trim()) {
       toast("Öğrenci adı gerekli");
@@ -1551,29 +1192,31 @@ export default function DosyaAtamaApp() {
     if (manualTeacherId) {
       newCase.assignedTo = manualTeacherId;
       newCase.assignReason = manualReason.trim() || undefined;
-      const ym = ymOf(newCase.createdAt);
-      setTeachers((prev) =>
-        prev.map((t) =>
-          t.id === manualTeacherId
-            ? {
-              ...t,
-              yearlyLoad: t.yearlyLoad + newCase.score,
-              monthly: { ...(t.monthly || {}), [ym]: (t.monthly?.[ym] || 0) + newCase.score },
-            }
-            : t
-        )
-      );
       const chosen = teachers.find((t) => t.id === manualTeacherId);
       if (chosen) {
+        const ym = ymOf(newCase.createdAt);
+        updateTeacher(chosen.id, {
+          yearlyLoad: chosen.yearlyLoad + newCase.score,
+          monthly: { ...(chosen.monthly || {}), [ym]: (chosen.monthly?.[ym] || 0) + newCase.score },
+        });
+        newCase.assignedTo = chosen.id;
         notifyAssigned(chosen, newCase);
         playAssignSound();
-        showAssignmentPopup(chosen.name, newCase.student, newCase.score);
+        showAssignmentPopup({
+          teacherName: chosen.name,
+          studentName: newCase.student,
+          score: newCase.score
+        });
       }
     } else {
       const chosenAuto = autoAssign(newCase);
       if (chosenAuto) {
         playAssignSound();
-        showAssignmentPopup(chosenAuto.name, newCase.student, newCase.score);
+        showAssignmentPopup({
+          teacherName: chosenAuto.name,
+          studentName: newCase.student,
+          score: newCase.score
+        });
       }
     }
     // Eğer PDF randevusundan geldiyse, kaynak bilgisini ekle
@@ -1581,11 +1224,11 @@ export default function DosyaAtamaApp() {
       newCase.sourcePdfEntry = activePdfEntry;
     }
 
-    setCases(prev => [newCase, ...prev]);
+    addCaseAction(newCase);
 
-    // Atama başarılı olduysa ve PDF randevusundan geldiyse, randevu listesinden sil (sadece local state'ten)
+    // Atama başarılı olduysa ve PDF randevusundan geldiyse, randevu listesinden sil
     if (selectedPdfEntryId) {
-      setPdfEntries(prev => prev.filter(e => e.id !== selectedPdfEntryId));
+      setPdfEntries(pdfEntries.filter(e => e.id !== selectedPdfEntryId));
       setSelectedPdfEntryId(null);
     }
 
@@ -1613,35 +1256,18 @@ export default function DosyaAtamaApp() {
     // Sadece atanmış dosyaları arşive ekle
     if (lastCase.assignedTo) {
       const newArchiveEntry: EArchiveEntry = {
-        id: lastCase.id, student: lastCase.student, fileNo: lastCase.fileNo || undefined,
-        assignedToName: teacherName(lastCase.assignedTo), createdAt: lastCase.createdAt,
+        id: lastCase.id, studentName: lastCase.student, fileNo: lastCase.fileNo || undefined,
+        teacherName: teacherName(lastCase.assignedTo), date: lastCase.createdAt.slice(0, 10),
       };
-      setEArchive(prev => [newArchiveEntry, ...prev]);
+      addToEArchive(newArchiveEntry);
     }
   }, [cases.length, cases[0]?.assignedTo]);
 
-  // ---- Öğretmen ekleme (yeni)
-  function addTeacher() {
-    const name = newTeacherName.trim();
-    if (!name) return;
-    const birthDate = newTeacherBirthDate.trim() || undefined;
 
-    // En düşük puanlı aktif öğretmenin puanını bul
-    const activeTeachers = teachers.filter(t => t.active);
-    const minLoad = activeTeachers.length > 0
-      ? Math.min(...activeTeachers.map(t => t.yearlyLoad))
-      : 0;
-
-    setTeachers(prev => [
-      { id: uid(), name, isAbsent: false, yearlyLoad: minLoad, monthly: {}, active: true, isTester: false, birthDate },
-      ...prev,
-    ]);
-    setNewTeacherName("");
-    setNewTeacherBirthDate("");
-  }
 
   // ---- Dosya silme (yükleri geri al)
   function removeCase(id: string, skipConfirm = false) {
+    const cases = useAppStore.getState().cases;
     const targetNow = cases.find(c => c.id === id);
     if (!targetNow) return;
 
@@ -1657,95 +1283,35 @@ export default function DosyaAtamaApp() {
 
     // Eğer PDF randevusundan geldiyse, randevu listesine geri ekle
     if (hasSourcePdf && targetNow.sourcePdfEntry) {
-      setPdfEntries(prev => [targetNow.sourcePdfEntry!, ...prev]);
+      setPdfEntries([targetNow.sourcePdfEntry!, ...useAppStore.getState().pdfEntries]);
       toast("Dosya geri alındı, randevu listesine eklendi");
     } else {
       toast("Dosya silindi");
     }
 
-    setCases(prev => {
-      const target = prev.find(c => c.id === id);
-      if (!target) return prev;
-      if (target.assignedTo) {
-        const ym = ymOf(target.createdAt);
-        setTeachers(ts => ts.map(t => {
-          if (t.id !== target.assignedTo) return t;
-          const nextMonthly = { ...(t.monthly || {}) };
-          nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) - target.score);
-          return {
-            ...t,
-            yearlyLoad: Math.max(0, t.yearlyLoad - target.score),
-            monthly: nextMonthly,
-          };
-        }));
+    // Öğretmen yükünü düşür
+    if (targetNow.assignedTo) {
+      const teachers = useAppStore.getState().teachers;
+      const t = teachers.find(x => x.id === targetNow.assignedTo);
+      if (t) {
+        const ym = ymOf(targetNow.createdAt);
+        const nextMonthly = { ...(t.monthly || {}) };
+        nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) - targetNow.score);
+        updateTeacher(t.id, {
+          yearlyLoad: Math.max(0, t.yearlyLoad - targetNow.score),
+          monthly: nextMonthly
+        });
       }
-      return prev.filter(c => c.id !== id);
-    });
-
-    // E-Arşiv'den de sil
-    setEArchive(prev => prev.filter(e => e.id !== id));
-  }
-
-  // ---- Öğretmen devamsızlık/aktiflik/silme/testör
-  function toggleAbsent(tid: string) {
-    const today = getTodayYmd();
-    // Önce mevcut durumu kontrol et
-    const currentTeacher = teachers.find(t => t.id === tid);
-    const newAbsent = !currentTeacher?.isAbsent;
-
-    setTeachers(prev => prev.map(t => {
-      if (t.id !== tid) return t;
-      return {
-        ...t,
-        isAbsent: newAbsent,
-        // Devamsız işaretlenirken tarihi kaydet, uygun yapılırken temizle
-        absentDay: newAbsent ? today : undefined
-      };
-    }));
-
-    // Devamsızlık kaydını Supabase'de sakla/sil
-    setAbsenceRecords(prev => {
-      if (newAbsent) {
-        // Devamsız yapılıyor - kayıt ekle
-        const newRecord = { teacherId: tid, date: today };
-        if (!prev.find(r => r.teacherId === tid && r.date === today)) {
-          return [...prev, newRecord];
-        }
-        return prev;
-      } else {
-        // Uygun yapılıyor - kaydı sil
-        return prev.filter(r => !(r.teacherId === tid && r.date === today));
-      }
-    });
-  }
-  function toggleActive(tid: string) {
-    setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, active: !t.active } : t)));
-  }
-  function toggleTester(tid: string) {
-    setTeachers(prev => prev.map(t => (t.id === tid ? { ...t, isTester: !t.isTester } : t)));
-  }
-  function toggleBackupToday(tid: string) {
-    const today = getTodayYmd();
-    setTeachers(prev => prev.map(t => {
-      if (t.id !== tid) return t;
-      const nextBackup = t.backupDay === today ? undefined : today;
-      return { ...t, backupDay: nextBackup };
-    }));
-  }
-  function deleteTeacher(tid: string) {
-    const t = teachers.find(x => x.id === tid);
-    if (!t) return;
-    const caseCount = cases.filter(c => c.assignedTo === tid).length;
-    const hasLoad = t.yearlyLoad > 0 || Object.values(t.monthly || {}).some(v => v > 0);
-    if (caseCount > 0 || hasLoad) {
-      alert("Bu öğretmenin geçmiş kaydı var. Silmek raporları etkiler; öğretmen arşivlendi.");
-      setTeachers(prev => prev.map(tt => (tt.id === tid ? { ...tt, active: false } : tt)));
-      return;
     }
-    if (!confirm("Bu öğretmeni kalıcı olarak silmek istiyor musunuz?")) return;
-    setTeachers(prev => prev.filter(x => x.id !== tid));
-    setCases(prev => prev.map(c => (c.assignedTo === tid ? { ...c, assignedTo: undefined } : c)));
+
+    // Store'dan sil
+    removeCaseAction(id);
+
+    // E-Arşiv'den de sil (EArchive local state mi store mu? Store ise setEArchive ile güncelle)
+    setEArchive(useAppStore.getState().eArchive.filter(e => e.id !== id));
   }
+
+
 
   // ---- Devamsızlar için dengeleme puanı (gün sonu, rollover öncesi)
   const applyAbsencePenaltyForDay = React.useCallback((day: string) => {
@@ -1756,14 +1322,18 @@ export default function DosyaAtamaApp() {
 
     // Çalışan öğretmenler: aktif, o gün devamsız DEĞİL ve o gün yedek DEĞİL
     // absentDay === day kontrolü: öğretmen o gün için devamsız işaretlenmişse çalışmıyor sayılır
-    const workingTeachers = teachersRef.current.filter((t) =>
+    const currentTeachers = useAppStore.getState().teachers;
+    const currentCases = useAppStore.getState().cases;
+    const currentAbsenceRecords = useAppStore.getState().absenceRecords;
+
+    const workingTeachers = currentTeachers.filter((t) =>
       t.active &&
-      t.absentDay !== day && // O gün için devamsız değil
+      !currentAbsenceRecords.some(r => r.teacherId === t.id && r.date === day) && // O gün için devamsız değil
       !t.isAbsent && // Şu an devamsız değil
       t.backupDay !== day
     );
     const workingIds = new Set(workingTeachers.map((t) => t.id));
-    const dayWorkingCases = casesRef.current.filter(
+    const dayWorkingCases = currentCases.filter(
       (c) =>
         !c.absencePenalty &&
         c.assignedTo &&
@@ -1783,8 +1353,8 @@ export default function DosyaAtamaApp() {
     const penaltyScore = Math.max(0, minScore - absencePenaltyAmount);
 
     // Devamsız öğretmenler: o gün için devamsız işaretlenmiş VEYA şu an devamsız olan aktif öğretmenler
-    const absentTeachers = teachersRef.current.filter((t) =>
-      t.active && (t.absentDay === day || t.isAbsent)
+    const absentTeachers = currentTeachers.filter((t) =>
+      t.active && (currentAbsenceRecords.some(r => r.teacherId === t.id && r.date === day) || t.isAbsent)
     );
     const absentIds = new Set(absentTeachers.map((t) => t.id));
 
@@ -1856,21 +1426,18 @@ export default function DosyaAtamaApp() {
 
     if (loadDelta.size > 0) {
       const ym = day.slice(0, 7);
-      setTeachers((prev) => {
-        const next = prev.map((t) => {
-          const delta = loadDelta.get(t.id) || 0;
-          if (!delta) return t;
-          const nextMonthly = { ...(t.monthly || {}) };
-          nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + delta);
-          return {
-            ...t,
-            yearlyLoad: Math.max(0, t.yearlyLoad + delta),
-            monthly: nextMonthly,
-          };
-        });
-        teachersRef.current = next;
-        return next;
+      const nextTeachers = currentTeachers.map((t) => {
+        const delta = loadDelta.get(t.id) || 0;
+        if (!delta) return t;
+        const nextMonthly = { ...(t.monthly || {}) };
+        nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + delta);
+        return {
+          ...t,
+          yearlyLoad: Math.max(0, t.yearlyLoad + delta),
+          monthly: nextMonthly,
+        };
       });
+      setTeachers(nextTeachers);
     }
 
     setLastAbsencePenalty(day);
@@ -1879,10 +1446,13 @@ export default function DosyaAtamaApp() {
 
   // ---- Başkan yedek: bugün dosya alma, yarın bonusla başlat
   const applyBackupBonusForDay = React.useCallback((day: string) => {
-    const backups = teachersRef.current.filter((t) => t.active && t.backupDay === day);
+    const currentTeachers = useAppStore.getState().teachers;
+    const currentCases = useAppStore.getState().cases;
+
+    const backups = currentTeachers.filter((t) => t.active && t.backupDay === day);
     if (!backups.length) return;
 
-    const dayCases = casesRef.current.filter(
+    const dayCases = currentCases.filter(
       (c) => !c.absencePenalty && !c.backupBonus && c.assignedTo && c.createdAt.slice(0, 10) === day
     );
     const pointsByTeacher = new Map<string, number>();
@@ -1901,10 +1471,10 @@ export default function DosyaAtamaApp() {
     const ym = day.slice(0, 7);
 
     // Bonus CaseFile'ları oluştur (günlük raporda görünsün)
-    const existingBonusCases = casesRef.current.filter(
+    const existingBonusCases = currentCases.filter(
       (c) => c.backupBonus && c.createdAt.slice(0, 10) === day
     );
-    const keepNonBonus = casesRef.current.filter(
+    const keepNonBonus = currentCases.filter(
       (c) => !(c.backupBonus && c.createdAt.slice(0, 10) === day)
     );
 
@@ -1937,25 +1507,21 @@ export default function DosyaAtamaApp() {
     // Cases güncelle
     const nextCases = [...newBonusCases, ...keepNonBonus];
     setCases(nextCases);
-    casesRef.current = nextCases;
 
     // Teachers güncelle
-    setTeachers((prev) => {
-      const next = prev.map((t) => {
-        if (t.backupDay !== day) return t;
-        const delta = loadDelta.get(t.id) || 0;
-        const nextMonthly = { ...(t.monthly || {}) };
-        nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + delta);
-        return {
-          ...t,
-          backupDay: undefined,
-          yearlyLoad: Math.max(0, t.yearlyLoad + delta),
-          monthly: nextMonthly,
-        };
-      });
-      teachersRef.current = next;
-      return next;
+    const nextTeachers = currentTeachers.map((t) => {
+      if (t.backupDay !== day) return t;
+      const delta = loadDelta.get(t.id) || 0;
+      const nextMonthly = { ...(t.monthly || {}) };
+      nextMonthly[ym] = Math.max(0, (nextMonthly[ym] || 0) + delta);
+      return {
+        ...t,
+        backupDay: undefined,
+        yearlyLoad: Math.max(0, t.yearlyLoad + delta),
+        monthly: nextMonthly,
+      };
     });
+    setTeachers(nextTeachers);
   }, [setTeachers, setCases]);
 
   // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
@@ -2146,10 +1712,10 @@ export default function DosyaAtamaApp() {
   function exportEArchiveCSV() {
     const headers = ['Öğrenci Adı', 'Dosya No', 'Atanan Öğretmen', 'Atama Tarihi'];
     const rows = eArchive.map((entry) => [
-      entry.student,
+      entry.studentName,
       entry.fileNo || '',
-      entry.assignedToName,
-      new Date(entry.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }),
+      entry.teacherName,
+      new Date(entry.date).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }),
     ]);
     const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2177,7 +1743,7 @@ export default function DosyaAtamaApp() {
       if (searchStudent.trim()) {
         const searchLower = searchStudent.toLowerCase().trim();
         filtered = filtered.filter(e =>
-          e.student.toLowerCase().includes(searchLower)
+          e.studentName.toLowerCase().includes(searchLower)
         );
       }
 
@@ -2191,7 +1757,7 @@ export default function DosyaAtamaApp() {
 
       // Öğretmen bazlı filtrele
       if (filterTeacher) {
-        filtered = filtered.filter(e => e.assignedToName === filterTeacher);
+        filtered = filtered.filter(e => e.teacherName === filterTeacher);
       }
 
       // Tarih aralığı filtreleme
@@ -2199,7 +1765,7 @@ export default function DosyaAtamaApp() {
         const fromDate = new Date(dateFrom);
         fromDate.setHours(0, 0, 0, 0);
         filtered = filtered.filter(e => {
-          const entryDate = new Date(e.createdAt);
+          const entryDate = new Date(e.date);
           entryDate.setHours(0, 0, 0, 0);
           return entryDate >= fromDate;
         });
@@ -2209,20 +1775,20 @@ export default function DosyaAtamaApp() {
         const toDate = new Date(dateTo);
         toDate.setHours(23, 59, 59, 999);
         filtered = filtered.filter(e => {
-          const entryDate = new Date(e.createdAt);
+          const entryDate = new Date(e.date);
           return entryDate <= toDate;
         });
       }
 
       // Tarihe göre sırala (en yeni üstte)
       return filtered.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        new Date(b.date).getTime() - new Date(a.date).getTime()
       );
     }, [eArchive, searchStudent, searchFileNo, filterTeacher, dateFrom, dateTo]);
 
     // Tüm öğretmen isimlerini al (filtreleme için)
     const teacherNames = useMemo(() => {
-      const names = new Set(eArchive.map(e => e.assignedToName));
+      const names = new Set(eArchive.map(e => e.teacherName));
       return Array.from(names).sort();
     }, [eArchive]);
 
@@ -2337,7 +1903,7 @@ export default function DosyaAtamaApp() {
                 <tbody>
                   {filteredArchive.map(entry => (
                     <tr key={entry.id} className="border-t hover:bg-slate-50">
-                      <td className="p-2 font-medium">{entry.student}</td><td className="p-2">{entry.fileNo || '—'}</td><td className="p-2">{entry.assignedToName}</td><td className="p-2">{new Date(entry.createdAt).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}</td>
+                      <td className="p-2 font-medium">{entry.studentName}</td><td className="p-2">{entry.fileNo || '—'}</td><td className="p-2">{entry.teacherName}</td><td className="p-2">{new Date(entry.date).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2449,7 +2015,7 @@ export default function DosyaAtamaApp() {
 
         const safe = BackupSchema.safeParse(parsed);
         if (!safe.success) {
-          console.error(safe.error);
+          logger.error(safe.error);
           alert("Geçersiz JSON: veri şeması hatalı.");
           return;
         }
@@ -2467,33 +2033,7 @@ export default function DosyaAtamaApp() {
     };
     reader.readAsText(file);
   }
-  // === Pushover Test Bildirimi ===
-  async function testNotifyTeacher(t: Teacher) {
-    if (!t.pushoverKey) {
-      alert("Bu öğretmenin Pushover User Key’i boş.");
-      return;
-    }
-    try {
-      const res = await fetch("/api/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userKey: t.pushoverKey,
-          title: "Test Bildirim",
-          message: `${t.name} için test bildirimi`,
-          priority: 0, // normal
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        alert("Bildirim hatası: " + (json?.errors?.[0] || JSON.stringify(json)));
-      } else {
-        alert("Test bildirimi gönderildi!");
-      }
-    } catch {
-      alert("Bildirim gönderilemedi.");
-    }
-  }
+
   // === Otomatik atamada/yeniden atamada haber ver ===
   async function notifyAssigned(t: Teacher, c: CaseFile) {
     if (!t?.pushoverKey) return; // key yoksa sessizce çık
@@ -2805,12 +2345,16 @@ export default function DosyaAtamaApp() {
       }
     });
 
-    // Mevcut devamsızlıklar (absentDay'den - bugün için)
+    // Mevcut devamsızlıklar (absenceRecords'dan - bugün için)
     const today = getTodayYmd();
-    teachers.filter(t => t.absentDay === today).forEach(t => {
-      if (!absentByDay[today]) absentByDay[today] = [];
-      if (!absentByDay[today].find(tt => tt.id === t.id)) {
-        absentByDay[today].push(t);
+    const currentAbsenceRecords = useAppStore.getState().absenceRecords;
+    currentAbsenceRecords.filter(r => r.date === today).forEach(r => {
+      const t = teachers.find(tt => tt.id === r.teacherId);
+      if (t) {
+        if (!absentByDay[today]) absentByDay[today] = [];
+        if (!absentByDay[today].find(tt => tt.id === t.id)) {
+          absentByDay[today].push(t);
+        }
       }
     });
 
@@ -3113,7 +2657,13 @@ export default function DosyaAtamaApp() {
 
   // Arşiv sayfası - Şifre korumalı
   if (viewMode === "archive") {
-    const ARCHIVE_PASSWORD = "ram2025"; // Şifreyi buradan değiştirebilirsiniz
+    // ⚠️ NOT: Bu şifre client-side'da görünür, sadece basit koruma için kullanılmalı
+    // Hassas bilgiler için server-side authentication kullanın
+    const ARCHIVE_PASSWORD = process.env.NEXT_PUBLIC_ARCHIVE_PASSWORD;
+
+    if (!ARCHIVE_PASSWORD) {
+      console.error("Archive password not set in environment variables");
+    }
 
     if (!archiveAuthenticated) {
       return (
@@ -3191,10 +2741,10 @@ export default function DosyaAtamaApp() {
         const t = teachers.find(x => x.id === c.assignedTo);
         existingFiles.set(c.fileNo, {
           id: c.id,
-          student: c.student,
+          studentName: c.student,
           fileNo: c.fileNo,
-          assignedToName: t ? t.name : "Bilinmiyor",
-          createdAt: c.createdAt
+          teacherName: t ? t.name : "Bilinmiyor",
+          date: c.createdAt.slice(0, 10),
         });
       }
     });
@@ -3203,9 +2753,9 @@ export default function DosyaAtamaApp() {
     archiveFiles.forEach(file => {
       const existing = existingFiles.get(file.fileNo);
       if (existing) {
-        file.student = existing.student;
-        file.assignedToName = existing.assignedToName;
-        file.createdAt = existing.createdAt;
+        file.student = existing.studentName;
+        file.assignedToName = existing.teacherName;
+        file.createdAt = existing.date;
       }
     });
 
@@ -3223,7 +2773,7 @@ export default function DosyaAtamaApp() {
       } else {
         // İsim ara
         for (const [fileNo, entry] of existingFiles.entries()) {
-          if (entry.student.toLowerCase().includes(term)) {
+          if (entry.studentName.toLowerCase().includes(term)) {
             targetFileNo = fileNo;
             break;
           }
@@ -3428,7 +2978,7 @@ export default function DosyaAtamaApp() {
                     className="shrink-0 px-2"
                     data-silent="true"
                     title={soundOn ? "Sesi Kapat" : "Sesi Aç"}
-                    onClick={() => setSoundOn(v => !v)}
+                    onClick={() => setSoundOn(!soundOn)}
                   >
                     {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                   </Button>
@@ -3487,13 +3037,7 @@ export default function DosyaAtamaApp() {
         </div>
 
         {/* 📊 DASHBOARD WIDGET'LAR (Herkes için) */}
-        <MiniWidgets
-          teachers={teachers}
-          cases={cases}
-          pdfEntries={pdfEntries}
-          history={history}
-          isAdmin={isAdmin}
-        />
+        <MiniWidgets />
 
 
         {/* Admin olmayan kullanıcılar için randevu listesi ve duyurular */}
@@ -3511,15 +3055,10 @@ export default function DosyaAtamaApp() {
               </div>
             )}
             <DailyAppointmentsCard
-              pdfDate={pdfDate}
               pdfLoading={pdfLoading}
-              pdfEntries={pdfEntries}
-              selectedPdfEntryId={selectedPdfEntryId}
               onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
               onPrint={handlePrintPdfList}
               onClearAll={() => clearPdfEntries(true, true)}
-              cases={cases}
-              history={history}
             />
 
             {/* Non-admin için Raporlar ve Atanan Dosyalar */}
@@ -3663,7 +3202,7 @@ export default function DosyaAtamaApp() {
                     type="text"
                     placeholder="YouTube URL"
                     value={settings.musicUrl || ""}
-                    onChange={(e) => setSettings(prev => ({ ...prev, musicUrl: e.target.value }))}
+                    onChange={(e) => updateSettings({ musicUrl: e.target.value })}
                     className="h-8 w-48 px-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
                   />
                   <Button
@@ -3671,7 +3210,7 @@ export default function DosyaAtamaApp() {
                     variant={settings.musicPlaying ? "destructive" : "default"}
                     onClick={async () => {
                       const newPlaying = !settings.musicPlaying;
-                      setSettings(prev => ({ ...prev, musicPlaying: newPlaying }));
+                      updateSettings({ musicPlaying: newPlaying });
                       try {
                         const channel = supabase.channel('music_state');
                         await channel.send({
@@ -3680,7 +3219,7 @@ export default function DosyaAtamaApp() {
                           payload: { url: settings.musicUrl, playing: newPlaying }
                         });
                       } catch (err) {
-                        console.error("[Admin] Music update error:", err);
+                        logger.error("[Admin] Music update error:", err);
                       }
                     }}
                     className="h-8 min-w-16"
@@ -3700,25 +3239,19 @@ export default function DosyaAtamaApp() {
                     // Enter: kaydet, Shift+Enter: boş (açıklamada newline)
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      addCase();
+                      handleAddCase();
                     }
                   }}
                 >
                   {/* Sol: Dosya Atama Formu */}
                   <div className="space-y-4">
                     <DailyAppointmentsCard
-                      pdfDate={pdfDate}
                       pdfLoading={pdfLoading}
-                      pdfEntries={pdfEntries}
-                      selectedPdfEntryId={selectedPdfEntryId}
-                      isAdmin={isAdmin}
                       onApplyEntry={applyPdfEntry}
                       onRemoveEntry={removePdfEntry}
                       onPrint={handlePrintPdfList}
                       onClearAll={() => clearPdfEntries()}
                       onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
-                      cases={cases}
-                      history={history}
                     />
                     {activePdfEntry && (
                       <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
@@ -3797,7 +3330,7 @@ export default function DosyaAtamaApp() {
                         </div>
                         <Button
                           data-silent="true"
-                          onClick={addCase}
+                          onClick={handleAddCase}
                           disabled={!student.trim()}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
                         >
@@ -3844,7 +3377,7 @@ export default function DosyaAtamaApp() {
                             }
                             if (e.key === "Enter") {
                               e.preventDefault();
-                              addCase();
+                              handleAddCase();
                             }
                           }}
                         />
@@ -3861,126 +3394,8 @@ export default function DosyaAtamaApp() {
 
                   {/* Sağ: Dosyalar (Bugün) ve Atanan Dosyalar */}
                   <div className="space-y-4">
-                    {/* Dosyalar (Bugün) */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>📂 Dosyalar (Bugün)</CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={testSound}>Ses Test</Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {/* md+ masaüstü: tablo görünümü */}
-                        <div className="overflow-auto hidden md:block">
-                          <table className="w-full text-sm border border-border">
-                            <thead className="sticky top-0 z-10 bg-muted">
-                              <tr>
-                                <th className="p-2 text-left">Öğrenci</th>
-                                <th className="p-2 text-right">Puan</th>
-                                <th className="p-2 text-left">Tarih</th>
-                                <th className="p-2 text-left">Atanan</th>
-                                <th className="p-2 text-left">Test</th>
-                                <th className="p-2 text-left">Açıklama</th>
-                                <th className="p-2"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredCases.map((c) => (
-                                <tr key={c.id} className="border-t hover:bg-slate-50 transition-colors duration-150">
-                                  <td className="p-2">{c.student}</td>
-                                  <td className="p-2 text-right">{c.score}</td>
-                                  <td className="p-2">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                                  <td className="p-2">{teacherName(c.assignedTo)}
-                                    {c.assignedTo ? (
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="ml-2"
-                                        data-silent="true"
-                                        title="Acil çağrı: Tekrarlı bildirim gönder"
-                                        onClick={() => notifyEmergencyNow(c)}
-                                      >
-                                        Acil
-                                      </Button>
-                                    ) : null}
-                                  </td>
-                                  <td className="p-2">{c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</td>
-                                  <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
-                                  <td className="p-2 text-right">
-                                    {c.sourcePdfEntry ? (
-                                      <Button size="sm" variant="outline" onClick={() => removeCase(c.id)} title="Randevu listesine geri al" className="text-amber-600 hover:text-amber-700">
-                                        ↩️ Geri Al
-                                      </Button>
-                                    ) : (
-                                      <Button size="icon" variant="ghost" onClick={() => removeCase(c.id)} title="Sil">
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                              {filteredCases.length === 0 && (
-                                <tr>
-                                  <td className="p-8 text-center" colSpan={7}>
-                                    <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                      <FileText className="h-10 w-10 mb-2 text-slate-400" />
-                                      <p className="text-sm font-medium">Bugün için kayıt yok</p>
-                                      <p className="text-xs text-slate-400 mt-1">Henüz dosya atanmamış</p>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Mobil: kart görünümü */}
-                        <div className="md:hidden space-y-2">
-                          {filteredCases.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border rounded-lg bg-slate-50">
-                              <FileText className="h-10 w-10 mb-2 text-slate-400" />
-                              <p className="text-sm font-medium">Bugün için kayıt yok</p>
-                              <p className="text-xs text-slate-400 mt-1">Henüz dosya atanmamış</p>
-                            </div>
-                          )}
-                          {filteredCases.map((c) => (
-                            <div key={c.id} className="border rounded-lg p-3 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-                              <div className="flex items-center justify-between">
-                                <div className="font-medium">{c.student}</div>
-                                <div className="text-sm">Puan: <span className="font-semibold">{c.score}</span></div>
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</div>
-                              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                                <div><span className="text-muted-foreground">Atanan:</span> {teacherName(c.assignedTo)}</div>
-                                <div><span className="text-muted-foreground">Test:</span> {c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}</div>
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">{caseDesc(c)}</div>
-                              <div className="flex items-center justify-end gap-2 mt-2">
-                                {c.assignedTo ? (
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    title="Acil çağrı: Tekrarlı bildirim gönder"
-                                    onClick={() => notifyEmergencyNow(c)}
-                                  >
-                                    Acil
-                                  </Button>
-                                ) : null}
-                                {c.sourcePdfEntry ? (
-                                  <Button size="sm" variant="outline" onClick={() => removeCase(c.id)} title="Randevu listesine geri al" className="text-amber-600 hover:text-amber-700">
-                                    ↩️ Geri Al
-                                  </Button>
-                                ) : (
-                                  <Button size="icon" variant="ghost" onClick={() => removeCase(c.id)} title="Sil">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* Dosyalar (Bugün) - CaseList Component */}
+                    <CaseList />
 
                     {/* Atanan Dosyalar (Tek Gün) */}
                     <AssignedArchiveSingleDayView
@@ -3995,170 +3410,7 @@ export default function DosyaAtamaApp() {
                 </div>
               )}
 
-              {adminTab === "teachers" && (
-                <div className="space-y-4">
-                  {/* Öğretmen Ekle */}
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <Label>➕ Öğretmen Ekle</Label>
-                      <Input
-                        value={newTeacherName}
-                        onChange={(e) => setNewTeacherName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && addTeacher()}
-                        placeholder="Ad Soyad"
-                      />
-                    </div>
-                    <div className="w-32">
-                      <Label>🎂 Doğum</Label>
-                      <Input
-                        value={newTeacherBirthDate}
-                        onChange={(e) => setNewTeacherBirthDate(e.target.value)}
-                        placeholder="AA-GG"
-                        maxLength={5}
-                      />
-                    </div>
-                    <Button onClick={addTeacher}>➕ Ekle</Button>
-                  </div>
-
-                  {teachers.map((t) => {
-                    const locked = hasTestToday(t.id);
-                    return (
-                      <div key={t.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
-                        <div className="space-y-1 min-w-0 flex-shrink">
-                          <div className="font-medium">{t.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === getTodayYmd() ? " • Yedek" : ""}
-                            {/* Pushover: opsiyonel giriş */}
-                            {!t.pushoverKey && !editKeyOpen[t.id] ? (
-                              <div className="mt-2">
-                                <Button size="sm" variant="outline" onClick={() => setEditKeyOpen((p) => ({ ...p, [t.id]: true }))}>
-                                  Key Yükle
-                                </Button>
-                              </div>
-                            ) : null}
-
-                            {editKeyOpen[t.id] ? (
-                              <div className="mt-2 flex items-center gap-2">
-                                <Label className="text-xs w-32">Pushover User Key</Label>
-                                <Input
-                                  autoFocus
-                                  className="h-8 w-[320px]"
-                                  placeholder="uQiRzpo4DXghDmr9QzzfQu27cmVRsG"
-                                  value={editPushover[t.id] ?? ""}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    setEditPushover((prev) => ({ ...prev, [t.id]: v }));
-                                  }}
-                                  onBlur={() => {
-                                    // Dışarı tıklanınca kaydetmeden kapat
-                                    setEditPushover((prev) => {
-                                      const next = { ...prev } as Record<string, string>;
-                                      delete next[t.id];
-                                      return next;
-                                    });
-                                    setEditKeyOpen((prev) => ({ ...prev, [t.id]: false }));
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      const v = (editPushover[t.id] ?? "").trim();
-                                      if (v) {
-                                        setTeachers((prev) =>
-                                          prev.map((tt) => (tt.id === t.id ? { ...tt, pushoverKey: v } : tt))
-                                        );
-                                      }
-                                      setEditPushover((prev) => {
-                                        const next = { ...prev };
-                                        delete next[t.id];
-                                        return next;
-                                      });
-                                      setEditKeyOpen((prev) => ({ ...prev, [t.id]: false }));
-                                    } else if (e.key === "Escape") {
-                                      // Vazgeç: kaydetmeden kapat
-                                      e.preventDefault();
-                                      setEditPushover((prev) => {
-                                        const next = { ...prev } as Record<string, string>;
-                                        delete next[t.id];
-                                        return next;
-                                      });
-                                      setEditKeyOpen((prev) => ({ ...prev, [t.id]: false }));
-                                    }
-                                  }}
-                                />
-                              </div>
-                            ) : null}
-
-                            {t.pushoverKey && !editKeyOpen[t.id] ? (
-                              <div className="mt-2 flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => testNotifyTeacher(t)}
-                                  title="Telefona test bildirimi gönder"
-                                >
-                                  Test Gönder
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditPushover((prev) => ({ ...prev, [t.id]: t.pushoverKey || "" }));
-                                    setEditKeyOpen((prev) => ({ ...prev, [t.id]: true }));
-                                  }}
-                                >
-                                  Anahtarı değiştir
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => {
-                                    setTeachers((prev) =>
-                                      prev.map((tt) => (tt.id === t.id ? { ...tt, pushoverKey: undefined } : tt))
-                                    );
-                                    setEditPushover((prev) => {
-                                      const next = { ...prev };
-                                      delete next[t.id];
-                                      return next;
-                                    });
-                                    setEditKeyOpen((prev) => ({ ...prev, [t.id]: false }));
-                                  }}
-                                >
-                                  Anahtarı temizle
-                                </Button>
-                              </div>
-                            ) : null}
-
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-xs text-muted-foreground mr-2">
-                            {t.isAbsent ? (
-                              <span className="text-red-600 font-medium">🚫 Devamsız</span>
-                            ) : t.backupDay === getTodayYmd() ? (
-                              <span className="text-amber-600 font-medium">👑 Yedek</span>
-                            ) : "Uygun"}
-                          </div>
-                          <Button variant={t.isAbsent ? "default" : "outline"} onClick={() => toggleAbsent(t.id)} size="sm">
-                            {t.isAbsent ? "✅ Uygun Yap" : "🚫 Devamsız Yap"}
-                          </Button>
-                          <Button variant={t.isTester ? "default" : "outline"} onClick={() => toggleTester(t.id)} size="sm">
-                            {t.isTester ? "🧪 Testör (Açık)" : "🧪 Testör Yap"}
-                          </Button>
-                          <Button
-                            variant={t.backupDay === getTodayYmd() ? "default" : "outline"}
-                            onClick={() => toggleBackupToday(t.id)}
-                            size="sm"
-                            title={`Bugün yedek: dosya almaz. Gün sonunda en yüksek puan +${settings.backupBonusAmount} ile başlar.`}
-                          >
-                            {t.backupDay === getTodayYmd() ? "👑 Yedek İptal" : "👑 Başkan Yedek"}
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => toggleActive(t.id)}>{t.active ? "📦 Arşivle" : "✨ Aktif Et"}</Button>
-                          <Button variant="destructive" size="sm" title="Kalıcı Sil" onClick={() => deleteTeacher(t.id)}>🗑️ Sil</Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {adminTab === "teachers" && <TeacherList />}
 
               {adminTab === "reports" && (
                 <div className="space-y-4">
@@ -4375,18 +3627,18 @@ export default function DosyaAtamaApp() {
               caseDesc={caseDesc}
               settings={settings}
               onRemove={(id, date) => {
-                setHistory(prev => {
-                  const dayCases = prev[date];
-                  if (!dayCases) return prev;
-                  return {
-                    ...prev,
+                const currentHistory = useAppStore.getState().history;
+                const dayCases = currentHistory[date];
+                if (dayCases) {
+                  setHistory({
+                    ...currentHistory,
                     [date]: dayCases.filter(c => c.id !== id)
-                  };
-                });
+                  });
+                }
 
                 // Eğer o günün cases'i içindeyse (bugün)
                 if (date === ymdLocal(new Date())) {
-                  setCases(prev => prev.filter(c => c.id !== id));
+                  removeCaseAction(id);
                 }
 
                 toast("✅ Arşiv kaydı silindi.");
@@ -4517,28 +3769,28 @@ export default function DosyaAtamaApp() {
                   <>
                     <div>
                       <Label className="text-slate-900 font-semibold">Günlük Limit (öğretmen başına)</Label>
-                      <Input type="number" value={settings.dailyLimit} onChange={e => setSettings({ ...settings, dailyLimit: Math.max(1, Number(e.target.value) || 0) })} />
+                      <Input type="number" value={settings.dailyLimit} onChange={e => updateSettings({ dailyLimit: Math.max(1, Number(e.target.value) || 0) })} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-slate-900 font-semibold">Test Puanı</Label>
-                        <Input type="number" value={settings.scoreTest} onChange={e => setSettings({ ...settings, scoreTest: Number(e.target.value) || 0 })} />
+                        <Input type="number" value={settings.scoreTest} onChange={e => updateSettings({ scoreTest: Number(e.target.value) || 0 })} />
                       </div>
                       <div>
                         <Label className="text-slate-900 font-semibold">Yeni Bonus</Label>
-                        <Input type="number" value={settings.scoreNewBonus} onChange={e => setSettings({ ...settings, scoreNewBonus: Number(e.target.value) || 0 })} />
+                        <Input type="number" value={settings.scoreNewBonus} onChange={e => updateSettings({ scoreNewBonus: Number(e.target.value) || 0 })} />
                       </div>
                       <div>
                         <Label className="text-slate-900 font-semibold">Yönlendirme</Label>
-                        <Input type="number" value={settings.scoreTypeY} onChange={e => setSettings({ ...settings, scoreTypeY: Number(e.target.value) || 0 })} />
+                        <Input type="number" value={settings.scoreTypeY} onChange={e => updateSettings({ scoreTypeY: Number(e.target.value) || 0 })} />
                       </div>
                       <div>
                         <Label className="text-slate-900 font-semibold">Destek</Label>
-                        <Input type="number" value={settings.scoreTypeD} onChange={e => setSettings({ ...settings, scoreTypeD: Number(e.target.value) || 0 })} />
+                        <Input type="number" value={settings.scoreTypeD} onChange={e => updateSettings({ scoreTypeD: Number(e.target.value) || 0 })} />
                       </div>
                       <div className="col-span-2">
                         <Label className="text-slate-900 font-semibold">İkisi</Label>
-                        <Input type="number" value={settings.scoreTypeI} onChange={e => setSettings({ ...settings, scoreTypeI: Number(e.target.value) || 0 })} />
+                        <Input type="number" value={settings.scoreTypeI} onChange={e => updateSettings({ scoreTypeI: Number(e.target.value) || 0 })} />
                       </div>
                     </div>
                     {/* Yedek Başkan Bonus Ayarları */}
@@ -4550,7 +3802,7 @@ export default function DosyaAtamaApp() {
                         </Label>
                         <div>
                           <Label className="text-xs text-slate-900 font-semibold">Bonus Miktarı (En Yüksek + X)</Label>
-                          <Input type="number" min={0} value={settings.backupBonusAmount} onChange={e => setSettings({ ...settings, backupBonusAmount: Math.max(0, Number(e.target.value) || 0) })} />
+                          <Input type="number" min={0} value={settings.backupBonusAmount} onChange={e => updateSettings({ backupBonusAmount: Math.max(0, Number(e.target.value) || 0) })} />
                         </div>
                         <p className="text-[11px] text-amber-700 mt-1">
                           Yedek başkan: O günün en yüksek puanına +{settings.backupBonusAmount} eklenir.
@@ -4566,7 +3818,7 @@ export default function DosyaAtamaApp() {
                         </Label>
                         <div>
                           <Label className="text-xs text-slate-900 font-semibold">Puan Farkı (En Düşük - X)</Label>
-                          <Input type="number" min={0} value={settings.absencePenaltyAmount} onChange={e => setSettings({ ...settings, absencePenaltyAmount: Math.max(0, Number(e.target.value) || 0) })} />
+                          <Input type="number" min={0} value={settings.absencePenaltyAmount} onChange={e => updateSettings({ absencePenaltyAmount: Math.max(0, Number(e.target.value) || 0) })} />
                         </div>
                         <p className="text-[11px] text-red-700 mt-1">
                           Devamsız öğretmen: O günün en düşük puanından -{settings.absencePenaltyAmount} çıkarılır.

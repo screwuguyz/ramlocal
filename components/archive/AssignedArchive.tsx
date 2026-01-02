@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Inbox } from "lucide-react";
-import type { CaseFile } from "@/lib/types";
+import type { CaseFile } from "@/types";
 
 function ymdLocal(d: Date) {
   const y = d.getFullYear();

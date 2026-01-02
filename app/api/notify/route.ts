@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const effectivePriority = String(priority ?? "0");
-    
+
     // FormData kullan (resim desteği için)
     const formData = new FormData();
     formData.append("token", token);
@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
     formData.append("title", String(title ?? "Yeni Dosya Atandı"));
     formData.append("message", String(message ?? ""));
     formData.append("priority", effectivePriority);
-    
+
     // Emergency modunda (priority 2) tekrar/retry parametreleri gerekir
     if (effectivePriority === "2") {
       formData.append("retry", "60");
       formData.append("expire", "3600");
       formData.append("sound", "siren");
     }
-    
+
     // Resim varsa indir ve ekle
     if (imageUrl) {
       try {
@@ -58,10 +58,13 @@ export async function POST(req: NextRequest) {
     let res: Response;
     try {
       // Kurumsal/self-signed sertifika zinciri sorunları için sadece GELİŞTİRMEDE geçici çözüm:
-      // ALLOW_INSECURE_TLS=1 ise, bu istek süresince TLS doğrulamayı devre dışı bırak.
-      const insecure = process.env.ALLOW_INSECURE_TLS === "1";
+      // ⚠️ SECURITY: Only allow in development, never in production
+      const insecure = process.env.NODE_ENV === "development" && process.env.ALLOW_INSECURE_TLS === "1";
       const prevTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-      if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+      if (insecure) {
+        console.warn("[api/notify] ALLOW_INSECURE_TLS=1 → Disabling TLS verification for local dev");
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+      }
       res = await fetch("https://api.pushover.net/1/messages.json", {
         method: "POST",
         body: formData,

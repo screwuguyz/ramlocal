@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Teacher, CaseFile } from "@/lib/types";
+import type { Teacher, CaseFile } from "@/types";
 
 type Props = {
   teachers: Teacher[];
@@ -21,7 +21,7 @@ function getWeekDates(weeksAgo = 0): string[] {
   const today = new Date();
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay() + 1 - (weeksAgo * 7)); // Monday
-  
+
   for (let i = 0; i < 7; i++) {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
@@ -36,7 +36,7 @@ function getMonthDates(monthsAgo = 0): string[] {
   const month = today.getMonth() - monthsAgo;
   const targetDate = new Date(year, month, 1);
   const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
-  
+
   const dates: string[] = [];
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(targetDate.getFullYear(), targetDate.getMonth(), i);
@@ -124,7 +124,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
   // Saat dağılımı (en çok atama yapılan saatler)
   const hourDistribution: Record<number, number> = {};
   for (let h = 8; h <= 17; h++) hourDistribution[h] = 0;
-  
+
   allCases.forEach(c => {
     const hour = new Date(c.createdAt).getHours();
     if (hour >= 8 && hour <= 17) {
@@ -158,7 +158,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
           <CardContent className="pt-4">
             <div className="text-3xl font-bold">{thisMonthCases.length}</div>
@@ -168,7 +168,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
           <CardContent className="pt-4">
             <div className="text-3xl font-bold">{thisMonthCases.reduce((s, c) => s + c.score, 0)}</div>
@@ -178,7 +178,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
           <CardContent className="pt-4">
             <div className="text-3xl font-bold">{allCases.length}</div>
@@ -226,7 +226,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
               {dailyDistribution.map((d, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center">
                   <div className="text-xs text-slate-600 mb-1">{d.count}</div>
-                  <div 
+                  <div
                     className="w-full bg-blue-500 rounded-t transition-all duration-300"
                     style={{ height: `${(d.count / maxDaily) * 100}%`, minHeight: d.count > 0 ? "8px" : "2px" }}
                   />
@@ -247,7 +247,7 @@ export default function Statistics({ teachers, cases, history }: Props) {
               {monthlyTrend.map((m, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center">
                   <div className="text-xs text-slate-600 mb-1">{m.count}</div>
-                  <div 
+                  <div
                     className="w-full bg-emerald-500 rounded-t transition-all duration-300"
                     style={{ height: `${(m.count / maxMonthly) * 100}%`, minHeight: m.count > 0 ? "8px" : "2px" }}
                   />
@@ -345,12 +345,11 @@ export default function Statistics({ teachers, cases, history }: Props) {
                       {hour}:00
                     </div>
                     <div className="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden relative">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isTopHour 
-                            ? "bg-gradient-to-r from-amber-400 to-amber-500" 
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isTopHour
+                            ? "bg-gradient-to-r from-amber-400 to-amber-500"
                             : "bg-gradient-to-r from-blue-400 to-blue-500"
-                        }`}
+                          }`}
                         style={{ width: `${percentage}%`, minWidth: count > 0 ? "8px" : "0" }}
                       />
                     </div>
@@ -413,16 +412,16 @@ export default function Statistics({ teachers, cases, history }: Props) {
                     <span className="text-slate-600">{t.points} puan • {t.files} dosya</span>
                   </div>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full transition-all duration-500 ${i === 0 ? "bg-amber-500" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-amber-700" : "bg-blue-500"}`}
-                      style={{ width: `${(t.points / maxPoints) * 100}%` }} 
+                      style={{ width: `${(t.points / maxPoints) * 100}%` }}
                     />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          
+
           {/* Uyarı notu */}
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
             <div className="font-medium text-amber-800 mb-1">ℹ️ Bu hesaplamada:</div>
