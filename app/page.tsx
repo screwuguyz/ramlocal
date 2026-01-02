@@ -39,6 +39,7 @@ import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
 import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCard";
+import MonthlyRecapModal from "@/components/modals/MonthlyRecapModal";
 import { useAppStore } from "@/stores/useAppStore";
 // Merkezi tipler ve utility'ler
 import type { Teacher, CaseFile, EArchiveEntry, Announcement, PdfAppointment, Settings } from "@/types";
@@ -101,6 +102,8 @@ export default function DosyaAtamaApp() {
     isAdmin, setIsAdmin,
     hydrated, setHydrated
   } = useAppStore();
+
+  const [showRecap, setShowRecap] = useState(false);
 
   // ---- ARŞİV ve DİĞERLERİ (Store'da var ama yerel türevler olabilir)
   const lastRollover = useAppStore(s => s.lastRollover);
@@ -2307,7 +2310,14 @@ export default function DosyaAtamaApp() {
           {/* Özellik kartları - Buton olarak çalışır */}
           <div className="grid grid-cols-3 gap-4 py-4">
             <Button
-              onClick={() => setViewMode("main")}
+              onClick={() => {
+                setViewMode("main");
+                // Check if today is the 5th (demo: force true or use logic)
+                const d = new Date();
+                // Demo için her zaman göster veya sadece ayın 5'inde:
+                // if (d.getDate() === 5) setShowRecap(true);
+                setShowRecap(true);
+              }}
               className="group p-6 rounded-xl bg-teal-50 border-2 border-teal-200 hover:border-teal-400 hover:bg-teal-100 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-teal-200 animate-card-pop h-auto flex flex-col items-center justify-center"
               style={{ animationDelay: '0.5s' }}
             >
@@ -4303,6 +4313,12 @@ export default function DosyaAtamaApp() {
           </div>
         </div>
       )}
+      <MonthlyRecapModal
+        isOpen={showRecap}
+        onClose={() => setShowRecap(false)}
+        history={history}
+        teachers={teachers}
+      />
     </>
   );
 }
