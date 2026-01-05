@@ -1274,22 +1274,29 @@ export default function DosyaAtamaApp() {
   }
   // Dosya eklendiğinde E-Arşive de ekle
   useEffect(() => {
-    // Bu kancanın sadece yeni bir dosya eklendiğinde çalışmasını sağlamak için
-    // ve mevcut dosyaların güncellenmesinden etkilenmemesi için `cases` dizisinin tamamı yerine
-    // sadece `cases.length` ve `cases[0]`'ın atanma durumunu dinliyoruz.
-    if (!cases.length || !cases[0]) return;
-    const lastCase = cases[0]; // En son eklenen dosya
-    // Eğer bu dosya zaten arşivde varsa, tekrar ekleme
-    if (eArchive.some(entry => entry.id === lastCase.id)) return;
-    // Sadece atanmış dosyaları arşive ekle
-    if (lastCase.assignedTo) {
-      const newArchiveEntry: EArchiveEntry = {
-        id: lastCase.id, studentName: lastCase.student, fileNo: lastCase.fileNo || undefined,
-        teacherName: teacherName(lastCase.assignedTo), date: lastCase.createdAt.slice(0, 10),
-      };
-      addToEArchive(newArchiveEntry);
+    // Tüm atanmış dosyaları kontrol et ve arşivde olmayanları ekle
+    if (!cases.length) return;
+
+    const existingIds = new Set(eArchive.map(e => e.id));
+
+    for (const caseItem of cases) {
+      // Sadece atanmış ve arşivde olmayan dosyaları ekle
+      if (caseItem.assignedTo && !existingIds.has(caseItem.id)) {
+        // Devamsızlık cezası veya yedek bonusu gibi sanal kayıtları atlaz
+        if (caseItem.absencePenalty || caseItem.backupBonus) continue;
+
+        const newArchiveEntry: EArchiveEntry = {
+          id: caseItem.id,
+          studentName: caseItem.student,
+          fileNo: caseItem.fileNo || undefined,
+          teacherName: teacherName(caseItem.assignedTo),
+          date: caseItem.createdAt.slice(0, 10),
+        };
+        addToEArchive(newArchiveEntry);
+        existingIds.add(caseItem.id); // Aynı döngüde tekrar eklenmesini önle
+      }
     }
-  }, [cases.length, cases[0]?.assignedTo]);
+  }, [cases]);
 
 
 
