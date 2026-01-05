@@ -3303,6 +3303,30 @@ export default function DosyaAtamaApp() {
                   >
                     {settings.videoPlaying ? "⏸️" : "▶️"}
                   </Button>
+                  {/* Videoyu Kapat Butonu */}
+                  {settings.videoPlaying && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        updateSettings({ videoPlaying: false, videoUrl: "" });
+                        try {
+                          const channel = supabase.channel('video_state');
+                          await channel.send({
+                            type: 'broadcast',
+                            event: 'video_update',
+                            payload: { url: "", playing: false }
+                          });
+                        } catch (err) {
+                          logger.error("[Admin] Video close error:", err);
+                        }
+                      }}
+                      className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Videoyu Kapat"
+                    >
+                      ✕
+                    </Button>
+                  )}
                 </div>
 
               </div>
