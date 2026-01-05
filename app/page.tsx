@@ -388,9 +388,22 @@ export default function DosyaAtamaApp() {
         if (date) toast("Seçilen tarih için randevu listesi bulunamadı.");
         return;
       }
+
+      // Eğer tarih parametresi verilmediyse (başlangıç yüklemesi) ve 
+      // dönen tarih bugün değilse, listeyi temizle
+      const returnedDateIso = json?.dateIso || null;
+      const today = getTodayYmd();
+      if (!date && returnedDateIso && returnedDateIso !== today) {
+        // Eski günün listesi - bugün için boş göster
+        setPdfEntries([]);
+        setPdfDate(null);
+        setPdfDateIso(null);
+        return;
+      }
+
       setPdfEntries(Array.isArray(json.entries) ? json.entries : []);
       setPdfDate(json?.date || null);
-      setPdfDateIso(json?.dateIso || null);
+      setPdfDateIso(returnedDateIso);
     } catch (err) {
       logger.warn("pdf fetch failed", err);
       setPdfEntries([]);
