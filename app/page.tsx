@@ -1318,7 +1318,7 @@ export default function DosyaAtamaApp() {
 
   // ---- Devamsızlar için dengeleme puanı (gün sonu, rollover öncesi)
   const applyAbsencePenaltyForDay = React.useCallback((day: string) => {
-    if (!isAdmin) return;
+    // isAdmin kontrolü kaldırıldı - rollover sırasında admin olmasına gerek yok
     if (!centralLoaded) return;
     if (!hydrated) return;
     if (lastAbsencePenaltyRef.current === day) return;
