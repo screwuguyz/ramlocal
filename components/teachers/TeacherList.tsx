@@ -197,7 +197,7 @@ export default function TeacherList() {
                         <div className="space-y-1 min-w-0 flex-shrink">
                             <div className="font-medium">{t.name}</div>
                             <div className="text-xs text-muted-foreground">
-                                Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === getTodayYmd() ? " • Yedek" : ""}
+                                Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {t.backupDay === getTodayYmd() ? " • Yedek" : ""} {t.birthDate ? ` • 🎂 ${t.birthDate}` : ""}
 
                                 {/* Pushover Key Yönetimi */}
                                 {!t.pushoverKey && !editKeyOpen[t.id] ? (

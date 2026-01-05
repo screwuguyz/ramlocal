@@ -1310,20 +1310,13 @@ export default function DosyaAtamaApp() {
       }
     });
 
-    // 2. Bugün oluşturulmuş olup cases'de artık olmayanları temizle (Silinenler)
-    const currentIds = new Set(cases.map(c => c.id));
-    const filtered = nextArchive.filter(a => {
-      if (a.date === today) {
-        if (!currentIds.has(a.id)) {
-          changed = true;
-          return false; // Sil
-        }
-      }
-      return true; // Kalsın
-    });
+    // 2. (İptal) Bugün silinenleri buradan temizlemek TEHLİKELİ.
+    // Çünkü "Günü Bitir" yapınca cases [] olur, bu durumda e-arşivi de siler.
+    // Silme işlemini removeCase fonksiyonu zaten yapıyor.
+    // Burası sadece Add/Update için kalsın.
 
     if (changed) {
-      setEArchive(filtered);
+      setEArchive(nextArchive);
     }
   }, [cases, eArchive]);
 

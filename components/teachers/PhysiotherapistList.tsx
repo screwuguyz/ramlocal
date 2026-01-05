@@ -173,7 +173,7 @@ export default function PhysiotherapistList() {
                         <div className="space-y-1 min-w-0 flex-shrink">
                             <div className="font-medium">{t.name}</div>
                             <div className="text-xs text-muted-foreground">
-                                Fizyoterapist
+                                Fizyoterapist {t.birthDate ? ` • 🎂 ${t.birthDate}` : ""}
                                 {/* Pushover Key Yönetimi */}
                                 {!t.pushoverKey && !editKeyOpen[t.id] ? (
                                     <div className="mt-2">
