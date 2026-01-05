@@ -1275,28 +1275,62 @@ export default function DosyaAtamaApp() {
   }
   // Dosya eklendiğinde E-Arşive de ekle
   useEffect(() => {
-    // Tüm atanmış dosyaları kontrol et ve arşivde olmayanları ekle
-    if (!cases.length) return;
+    // E-Arşiv senkronizasyonu (Add, Update, Remove for Today)
+    const today = getTodayYmd();
 
-    const existingIds = new Set(eArchive.map(e => e.id));
+    setEArchive(prevArchive => {
+      let nextArchive = [...prevArchive];
+      let changed = false;
 
-    for (const caseItem of cases) {
-      // Sadece atanmış ve arşivde olmayan dosyaları ekle
-      if (caseItem.assignedTo && !existingIds.has(caseItem.id)) {
-        // Devamsızlık cezası veya yedek bonusu gibi sanal kayıtları atlaz
-        if (caseItem.absencePenalty || caseItem.backupBonus) continue;
+      // 1. Cases'den gelenleri güncelle veya ekle
+      cases.forEach(c => {
+        if (!c.assignedTo || c.absencePenalty || c.backupBonus) return;
 
-        const newArchiveEntry: EArchiveEntry = {
-          id: caseItem.id,
-          studentName: caseItem.student,
-          fileNo: caseItem.fileNo || undefined,
-          teacherName: teacherName(caseItem.assignedTo),
-          date: caseItem.createdAt.slice(0, 10),
-        };
-        addToEArchive(newArchiveEntry);
-        existingIds.add(caseItem.id); // Aynı döngüde tekrar eklenmesini önle
-      }
-    }
+        const date = c.createdAt.slice(0, 10);
+        const idx = nextArchive.findIndex(a => a.id === c.id);
+        const tName = teacherName(c.assignedTo);
+
+        if (idx > -1) {
+          // Varsa ve değişiklik gerekiyorsa güncelle
+          const entry = nextArchive[idx];
+          if (entry.teacherName !== tName || entry.studentName !== c.student || entry.fileNo !== c.fileNo) {
+            nextArchive[idx] = { ...entry, teacherName: tName, studentName: c.student, fileNo: c.fileNo || undefined };
+            changed = true;
+          }
+        } else {
+          // Yoksa ekle
+          nextArchive.push({
+            id: c.id,
+            studentName: c.student,
+            fileNo: c.fileNo || undefined,
+            teacherName: tName,
+            date: date
+          });
+          changed = true;
+        }
+      });
+
+      // 2. Bugün oluşturulmuş olup cases'de artık olmayanları temizle (Silinenler)
+      // Sadece 'today' tarihli olup cases içinde ID'si bulunmayanları siliyoruz.
+      // Not: Geçmiş tarihli kayıtlar history'den gelir veya manueldir, dokunmuyoruz.
+      const currentIds = new Set(cases.map(c => c.id));
+      const filtered = nextArchive.filter(a => {
+        if (a.date === today) {
+          // Bugünün kaydı ise, cases içinde olmalı. Yoksa silinmiştir.
+          // Ancak, cases boşsa (günü bitir yapılmışsa)?
+          // Günü bitir yapılınca cases boşalır ama history'e geçer. 
+          // History'dekiler e-arşiv görüntülemesinde history'den okunur.
+          // Dolayısıyla eArchive array'inden silinmesi sorun olmaz, hatta duplication'ı önler.
+          if (!currentIds.has(a.id)) {
+            changed = true;
+            return false; // Sil
+          }
+        }
+        return true; // Kalsın
+      });
+
+      return changed ? filtered : prevArchive;
+    });
   }, [cases]);
 
 
