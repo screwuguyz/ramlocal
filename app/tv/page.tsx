@@ -521,21 +521,32 @@ export default function TvDisplayPage() {
             {/* Hidden YouTube Player (Müzik için) */}
             <div id="youtube-player" className="hidden"></div>
 
-            {/* Görünür Video Player */}
-            {videoPlaying && videoVideoId && (
-                <div className="fixed bottom-20 left-4 z-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-blue-500/50">
-                    <iframe
-                        width="400"
-                        height="225"
-                        src={`https://www.youtube.com/embed/${videoVideoId}?autoplay=1&loop=1&playlist=${videoVideoId}&mute=0&controls=0`}
-                        title="Video Player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="rounded-2xl"
-                    ></iframe>
-                </div>
-            )}
+            {/* Görünür Video Player - Sıra yokken büyük, sıra varken küçük */}
+            {videoPlaying && videoVideoId && (() => {
+                // Sıra aktivitesi var mı kontrol et
+                const hasQueueActivity = waitingTickets.length > 0 || currentTicket !== null;
+                const isLarge = !hasQueueActivity;
+
+                return (
+                    <div
+                        className={`fixed z-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-blue-500/50 transition-all duration-500 ${isLarge
+                                ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+                                : 'bottom-20 left-4'
+                            }`}
+                    >
+                        <iframe
+                            width={isLarge ? 960 : 400}
+                            height={isLarge ? 540 : 225}
+                            src={`https://www.youtube.com/embed/${videoVideoId}?autoplay=1&loop=1&playlist=${videoVideoId}&mute=0&controls=0`}
+                            title="Video Player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="rounded-2xl transition-all duration-500"
+                        ></iframe>
+                    </div>
+                );
+            })()}
 
             {/* Müzik Göstergesi */}
             {musicPlaying && (
