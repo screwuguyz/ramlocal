@@ -3239,96 +3239,99 @@ export default function DosyaAtamaApp() {
                   💾 Yedekleme
                 </Button>
 
-                {/* Müzik Kontrolü */}
-                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-300">
-                  <span className="text-xs text-slate-500">🎵</span>
-                  <input
-                    type="text"
-                    placeholder="YouTube URL (Müzik)"
-                    value={settings.musicUrl || ""}
-                    onChange={(e) => updateSettings({ musicUrl: e.target.value })}
-                    className="h-8 w-40 px-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                  <Button
-                    size="sm"
-                    variant={settings.musicPlaying ? "destructive" : "default"}
-                    onClick={async () => {
-                      const newPlaying = !settings.musicPlaying;
-                      updateSettings({ musicPlaying: newPlaying });
-                      try {
-                        const channel = supabase.channel('music_state');
-                        await channel.send({
-                          type: 'broadcast',
-                          event: 'music_update',
-                          payload: { url: settings.musicUrl, playing: newPlaying }
-                        });
-                      } catch (err) {
-                        logger.error("[Admin] Music update error:", err);
-                      }
-                    }}
-                    className="h-8 min-w-16"
-                  >
-                    {settings.musicPlaying ? "⏸️" : "▶️"}
-                  </Button>
-                </div>
+              </div>
+            </div>
 
-                {/* Video Kontrolü */}
-                <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-300">
-                  <span className="text-xs text-slate-500">🎬</span>
-                  <input
-                    type="text"
-                    placeholder="YouTube URL (Video)"
-                    value={settings.videoUrl || ""}
-                    onChange={(e) => updateSettings({ videoUrl: e.target.value })}
-                    className="h-8 w-40 px-2 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+            {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
+            <div className="flex flex-wrap items-center gap-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+              {/* Müzik Kontrolü */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-purple-700">🎵 Müzik:</span>
+                <input
+                  type="text"
+                  placeholder="YouTube URL"
+                  value={settings.musicUrl || ""}
+                  onChange={(e) => updateSettings({ musicUrl: e.target.value })}
+                  className="h-8 w-48 px-2 text-xs border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
+                />
+                <Button
+                  size="sm"
+                  variant={settings.musicPlaying ? "destructive" : "default"}
+                  onClick={async () => {
+                    const newPlaying = !settings.musicPlaying;
+                    updateSettings({ musicPlaying: newPlaying });
+                    try {
+                      const channel = supabase.channel('music_state');
+                      await channel.send({
+                        type: 'broadcast',
+                        event: 'music_update',
+                        payload: { url: settings.musicUrl, playing: newPlaying }
+                      });
+                    } catch (err) {
+                      logger.error("[Admin] Music update error:", err);
+                    }
+                  }}
+                  className="h-8"
+                >
+                  {settings.musicPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
+                </Button>
+              </div>
+
+              {/* Video Kontrolü */}
+              <div className="flex items-center gap-2 pl-4 border-l border-slate-300">
+                <span className="text-sm font-medium text-blue-700">🎬 Video:</span>
+                <input
+                  type="text"
+                  placeholder="YouTube URL"
+                  value={settings.videoUrl || ""}
+                  onChange={(e) => updateSettings({ videoUrl: e.target.value })}
+                  className="h-8 w-48 px-2 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                />
+                <Button
+                  size="sm"
+                  variant={settings.videoPlaying ? "destructive" : "default"}
+                  onClick={async () => {
+                    const newPlaying = !settings.videoPlaying;
+                    updateSettings({ videoPlaying: newPlaying });
+                    try {
+                      const channel = supabase.channel('video_state');
+                      await channel.send({
+                        type: 'broadcast',
+                        event: 'video_update',
+                        payload: { url: settings.videoUrl, playing: newPlaying }
+                      });
+                    } catch (err) {
+                      logger.error("[Admin] Video update error:", err);
+                    }
+                  }}
+                  className="h-8"
+                >
+                  {settings.videoPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
+                </Button>
+                {/* Videoyu Kapat Butonu */}
+                {settings.videoPlaying && (
                   <Button
                     size="sm"
-                    variant={settings.videoPlaying ? "destructive" : "default"}
+                    variant="outline"
                     onClick={async () => {
-                      const newPlaying = !settings.videoPlaying;
-                      updateSettings({ videoPlaying: newPlaying });
+                      updateSettings({ videoPlaying: false, videoUrl: "" });
                       try {
                         const channel = supabase.channel('video_state');
                         await channel.send({
                           type: 'broadcast',
                           event: 'video_update',
-                          payload: { url: settings.videoUrl, playing: newPlaying }
+                          payload: { url: "", playing: false }
                         });
                       } catch (err) {
-                        logger.error("[Admin] Video update error:", err);
+                        logger.error("[Admin] Video close error:", err);
                       }
                     }}
-                    className="h-8 min-w-16"
+                    className="h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    title="Videoyu Kapat"
                   >
-                    {settings.videoPlaying ? "⏸️" : "▶️"}
+                    ✕ Kapat
                   </Button>
-                  {/* Videoyu Kapat Butonu */}
-                  {settings.videoPlaying && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        updateSettings({ videoPlaying: false, videoUrl: "" });
-                        try {
-                          const channel = supabase.channel('video_state');
-                          await channel.send({
-                            type: 'broadcast',
-                            event: 'video_update',
-                            payload: { url: "", playing: false }
-                          });
-                        } catch (err) {
-                          logger.error("[Admin] Video close error:", err);
-                        }
-                      }}
-                      className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Videoyu Kapat"
-                    >
-                      ✕
-                    </Button>
-                  )}
-                </div>
-
+                )}
               </div>
             </div>
 
