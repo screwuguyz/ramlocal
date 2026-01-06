@@ -1197,6 +1197,8 @@ export default function DosyaAtamaApp() {
     let erayLog = "Bulunamadı";
     if (eray) {
       erayLog = `Yük:${eray.yearlyLoad}, Fzt:${eray.isPhysiotherapist}, Abs:${eray.isAbsent}, Act:${eray.active}, Bak:${eray.backupDay}, Cnt:${countCasesToday(eray.id)}, Lim:${settings.dailyLimit}`;
+      // Rotasyon
+      if (lastTid === eray.id) erayLog += " [SON_ALAN/ROT_BLOCK]";
       if (eray.backupDay === todayYmd) erayLog += " [YEDEK_BLOCK]";
       if (countCasesToday(eray.id) >= settings.dailyLimit) erayLog += " [LIMIT_BLOCK]";
       if (eray.isPhysiotherapist) erayLog += " [FZT_BLOCK]";
@@ -1204,7 +1206,7 @@ export default function DosyaAtamaApp() {
       if (!eray.active) erayLog += " [INACTIVE_BLOCK]";
     }
 
-    alert(`📢 ATAMA YAPILDI!\n\n🏆 KAZANAN: ${chosen.name}\n\n🕵️‍♂️ ERAY NEDEN YOK:\n${erayLog}\n\n📋 İLK 3 ADAY:\n${debugInfo}`);
+    alert(`📢 ATAMA (v2.6)!\n\n🏆 KAZANAN: ${chosen.name}\n\n🕵️‍♂️ ERAY LOG:\n${erayLog}\nLastTID: ${lastTid}\nErayID: ${eray ? eray.id : "?"}\n\n📋 İLK 3 ADAY:\n${debugInfo}`);
     console.log(debugInfo);
     const ym = ymOf(newCase.createdAt);
 
