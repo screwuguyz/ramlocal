@@ -2090,11 +2090,23 @@ export default function DosyaAtamaApp() {
           ) : (
             <div className="overflow-auto border rounded-md max-h-[70vh]">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted"><tr><th className="p-2 text-left">Öğrenci Adı</th><th className="p-2 text-left">Dosya No</th><th className="p-2 text-left">Atanan Öğretmen</th><th className="p-2 text-left">Atama Tarihi</th></tr></thead>
+                <thead className="sticky top-0 bg-muted">
+                  <tr>
+                    <th className="p-2 text-left w-12">No</th>
+                    <th className="p-2 text-left">Öğrenci Adı</th>
+                    <th className="p-2 text-left">Dosya No</th>
+                    <th className="p-2 text-left">Atanan Öğretmen</th>
+                    <th className="p-2 text-left">Atama Tarihi</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {filteredArchive.map(entry => (
+                  {filteredArchive.map((entry, index) => (
                     <tr key={entry.id} className="border-t hover:bg-slate-50">
-                      <td className="p-2 font-medium">{entry.studentName}</td><td className="p-2">{entry.fileNo || '—'}</td><td className="p-2">{entry.teacherName}</td><td className="p-2">{new Date(entry.date).toLocaleDateString("tr-TR")}</td>
+                      <td className="p-2 font-semibold text-slate-500">{filteredArchive.length - index}</td>
+                      <td className="p-2 font-medium">{entry.studentName}</td>
+                      <td className="p-2">{entry.fileNo || '—'}</td>
+                      <td className="p-2">{entry.teacherName}</td>
+                      <td className="p-2">{new Date(entry.date).toLocaleDateString("tr-TR")}</td>
                     </tr>
                   ))}
                 </tbody>
