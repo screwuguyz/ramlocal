@@ -1160,6 +1160,7 @@ export default function DosyaAtamaApp() {
     }
 
     // Normal dosyada: bugün test almış olsa da normal dosya verilebilir (Fizyoterapistler hariç)
+    console.log("--- ATAMA VERSİYON 2.0 (Eray Fix) ---");
     let available = teachers.filter(
       (t) => !t.isPhysiotherapist && !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit
     );
