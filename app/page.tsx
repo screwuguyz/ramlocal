@@ -1369,6 +1369,37 @@ export default function DosyaAtamaApp() {
     }
   }, [cases, eArchive]);
 
+  // ---- Admin aracı: E-Arşiv Temizliği
+  function cleanupEArchive() {
+    if (!confirm("⚠️ E-Arşiv Temizliği\n\nBu işlem, 'Dosyalar' listesinde veya 'Geçmiş'te (Arşiv) bulunmayan ama E-Arşiv'de kalmış olan 'hayalet kayıtları' kalıcı olarak silecektir.\n\nDevam etmek istiyor musunuz?")) return;
+
+    const allValidIds = new Set<string>();
+    const state = useAppStore.getState();
+
+    // 1. Bugünkü dosyaların ID'leri
+    state.cases.forEach(c => allValidIds.add(c.id));
+
+    // 2. Arşivdeki (Geçmiş) dosyaların ID'leri
+    Object.values(state.history).forEach(dayCases => {
+      dayCases.forEach(c => allValidIds.add(c.id));
+    });
+
+    // 3. E-Arşiv listesini filtrele
+    const currentEArchive = state.eArchive;
+    const cleanEArchive = currentEArchive.filter(e => allValidIds.has(e.id));
+
+    const removedCount = currentEArchive.length - cleanEArchive.length;
+
+    if (removedCount > 0) {
+      setEArchive(cleanEArchive);
+      alert(`✅ Temizlik Tamamlandı!\n\nToplam ${removedCount} adet silinmiş (hayalet) dosya E-Arşiv listesinden kaldırıldı.\nSayfa yenileniyor...`);
+      // İsteğe bağlı reload, UI'ın kesin güncellenmesi için
+      // window.location.reload(); 
+    } else {
+      alert("✅ E-Arşiv zaten temiz. Silinecek dosya bulunamadı.");
+    }
+  }
+
 
 
   // ---- Dosya silme (yükleri geri al)
@@ -4087,6 +4118,22 @@ export default function DosyaAtamaApp() {
                               Her atama işleminden sonra; kazanan öğretmeni, adayları ve özellikle Eray ile ilgili engelleme nedenlerini gösteren bilgi penceresini açar.
                             </p>
                           </div>
+                        </div>
+
+                        {/* E-Arşiv Temizliği Butonu */}
+                        <div className="mt-3 pt-3 border-t border-slate-200">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={cleanupEArchive}
+                            className="w-full flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            E-Arşiv Temizliği (Hayalet Kayıtları Sil)
+                          </Button>
+                          <p className="text-[10px] text-slate-500 mt-1 text-center">
+                            Silinmiş ama listede kalan dosyaları temizler.
+                          </p>
                         </div>
                       </div>
                     </div>
