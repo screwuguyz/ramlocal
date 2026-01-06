@@ -1,13 +1,28 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Users, Clock, TrendingUp } from "lucide-react";
 import { findBestTeacher } from "@/lib/scoring";
 import { useAppStore } from "@/stores/useAppStore";
+import { getWidgets } from "@/lib/widgets";
 import QueueWidget from "./QueueWidget";
 
 export default function MiniWidgets() {
     const { settings, teachers, cases, pdfEntries, history, isAdmin } = useAppStore();
+    const [isVisible, setIsVisible] = useState(true);
+
+    useEffect(() => {
+        const checkVisibility = () => {
+            const widgets = getWidgets();
+            const summaryCards = widgets.find(w => w.id === "summary-cards");
+            setIsVisible(summaryCards ? summaryCards.enabled : true);
+        };
+        checkVisibility();
+        window.addEventListener("widgets-updated", checkVisibility);
+        return () => window.removeEventListener("widgets-updated", checkVisibility);
+    }, []);
+
+    if (!isVisible) return null;
 
     // 1. Öğretmen Özeti
     const teacherStats = useMemo(() => {

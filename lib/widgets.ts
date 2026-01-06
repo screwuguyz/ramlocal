@@ -1,6 +1,6 @@
 // Dashboard widgets yönetimi
 
-export type WidgetType = 
+export type WidgetType =
   | "summary-cards"
   | "daily-stats"
   | "teacher-list"
@@ -35,7 +35,7 @@ const WIDGETS_KEY = "dashboard_widgets";
 
 export function getWidgets(): WidgetConfig[] {
   if (typeof window === "undefined") return DEFAULT_WIDGETS;
-  
+
   try {
     const saved = localStorage.getItem(WIDGETS_KEY);
     if (saved) {
@@ -48,7 +48,7 @@ export function getWidgets(): WidgetConfig[] {
   } catch {
     // Hatalı JSON, varsayılan döndür
   }
-  
+
   return DEFAULT_WIDGETS;
 }
 
@@ -56,6 +56,8 @@ export function saveWidgets(widgets: WidgetConfig[]) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(WIDGETS_KEY, JSON.stringify(widgets));
+    // UI güncellenmesi için event fırlat
+    window.dispatchEvent(new Event("widgets-updated"));
   } catch (error) {
     console.error("Widgets kaydedilemedi:", error);
   }
@@ -87,14 +89,14 @@ export function reorderWidgets(widgetIds: string[]) {
     const widget = widgets.find(w => w.id === id);
     return widget ? { ...widget, order: index } : null;
   }).filter((w): w is WidgetConfig => w !== null);
-  
+
   // Eksik widget'ları sona ekle
   const reorderedIds = new Set(reordered.map(w => w.id));
   const remaining = widgets.filter(w => !reorderedIds.has(w.id));
   remaining.forEach((w, i) => {
     w.order = reordered.length + i;
   });
-  
+
   saveWidgets([...reordered, ...remaining]);
   return [...reordered, ...remaining];
 }
