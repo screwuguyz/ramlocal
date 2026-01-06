@@ -1101,7 +1101,8 @@ export default function DosyaAtamaApp() {
     const previousYear = currentYear - 1;
 
     // 🆕 YENİ YIL İLK ATAMA: Bu yıl hiç atama yoksa, geçen yılın en düşük puanlısına ver
-    const isFirstOfYear = !cases.some(c => c.createdAt.startsWith(String(currentYear)) && c.assignedTo);
+    // FIX (v2.2): isFirstOfYear kontrolü devre dışı bırakıldı çünkü tarih formatı uyuşmazlığında hatalı tetiklenebiliyor.
+    const isFirstOfYear = false; // !cases.some(c => c.createdAt.startsWith(String(currentYear)) && c.assignedTo);
 
     // Geçen yılın toplam puanını hesapla
     function getPreviousYearLoad(tid: string): number {
