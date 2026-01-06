@@ -109,10 +109,14 @@ export function findBestTeacher(
 
     if (activeTeachers.length === 0) return null;
 
-    // 🔄 ZORUNLU ROTASYON: Son atanan kişiyi listeden çıkar (birden fazla aday varsa)
+    // 🔄 ZORUNLU ROTASYON İPTAL EDİLDİ: 
+    // Artık son atanan kişi listeden çıkarılmıyor, böylece yükü az olan kişiye (Eray) 
+    // üst üste dosya verilebilir.
+    /*
     if (activeTeachers.length > 1 && lastAssignedId) {
         activeTeachers = activeTeachers.filter(t => t.id !== lastAssignedId);
     }
+    */
 
     // Bugünkü cases'lerden öğretmen başına toplam skorları hesapla
     const todayScores: Record<string, number> = {};

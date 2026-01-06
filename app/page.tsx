@@ -1125,10 +1125,12 @@ export default function DosyaAtamaApp() {
       );
       if (!testers.length) return null; // uygun testör yoksa atama yok
 
-      // 🔄 ZORUNLU ROTASYON: Son atanan kişiyi listeden ÇIKAR (birden fazla aday varsa)
+      // 🔄 ZORUNLU ROTASYON İPTAL EDİLDİ:
+      /*
       if (testers.length > 1 && lastTid) {
         testers = testers.filter(t => t.id !== lastTid);
       }
+      */
 
       // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
       if (isFirstOfYear) {
@@ -1163,9 +1165,12 @@ export default function DosyaAtamaApp() {
     );
     if (!available.length) return null;
 
+    // 🔄 ZORUNLU ROTASYON İPTAL EDİLDİ:
+    /*
     if (available.length > 1 && lastTid) {
       available = available.filter(t => t.id !== lastTid);
     }
+    */
 
     // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
     if (isFirstOfYear) {
