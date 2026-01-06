@@ -1075,8 +1075,12 @@ export default function DosyaAtamaApp() {
   // Bugün en son kime atama yapıldı? (liste en yeni başta olduğundan ilk uygun kaydı alır)
   function lastAssignedTeacherToday(): string | undefined {
     const today = getTodayYmd();
-    const recent = cases.find(c => !c.absencePenalty && c.createdAt.slice(0, 10) === today && !!c.assignedTo);
-    return recent?.assignedTo;
+    // Sıralama yap (yeni > eski) ve ilkini al
+    const todayCases = cases.filter(c => !c.absencePenalty && c.createdAt.slice(0, 10) === today && !!c.assignedTo);
+    if (!todayCases.length) return undefined;
+
+    todayCases.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return todayCases[0].assignedTo;
   }
 
   // ---- Puanlama
@@ -1168,18 +1172,9 @@ export default function DosyaAtamaApp() {
     );
     if (!available.length) return null;
 
-    // 🔄 AKILLI ROTASYON: Fark azsa rotasyon uygula, fark çoksa düşük olan kazansın
+    // 🔄 ZORUNLU ROTASYON: Aynı kişiye art arda dosya VERİLMEZ (tek kişi kalmadıkça)
     if (available.length > 1 && lastTid) {
-      // Önce geçici sıralama yapıp farka bak
-      const sortedForCheck = [...available].sort((a, b) => a.yearlyLoad - b.yearlyLoad);
-      const best = sortedForCheck[0];
-      const second = sortedForCheck[1];
-
-      // Eğer en iyi ile ikinci arasında 5 puandan AZ fark varsa rotasyon yap (çeşitlilik olsun)
-      // Eğer fark çoksa (örn 13 puan), rotasyon yapma, düşük olan üst üste alsın ki yetişsin.
-      if ((second.yearlyLoad - best.yearlyLoad) < 5) {
-        available = available.filter(t => t.id !== lastTid);
-      }
+      available = available.filter(t => t.id !== lastTid);
     }
 
     // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
@@ -1199,25 +1194,6 @@ export default function DosyaAtamaApp() {
     }
 
     const chosen = available[0];
-
-    // DEBUG: Canlı atama analizi (Kullanıcıya göster)
-    const debugInfo = available.slice(0, 3).map(t => `${t.name}: ${t.yearlyLoad} (Gün: ${countCasesToday(t.id)})`).join("\n");
-    // ERAY ANALİZİ
-    const eray = teachers.find(t => t.name.toUpperCase().includes("ERAY"));
-    let erayLog = "Bulunamadı";
-    if (eray) {
-      erayLog = `Yük:${eray.yearlyLoad}, Fzt:${eray.isPhysiotherapist}, Abs:${eray.isAbsent}, Act:${eray.active}, Bak:${eray.backupDay}, Cnt:${countCasesToday(eray.id)}, Lim:${settings.dailyLimit}`;
-      // Rotasyon
-      if (lastTid === eray.id) erayLog += " [SON_ALAN/ROT_BLOCK]";
-      if (eray.backupDay === todayYmd) erayLog += " [YEDEK_BLOCK]";
-      if (countCasesToday(eray.id) >= settings.dailyLimit) erayLog += " [LIMIT_BLOCK]";
-      if (eray.isPhysiotherapist) erayLog += " [FZT_BLOCK]";
-      if (eray.isAbsent) erayLog += " [ABSENT_BLOCK]";
-      if (!eray.active) erayLog += " [INACTIVE_BLOCK]";
-    }
-
-    alert(`📢 ATAMA (v2.6)!\n\n🏆 KAZANAN: ${chosen.name}\n\n🕵️‍♂️ ERAY LOG:\n${erayLog}\nLastTID: ${lastTid}\nErayID: ${eray ? eray.id : "?"}\n\n📋 İLK 3 ADAY:\n${debugInfo}`);
-    console.log(debugInfo);
     const ym = ymOf(newCase.createdAt);
 
     updateTeacher(chosen.id, {
