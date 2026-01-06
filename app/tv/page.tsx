@@ -593,104 +593,104 @@ export default function TvDisplayPage() {
                 </div>
 
                 {/* SAĞ SÜTUN - Dinamik Carousel */}
-                <div className="hidden xl:flex xl:col-span-4 flex-col bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-orange-500/30 p-4 overflow-hidden relative">
+                <div className="hidden xl:flex xl:col-span-4 flex-col bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-orange-500/30 p-6 overflow-hidden relative">
 
                     {/* Slide Indicators */}
-                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                    <div className="absolute top-6 right-6 flex gap-2 z-10">
                         {[0, 1, 2, 3].map((i) => (
                             <div
                                 key={i}
-                                className={`w-2 h-2 rounded-full transition-all ${currentSlide === i ? 'bg-orange-400 w-6' : 'bg-white/30'}`}
+                                className={`h-3 rounded-full transition-all duration-500 ${currentSlide === i ? 'bg-orange-400 w-8' : 'bg-white/30 w-3'}`}
                             />
                         ))}
                     </div>
 
                     {/* Slide 0: Gerekli Evraklar */}
-                    {currentSlide === 0 && (
-                        <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right duration-500">
-                            <h3 className="text-orange-300 font-bold uppercase tracking-wider text-xl border-b border-orange-500/40 pb-3 mb-3 flex items-center gap-2">
-                                <span>📋</span>
-                                <span>GEREKLİ EVRAKLAR</span>
-                            </h3>
-                            <div className="flex-1 space-y-2">
-                                {documents.map((item, idx) => (
-                                    <div
-                                        key={item.no}
-                                        className="bg-slate-700/50 p-3 rounded-xl border border-orange-500/20 flex items-start gap-3"
-                                    >
-                                        <div className="bg-orange-600 text-white font-bold w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-base">
-                                            {item.no}
-                                        </div>
-                                        <span className="text-lg font-semibold text-white leading-snug">{item.text}</span>
+                    <div
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out ${currentSlide === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3 className="text-orange-300 font-black uppercase tracking-wider text-2xl border-b border-orange-500/40 pb-4 mb-4 flex items-center gap-3">
+                            <span className="text-3xl">📋</span>
+                            <span>GEREKLİ EVRAKLAR</span>
+                        </h3>
+                        <div className="flex-1 space-y-3">
+                            {documents.map((item) => (
+                                <div
+                                    key={item.no}
+                                    className="bg-slate-700/50 p-4 rounded-xl border border-orange-500/20 flex items-start gap-4"
+                                >
+                                    <div className="bg-orange-600 text-white font-black w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full text-xl">
+                                        {item.no}
                                     </div>
-                                ))}
-                            </div>
+                                    <span className="text-xl font-bold text-white leading-snug">{item.text}</span>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
                     {/* Slide 1: Kurum Duyurusu */}
-                    {currentSlide === 1 && (
-                        <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in slide-in-from-right duration-500">
-                            <h3 className="text-blue-300 font-bold uppercase tracking-wider text-xl border-b border-blue-500/40 pb-3 mb-6 flex items-center gap-2 w-full">
-                                <span>📢</span>
-                                <span>KURUM DUYURUSU</span>
-                            </h3>
-                            <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                                <div className="text-6xl mb-6">🏫</div>
-                                <h4 className="text-2xl font-bold text-white mb-4">KARŞIYAKA RAM</h4>
-                                <p className="text-lg text-slate-300 leading-relaxed mb-4">
-                                    Değerli velilerimiz, randevu saatinizden <span className="text-yellow-400 font-bold">15 dakika önce</span> kurumumuzda bulunmanızı rica ederiz.
-                                </p>
-                                <p className="text-lg text-slate-300 leading-relaxed">
-                                    Gerekli evraklarınızı <span className="text-orange-400 font-bold">eksiksiz</span> getirmeniz işlemlerinizin hızlanmasını sağlayacaktır.
-                                </p>
-                                <div className="mt-6 px-6 py-3 bg-blue-600/30 rounded-xl border border-blue-500/50">
-                                    <p className="text-blue-200">📞 İletişim: <span className="font-bold">(0232) 368 89 85</span></p>
-                                </div>
+                    <div
+                        className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3 className="text-blue-300 font-black uppercase tracking-wider text-2xl border-b border-blue-500/40 pb-4 mb-8 flex items-center gap-3 w-full">
+                            <span className="text-3xl">📢</span>
+                            <span>KURUM DUYURUSU</span>
+                        </h3>
+                        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+                            <div className="text-8xl mb-8">🏫</div>
+                            <h4 className="text-4xl font-black text-white mb-6" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>KARŞIYAKA RAM</h4>
+                            <p className="text-2xl text-slate-300 leading-relaxed mb-6">
+                                Değerli velilerimiz, randevu saatinizden <span className="text-yellow-400 font-bold">15 dakika önce</span> kurumumuzda bulunmanızı rica ederiz.
+                            </p>
+                            <p className="text-2xl text-slate-300 leading-relaxed">
+                                Gerekli evraklarınızı <span className="text-orange-400 font-bold">eksiksiz</span> getirmeniz işlemlerinizin hızlanmasını sağlayacaktır.
+                            </p>
+                            <div className="mt-8 px-8 py-4 bg-blue-600/30 rounded-2xl border border-blue-500/50">
+                                <p className="text-blue-200 text-xl">📞 İletişim: <span className="font-black text-2xl">(0232) 368 89 85</span></p>
                             </div>
                         </div>
-                    )}
+                    </div>
 
                     {/* Slide 2: Hava Durumu */}
-                    {currentSlide === 2 && (
-                        <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in slide-in-from-right duration-500">
-                            <h3 className="text-cyan-300 font-bold uppercase tracking-wider text-xl border-b border-cyan-500/40 pb-3 mb-6 flex items-center gap-2 w-full">
-                                <span>🌤️</span>
-                                <span>HAVA DURUMU - KARŞIYAKA</span>
-                            </h3>
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <div className="text-9xl mb-4">{weatherData?.icon || '🌡️'}</div>
-                                <div className="text-7xl font-black text-white mb-2" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>
-                                    {weatherData?.temp || '—'}
-                                </div>
-                                <div className="text-2xl text-slate-300 capitalize">
-                                    {weatherData?.condition || 'Yükleniyor...'}
-                                </div>
-                                <div className="mt-6 text-slate-500 text-sm">
-                                    İzmir, Karşıyaka
-                                </div>
+                    <div
+                        className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 2 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3 className="text-cyan-300 font-black uppercase tracking-wider text-2xl border-b border-cyan-500/40 pb-4 mb-8 flex items-center gap-3 w-full">
+                            <span className="text-3xl">🌤️</span>
+                            <span>HAVA DURUMU - KARŞIYAKA</span>
+                        </h3>
+                        <div className="flex-1 flex flex-col items-center justify-center">
+                            <div style={{ fontSize: '10rem' }} className="mb-6">{weatherData?.icon || '🌡️'}</div>
+                            <div className="text-8xl font-black text-white mb-4" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>
+                                {weatherData?.temp || '—'}
+                            </div>
+                            <div className="text-3xl text-slate-300 capitalize font-semibold">
+                                {weatherData?.condition || 'Yükleniyor...'}
+                            </div>
+                            <div className="mt-8 text-slate-400 text-lg">
+                                📍 İzmir, Karşıyaka
                             </div>
                         </div>
-                    )}
+                    </div>
 
                     {/* Slide 3: Günün Sözü */}
-                    {currentSlide === 3 && (
-                        <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in slide-in-from-right duration-500">
-                            <h3 className="text-purple-300 font-bold uppercase tracking-wider text-xl border-b border-purple-500/40 pb-3 mb-6 flex items-center gap-2 w-full">
-                                <span>💬</span>
-                                <span>GÜNÜN SÖZÜ</span>
-                            </h3>
-                            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-                                <div className="text-6xl mb-6">📖</div>
-                                <blockquote className="text-2xl text-white leading-relaxed italic mb-6">
-                                    "{currentQuote.text}"
-                                </blockquote>
-                                <cite className="text-lg text-purple-300 not-italic font-semibold">
-                                    — {currentQuote.author}
-                                </cite>
-                            </div>
+                    <div
+                        className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 3 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3 className="text-purple-300 font-black uppercase tracking-wider text-2xl border-b border-purple-500/40 pb-4 mb-8 flex items-center gap-3 w-full">
+                            <span className="text-3xl">💬</span>
+                            <span>GÜNÜN SÖZÜ</span>
+                        </h3>
+                        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+                            <div className="text-8xl mb-8">📖</div>
+                            <blockquote className="text-3xl text-white leading-relaxed italic mb-8">
+                                "{currentQuote.text}"
+                            </blockquote>
+                            <cite className="text-2xl text-purple-300 not-italic font-bold">
+                                — {currentQuote.author}
+                            </cite>
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
