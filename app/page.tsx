@@ -3873,6 +3873,10 @@ export default function DosyaAtamaApp() {
                   });
                 }
 
+                // E-Arşivden de sil (Veri tutarlılığı için)
+                const currentEArchive = useAppStore.getState().eArchive;
+                setEArchive(currentEArchive.filter(e => e.id !== id));
+
                 // Eğer o günün cases'i içindeyse (bugün)
                 if (date === ymdLocal(new Date())) {
                   removeCaseAction(id);

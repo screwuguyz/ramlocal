@@ -169,7 +169,10 @@ export const useAppStore = create<AppState>()(
                     ),
                 })),
             removeCase: (id) =>
-                set((state) => ({ cases: state.cases.filter((c) => c.id !== id) })),
+                set((state) => ({
+                    cases: state.cases.filter((c) => c.id !== id),
+                    eArchive: state.eArchive.filter((a) => a.id !== id)
+                })),
 
             // === History ===
             setHistory: (history) => set({ history }),
