@@ -1168,8 +1168,18 @@ export default function DosyaAtamaApp() {
     );
     if (!available.length) return null;
 
+    // 🔄 AKILLI ROTASYON: Fark azsa rotasyon uygula, fark çoksa düşük olan kazansın
     if (available.length > 1 && lastTid) {
-      available = available.filter(t => t.id !== lastTid);
+      // Önce geçici sıralama yapıp farka bak
+      const sortedForCheck = [...available].sort((a, b) => a.yearlyLoad - b.yearlyLoad);
+      const best = sortedForCheck[0];
+      const second = sortedForCheck[1];
+
+      // Eğer en iyi ile ikinci arasında 5 puandan AZ fark varsa rotasyon yap (çeşitlilik olsun)
+      // Eğer fark çoksa (örn 13 puan), rotasyon yapma, düşük olan üst üste alsın ki yetişsin.
+      if ((second.yearlyLoad - best.yearlyLoad) < 5) {
+        available = available.filter(t => t.id !== lastTid);
+      }
     }
 
     // 🆕 YENİ YIL İLK ATAMA: Geçen yılın en düşük puanlısını seç
