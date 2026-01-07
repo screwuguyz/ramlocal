@@ -1465,6 +1465,7 @@ export default function DosyaAtamaApp() {
 
     const workingTeachers = currentTeachers.filter((t) =>
       t.active &&
+      !t.isPhysiotherapist && // Fizyoterapistleri hariç tut
       !currentAbsenceRecords.some(r => r.teacherId === t.id && r.date === day) && // O gün için devamsız değil
       !t.isAbsent && // Şu an devamsız değil
       t.backupDay !== day
@@ -1716,8 +1717,8 @@ export default function DosyaAtamaApp() {
   const liveScores = useMemo(() => {
     const today = getTodayYmd();
 
-    // Çalışan öğretmenler: aktif, devamsız DEĞİL ve bugün yedek DEĞİL
-    const workingTeachers = teachers.filter((t) => t.active && !t.isAbsent && t.backupDay !== today);
+    // Çalışan öğretmenler: aktif, devamsız DEĞİL, bugün yedek DEĞİL ve fizyoterapist DEĞİL
+    const workingTeachers = teachers.filter((t) => t.active && !t.isAbsent && t.backupDay !== today && !t.isPhysiotherapist);
     const workingIds = new Set(workingTeachers.map((t) => t.id));
 
     // Bugünkü çalışan öğretmenlerin dosyaları (ceza/bonus hariç)
