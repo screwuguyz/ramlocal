@@ -82,15 +82,25 @@ export default function TvDisplayPage() {
     // Sağ Panel Carousel State
     const [currentSlide, setCurrentSlide] = useState(0);
     const [weatherData, setWeatherData] = useState<{ temp: string, condition: string, icon: string } | null>(null);
-    const [currentQuote, setCurrentQuote] = useState({ text: "Eğitim, geleceğe yapılabilecek en büyük yatırımdır.", author: "Benjamin Franklin" });
+    const [currentAwarenessMessage, setCurrentAwarenessMessage] = useState({
+        text: "Her çocuk eşsizdir ve kendi yolculuğunda özeldir.",
+        emoji: "🌟"
+    });
 
-    // Günün Sözleri
-    const quotes = [
-        { text: "Eğitim, geleceğe yapılabilecek en büyük yatırımdır.", author: "Benjamin Franklin" },
-        { text: "Bir çocuğa balık verirsen bir gün doyar, balık tutmayı öğretirsen ömür boyu doyar.", author: "Atasözü" },
-        { text: "Öğretmenler, toplumun en özverili ve en önemli üyeleridir.", author: "M. Kemal Atatürk" },
-        { text: "Her çocuk bir dahidir. Ama bir balığı ağaca tırmanma yeteneğine göre yargılarsanız, tüm hayatını aptal olduğuna inanarak geçirir.", author: "Albert Einstein" },
-        { text: "Eğitimin amacı, boş bir zihni açık bir zihinle değiştirmektir.", author: "Malcolm Forbes" },
+    // Özel Eğitim Farkındalık Mesajları
+    const awarenessMessages = [
+        { text: "Her çocuk eşsizdir ve kendi yolculuğunda özeldir.", emoji: "🌟" },
+        { text: "Farklılıklar bizi zenginleştirir, kapsayıcı olalım.", emoji: "🤝" },
+        { text: "Özel gereksinimli bireyler toplumun ayrılmaz bir parçasıdır.", emoji: "💜" },
+        { text: "Engel, bireyde değil toplumun bakış açısındadır.", emoji: "👁️" },
+        { text: "Her birey kendi hızında öğrenir, sabırla destekleyelim.", emoji: "🐢" },
+        { text: "Eğitim herkes için bir haktır, erişilebilir olmalıdır.", emoji: "📚" },
+        { text: "Küçük adımlar büyük başarılara dönüşür.", emoji: "👣" },
+        { text: "Anlayış ve empati, en güçlü destek araçlarıdır.", emoji: "💝" },
+        { text: "Potansiyeli keşfetmek için fırsat vermek yeterlidir.", emoji: "🔑" },
+        { text: "Birlikte daha güçlüyüz, işbirliği yapalım.", emoji: "🤲" },
+        { text: "Her çocuğun güçlü yanları vardır, onları keşfedelim.", emoji: "💪" },
+        { text: "Sabır ve sevgi, her engeli aşmanın anahtarıdır.", emoji: "❤️" },
     ];
 
     // Hava durumu çek (İzmir/Karşıyaka)
@@ -140,15 +150,16 @@ export default function TvDisplayPage() {
         return () => clearInterval(weatherInterval);
     }, []);
 
-    // Carousel otomatik döngü (10 saniye)
+    // Carousel otomatik döngü (8 saniye - 9 slayt)
+    const TOTAL_SLIDES = 9;
     useEffect(() => {
         const slideInterval = setInterval(() => {
-            setCurrentSlide(prev => (prev + 1) % 4); // 4 slayt
-            // Günün sözünü de döndür
-            if (currentSlide === 2) { // Günün sözü slaytına geçerken yeni söz seç
-                setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
+            setCurrentSlide(prev => (prev + 1) % TOTAL_SLIDES);
+            // Farkındalık mesajını döndür (son slayta geçerken)
+            if (currentSlide === TOTAL_SLIDES - 2) {
+                setCurrentAwarenessMessage(awarenessMessages[Math.floor(Math.random() * awarenessMessages.length)]);
             }
-        }, 10000); // 10 saniye
+        }, 8000); // 8 saniye
         return () => clearInterval(slideInterval);
     }, [currentSlide]);
 
@@ -658,11 +669,11 @@ export default function TvDisplayPage() {
                 <div className="hidden xl:flex xl:col-span-4 flex-col bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-orange-500/30 p-6 overflow-hidden relative">
 
                     {/* Slide Indicators */}
-                    <div className="absolute top-6 right-6 flex gap-2 z-10">
-                        {[0, 1, 2, 3].map((i) => (
+                    <div className="absolute top-6 right-6 flex gap-1.5 z-10">
+                        {Array.from({ length: 9 }, (_, i) => (
                             <div
                                 key={i}
-                                className={`h-3 rounded-full transition-all duration-500 ${currentSlide === i ? 'bg-orange-400 w-8' : 'bg-white/30 w-3'}`}
+                                className={`h-2 rounded-full transition-all duration-500 ${currentSlide === i ? 'bg-orange-400 w-6' : 'bg-white/30 w-2'}`}
                             />
                         ))}
                     </div>
@@ -700,27 +711,30 @@ export default function TvDisplayPage() {
                     <div
                         className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
                     >
-                        <h3 className="text-blue-300 font-black uppercase tracking-wider text-2xl border-b border-blue-500/40 pb-4 mb-8 flex items-center gap-3 w-full">
-                            <span className="text-3xl">📢</span>
+                        <h3
+                            className="text-blue-300 font-black uppercase tracking-wider border-b border-blue-500/40 pb-3 mb-6 flex items-center gap-3 w-full"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📢</span>
                             <span>KURUM DUYURUSU</span>
                         </h3>
                         <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                            <div style={{ fontSize: `calc(5rem * ${fontScale})` }} className="mb-8">🏫</div>
+                            <div style={{ fontSize: `calc(4rem * ${fontScale})` }} className="mb-6">🏫</div>
                             <h4
-                                className="font-black text-white mb-6"
-                                style={{ fontSize: `calc(2.5rem * ${fontScale})`, fontFamily: 'var(--font-outfit), sans-serif' }}
+                                className="font-black text-white mb-4"
+                                style={{ fontSize: `calc(1.5rem * ${fontScale})`, fontFamily: 'var(--font-outfit), sans-serif' }}
                             >
                                 KARŞIYAKA RAM
                             </h4>
-                            <p style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="text-slate-300 leading-relaxed mb-6">
+                            <p style={{ fontSize: `calc(1rem * ${fontScale})` }} className="text-slate-300 leading-relaxed mb-4">
                                 Değerli velilerimiz, randevu saatinizden <span className="text-yellow-400 font-bold">15 dakika önce</span> kurumumuzda bulunmanızı rica ederiz.
                             </p>
-                            <p style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="text-slate-300 leading-relaxed">
+                            <p style={{ fontSize: `calc(1rem * ${fontScale})` }} className="text-slate-300 leading-relaxed">
                                 Gerekli evraklarınızı <span className="text-orange-400 font-bold">eksiksiz</span> getirmeniz işlemlerinizin hızlanmasını sağlayacaktır.
                             </p>
-                            <div className="mt-8 px-8 py-4 bg-blue-600/30 rounded-2xl border border-blue-500/50">
-                                <p style={{ fontSize: `calc(1.25rem * ${fontScale})` }} className="text-blue-200">
-                                    📞 İletişim: <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="font-black">(0232) 368 89 85</span>
+                            <div className="mt-6 px-6 py-3 bg-blue-600/30 rounded-2xl border border-blue-500/50">
+                                <p style={{ fontSize: `calc(0.875rem * ${fontScale})` }} className="text-blue-200">
+                                    📞 İletişim: <span style={{ fontSize: `calc(1rem * ${fontScale})` }} className="font-black">(0232) 368 89 85</span>
                                 </p>
                             </div>
                         </div>
@@ -748,22 +762,256 @@ export default function TvDisplayPage() {
                         </div>
                     </div>
 
-                    {/* Slide 3: Günün Sözü */}
+                    {/* Slide 3: Özel Eğitim Hakları */}
                     <div
-                        className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 3 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out p-2 ${currentSlide === 3 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
                     >
-                        <h3 className="text-purple-300 font-black uppercase tracking-wider text-2xl border-b border-purple-500/40 pb-4 mb-8 flex items-center gap-3 w-full">
-                            <span className="text-3xl">💬</span>
-                            <span>GÜNÜN SÖZÜ</span>
+                        <h3
+                            className="text-emerald-300 font-black uppercase tracking-wider border-b border-emerald-500/40 pb-3 mb-4 flex items-center gap-3"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>⚖️</span>
+                            <span>ÖZEL EĞİTİM HAKLARI</span>
                         </h3>
-                        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-                            <div className="text-8xl mb-8">📖</div>
-                            <blockquote className="text-3xl text-white leading-relaxed italic mb-8">
-                                "{currentQuote.text}"
+                        <div className="flex-1 space-y-3 overflow-y-auto">
+                            <div className="bg-emerald-900/30 p-3 rounded-xl border border-emerald-500/30">
+                                <div className="flex items-start gap-3">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📚</span>
+                                    <div>
+                                        <h4 className="font-bold text-emerald-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Kaynaştırma/Bütünleştirme Eğitimi</h4>
+                                        <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Özel gereksinimli öğrenciler, akranlarıyla birlikte normal sınıflarda eğitim alma hakkına sahiptir.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-emerald-900/30 p-3 rounded-xl border border-emerald-500/30">
+                                <div className="flex items-start gap-3">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📝</span>
+                                    <div>
+                                        <h4 className="font-bold text-emerald-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>BEP (Bireyselleştirilmiş Eğitim Programı)</h4>
+                                        <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Her öğrencinin ihtiyaçlarına göre özel hazırlanan eğitim programı.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-emerald-900/30 p-3 rounded-xl border border-emerald-500/30">
+                                <div className="flex items-start gap-3">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🏫</span>
+                                    <div>
+                                        <h4 className="font-bold text-emerald-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Destek Eğitim Odası</h4>
+                                        <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Okullarda bireysel veya küçük gruplarla özel destek eğitimi hakkı.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-emerald-900/30 p-3 rounded-xl border border-emerald-500/30">
+                                <div className="flex items-start gap-3">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🆓</span>
+                                    <div>
+                                        <h4 className="font-bold text-emerald-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Ücretsiz RAM Hizmetleri</h4>
+                                        <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Tüm değerlendirme ve rehberlik hizmetleri ücretsizdir.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide 4: Tanılama Süreci */}
+                    <div
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out p-2 ${currentSlide === 4 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3
+                            className="text-sky-300 font-black uppercase tracking-wider border-b border-sky-500/40 pb-3 mb-4 flex items-center gap-3"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🔍</span>
+                            <span>TANILAMA SÜRECİ</span>
+                        </h3>
+                        <div className="flex-1 flex flex-col justify-center space-y-4">
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="bg-sky-600 text-white font-black flex items-center justify-center rounded-full flex-shrink-0"
+                                    style={{ width: `calc(3rem * ${fontScale})`, height: `calc(3rem * ${fontScale})`, fontSize: `calc(1.25rem * ${fontScale})` }}
+                                >1</div>
+                                <div className="bg-sky-900/40 p-3 rounded-xl flex-1 border border-sky-500/30">
+                                    <h4 className="font-bold text-sky-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Başvuru</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Okul veya aile, RAM'a başvurur</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="bg-sky-600 text-white font-black flex items-center justify-center rounded-full flex-shrink-0"
+                                    style={{ width: `calc(3rem * ${fontScale})`, height: `calc(3rem * ${fontScale})`, fontSize: `calc(1.25rem * ${fontScale})` }}
+                                >2</div>
+                                <div className="bg-sky-900/40 p-3 rounded-xl flex-1 border border-sky-500/30">
+                                    <h4 className="font-bold text-sky-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Randevu</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Değerlendirme için randevu alınır</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="bg-sky-600 text-white font-black flex items-center justify-center rounded-full flex-shrink-0"
+                                    style={{ width: `calc(3rem * ${fontScale})`, height: `calc(3rem * ${fontScale})`, fontSize: `calc(1.25rem * ${fontScale})` }}
+                                >3</div>
+                                <div className="bg-sky-900/40 p-3 rounded-xl flex-1 border border-sky-500/30">
+                                    <h4 className="font-bold text-sky-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Değerlendirme</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Uzmanlar tarafından eğitsel değerlendirme yapılır</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="bg-sky-600 text-white font-black flex items-center justify-center rounded-full flex-shrink-0"
+                                    style={{ width: `calc(3rem * ${fontScale})`, height: `calc(3rem * ${fontScale})`, fontSize: `calc(1.25rem * ${fontScale})` }}
+                                >4</div>
+                                <div className="bg-sky-900/40 p-3 rounded-xl flex-1 border border-sky-500/30">
+                                    <h4 className="font-bold text-sky-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Rapor</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Bireysel Gelişim Raporu hazırlanır ve yönlendirme yapılır</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide 5: Özel Eğitim Türleri */}
+                    <div
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out p-2 ${currentSlide === 5 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3
+                            className="text-pink-300 font-black uppercase tracking-wider border-b border-pink-500/40 pb-3 mb-4 flex items-center gap-3"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🎓</span>
+                            <span>ÖZEL EĞİTİM TÜRLERİ</span>
+                        </h3>
+                        <div className="flex-1 grid grid-cols-2 gap-3">
+                            <div className="bg-pink-900/30 p-4 rounded-xl border border-pink-500/30 flex flex-col items-center text-center">
+                                <span style={{ fontSize: `calc(2.5rem * ${fontScale})` }} className="mb-2">🏫</span>
+                                <h4 className="font-bold text-pink-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Kaynaştırma Eğitimi</h4>
+                                <p className="text-slate-300 mt-1" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Normal sınıflarda akranlarla birlikte eğitim</p>
+                            </div>
+                            <div className="bg-pink-900/30 p-4 rounded-xl border border-pink-500/30 flex flex-col items-center text-center">
+                                <span style={{ fontSize: `calc(2.5rem * ${fontScale})` }} className="mb-2">👥</span>
+                                <h4 className="font-bold text-pink-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Özel Eğitim Sınıfı</h4>
+                                <p className="text-slate-300 mt-1" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Okul içinde ayrı sınıflarda eğitim</p>
+                            </div>
+                            <div className="bg-pink-900/30 p-4 rounded-xl border border-pink-500/30 flex flex-col items-center text-center">
+                                <span style={{ fontSize: `calc(2.5rem * ${fontScale})` }} className="mb-2">🏛️</span>
+                                <h4 className="font-bold text-pink-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Uygulama Okulu</h4>
+                                <p className="text-slate-300 mt-1" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Özel eğitim uygulama okullarında tam zamanlı eğitim</p>
+                            </div>
+                            <div className="bg-pink-900/30 p-4 rounded-xl border border-pink-500/30 flex flex-col items-center text-center">
+                                <span style={{ fontSize: `calc(2.5rem * ${fontScale})` }} className="mb-2">🏠</span>
+                                <h4 className="font-bold text-pink-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Evde Eğitim</h4>
+                                <p className="text-slate-300 mt-1" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Sağlık durumu nedeniyle evde eğitim hizmeti</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide 6: Evde Destek İpuçları */}
+                    <div
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out p-2 ${currentSlide === 6 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3
+                            className="text-amber-300 font-black uppercase tracking-wider border-b border-amber-500/40 pb-3 mb-4 flex items-center gap-3"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🏠</span>
+                            <span>EVDE DESTEK İPUÇLARI</span>
+                        </h3>
+                        <div className="flex-1 space-y-3 overflow-y-auto">
+                            <div className="bg-amber-900/30 p-3 rounded-xl border border-amber-500/30 flex items-start gap-3">
+                                <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>⏰</span>
+                                <div>
+                                    <h4 className="font-bold text-amber-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Düzenli Rutinler Oluşturun</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Günlük programlar çocuğunuzun güvende hissetmesini sağlar.</p>
+                                </div>
+                            </div>
+                            <div className="bg-amber-900/30 p-3 rounded-xl border border-amber-500/30 flex items-start gap-3">
+                                <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🎯</span>
+                                <div>
+                                    <h4 className="font-bold text-amber-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Küçük Hedefler Belirleyin</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Ulaşılabilir hedefler motivasyonu artırır.</p>
+                                </div>
+                            </div>
+                            <div className="bg-amber-900/30 p-3 rounded-xl border border-amber-500/30 flex items-start gap-3">
+                                <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🎮</span>
+                                <div>
+                                    <h4 className="font-bold text-amber-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Oyun ile Öğrenme</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Eğitici oyunlar öğrenmeyi keyifli hale getirir.</p>
+                                </div>
+                            </div>
+                            <div className="bg-amber-900/30 p-3 rounded-xl border border-amber-500/30 flex items-start gap-3">
+                                <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>💪</span>
+                                <div>
+                                    <h4 className="font-bold text-amber-200" style={{ fontSize: `calc(1rem * ${fontScale})` }}>Sabırlı ve Destekleyici Olun</h4>
+                                    <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Her başarıyı kutlayın, süreci destekleyin.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide 7: Önemli Hatırlatmalar */}
+                    <div
+                        className={`flex-1 flex flex-col transition-all duration-700 ease-in-out p-2 ${currentSlide === 7 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3
+                            className="text-red-300 font-black uppercase tracking-wider border-b border-red-500/40 pb-3 mb-4 flex items-center gap-3"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📅</span>
+                            <span>ÖNEMLİ HATIRLATMALAR</span>
+                        </h3>
+                        <div className="flex-1 space-y-3 overflow-y-auto">
+                            <div className="bg-red-900/30 p-4 rounded-xl border border-red-500/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📋</span>
+                                    <h4 className="font-bold text-red-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Rapor Yenileme</h4>
+                                </div>
+                                <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Bireysel Gelişim Raporları süre sonunda yenilenmelidir. Sürenizi takip edin!</p>
+                            </div>
+                            <div className="bg-red-900/30 p-4 rounded-xl border border-red-500/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>📚</span>
+                                    <h4 className="font-bold text-red-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>Kayıt Dönemleri</h4>
+                                </div>
+                                <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>Okul kayıt dönemlerinde gerekli evraklarınızı hazır bulundurun.</p>
+                            </div>
+                            <div className="bg-red-900/30 p-4 rounded-xl border border-red-500/30">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>🔄</span>
+                                    <h4 className="font-bold text-red-200" style={{ fontSize: `calc(1.125rem * ${fontScale})` }}>BEP Toplantıları</h4>
+                                </div>
+                                <p className="text-slate-300" style={{ fontSize: `calc(0.875rem * ${fontScale})` }}>BEP toplantılarına katılım zorunludur. Okulunuzla iletişimde kalın.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide 8: Farkındalık Mesajları (Dinamik) */}
+                    <div
+                        className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${currentSlide === 8 ? 'opacity-100 scale-100' : 'opacity-0 scale-95 absolute inset-0 pointer-events-none'}`}
+                    >
+                        <h3
+                            className="text-violet-300 font-black uppercase tracking-wider border-b border-violet-500/40 pb-3 mb-6 flex items-center gap-3 w-full"
+                            style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                        >
+                            <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }}>💜</span>
+                            <span>ÖZEL EĞİTİM FARKINDALIĞI</span>
+                        </h3>
+                        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+                            <div style={{ fontSize: `calc(6rem * ${fontScale})` }} className="mb-8">{currentAwarenessMessage.emoji}</div>
+                            <blockquote className="text-white leading-relaxed mb-8 font-medium" style={{ fontSize: `calc(2rem * ${fontScale})` }}>
+                                "{currentAwarenessMessage.text}"
                             </blockquote>
-                            <cite className="text-2xl text-purple-300 not-italic font-bold">
-                                — {currentQuote.author}
-                            </cite>
+                            <div className="grid grid-cols-3 gap-4 mt-4">
+                                <div className="bg-violet-900/40 p-3 rounded-xl text-center">
+                                    <div style={{ fontSize: `calc(2rem * ${fontScale})` }} className="mb-1">🤝</div>
+                                    <p className="text-violet-200 font-semibold" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Kapsayıcı Ol</p>
+                                </div>
+                                <div className="bg-violet-900/40 p-3 rounded-xl text-center">
+                                    <div style={{ fontSize: `calc(2rem * ${fontScale})` }} className="mb-1">👂</div>
+                                    <p className="text-violet-200 font-semibold" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Dinle ve Anla</p>
+                                </div>
+                                <div className="bg-violet-900/40 p-3 rounded-xl text-center">
+                                    <div style={{ fontSize: `calc(2rem * ${fontScale})` }} className="mb-1">💪</div>
+                                    <p className="text-violet-200 font-semibold" style={{ fontSize: `calc(0.75rem * ${fontScale})` }}>Destekle</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
