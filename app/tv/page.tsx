@@ -404,7 +404,9 @@ export default function TvDisplayPage() {
             style={{
                 background: 'linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e3a8a, #0f172a)',
                 backgroundSize: '400% 400%',
-                animation: 'aurora-movement 15s ease infinite'
+                animation: 'aurora-movement 15s ease infinite',
+                // Font scale CSS değişkeni - tüm child elementlere uygulanacak
+                ['--font-scale' as any]: fontScale
             }}
         >
             {/* Overlay gradient for depth */}
@@ -528,15 +530,23 @@ export default function TvDisplayPage() {
 
                 {/* SOL SÜTUN - Bekleyen Sıralar */}
                 <div className="hidden lg:flex lg:col-span-3 flex-col bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-blue-500/30 p-4 overflow-hidden">
-                    <h3 className="text-blue-300 font-bold uppercase tracking-wider text-2xl border-b border-blue-500/40 pb-3 mb-4 flex items-center justify-between">
+                    <h3
+                        className="text-blue-300 font-bold uppercase tracking-wider border-b border-blue-500/40 pb-3 mb-4 flex items-center justify-between"
+                        style={{ fontSize: `calc(1.5rem * ${fontScale})` }}
+                    >
                         <span>BEKLEYEN SIRALAR</span>
-                        <span className="bg-blue-600 px-4 py-2 rounded-lg text-2xl font-black text-white">{waitingTickets.length}</span>
+                        <span
+                            className="bg-blue-600 px-4 py-2 rounded-lg font-black text-white"
+                            style={{ fontSize: `calc(1.5rem * ${fontScale})` }}
+                        >
+                            {waitingTickets.length}
+                        </span>
                     </h3>
                     <div className="flex-1 space-y-2 overflow-y-auto">
                         {waitingTickets.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
-                                <div className="text-4xl mb-2">💤</div>
-                                <div className="text-lg text-center">Sırada kimse yok</div>
+                                <div style={{ fontSize: `calc(2.5rem * ${fontScale})` }} className="mb-2">💤</div>
+                                <div style={{ fontSize: `calc(1.125rem * ${fontScale})` }} className="text-center">Sırada kimse yok</div>
                             </div>
                         ) : (
                             waitingTickets.map((t, idx) => (
@@ -545,11 +555,30 @@ export default function TvDisplayPage() {
                                     className="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center gap-3 transition-all animate-in slide-in-from-left duration-300"
                                     style={{ animationDelay: `${idx * 50}ms` }}
                                 >
-                                    <div className="bg-blue-600 text-white font-black w-14 h-14 flex items-center justify-center rounded-full text-2xl border-2 border-blue-400">
+                                    <div
+                                        className="bg-blue-600 text-white font-black flex items-center justify-center rounded-full border-2 border-blue-400"
+                                        style={{
+                                            width: `calc(3.5rem * ${fontScale})`,
+                                            height: `calc(3.5rem * ${fontScale})`,
+                                            fontSize: `calc(1.5rem * ${fontScale})`
+                                        }}
+                                    >
                                         {String(t.no || '')}
                                     </div>
-                                    <span className="text-xl font-medium truncate flex-1 text-white">{String(t.name || "Misafir")}</span>
-                                    {idx === 0 && <span className="text-lime-400 font-bold text-base animate-pulse">SIRADA</span>}
+                                    <span
+                                        className="font-medium truncate flex-1 text-white"
+                                        style={{ fontSize: `calc(1.25rem * ${fontScale})` }}
+                                    >
+                                        {String(t.name || "Misafir")}
+                                    </span>
+                                    {idx === 0 && (
+                                        <span
+                                            className="text-lime-400 font-bold animate-pulse"
+                                            style={{ fontSize: `calc(1rem * ${fontScale})` }}
+                                        >
+                                            SIRADA
+                                        </span>
+                                    )}
                                 </div>
                             ))
                         )}
@@ -559,9 +588,9 @@ export default function TvDisplayPage() {
                     {waitingTickets.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-blue-500/30">
                             <div className="flex items-center justify-center gap-2 text-yellow-400">
-                                <Clock className="w-5 h-5" />
-                                <span className="text-lg font-bold">Tahmini Bekleme:</span>
-                                <span className="text-2xl font-black">~{waitingTickets.length * 15} dk</span>
+                                <Clock style={{ width: `calc(1.25rem * ${fontScale})`, height: `calc(1.25rem * ${fontScale})` }} />
+                                <span style={{ fontSize: `calc(1.125rem * ${fontScale})` }} className="font-bold">Tahmini Bekleme:</span>
+                                <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="font-black">~{waitingTickets.length * 15} dk</span>
                             </div>
                         </div>
                     )}
@@ -676,16 +705,23 @@ export default function TvDisplayPage() {
                             <span>KURUM DUYURUSU</span>
                         </h3>
                         <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                            <div className="text-8xl mb-8">🏫</div>
-                            <h4 className="text-4xl font-black text-white mb-6" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>KARŞIYAKA RAM</h4>
-                            <p className="text-2xl text-slate-300 leading-relaxed mb-6">
+                            <div style={{ fontSize: `calc(5rem * ${fontScale})` }} className="mb-8">🏫</div>
+                            <h4
+                                className="font-black text-white mb-6"
+                                style={{ fontSize: `calc(2.5rem * ${fontScale})`, fontFamily: 'var(--font-outfit), sans-serif' }}
+                            >
+                                KARŞIYAKA RAM
+                            </h4>
+                            <p style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="text-slate-300 leading-relaxed mb-6">
                                 Değerli velilerimiz, randevu saatinizden <span className="text-yellow-400 font-bold">15 dakika önce</span> kurumumuzda bulunmanızı rica ederiz.
                             </p>
-                            <p className="text-2xl text-slate-300 leading-relaxed">
+                            <p style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="text-slate-300 leading-relaxed">
                                 Gerekli evraklarınızı <span className="text-orange-400 font-bold">eksiksiz</span> getirmeniz işlemlerinizin hızlanmasını sağlayacaktır.
                             </p>
                             <div className="mt-8 px-8 py-4 bg-blue-600/30 rounded-2xl border border-blue-500/50">
-                                <p className="text-blue-200 text-xl">📞 İletişim: <span className="font-black text-2xl">(0232) 368 89 85</span></p>
+                                <p style={{ fontSize: `calc(1.25rem * ${fontScale})` }} className="text-blue-200">
+                                    📞 İletişim: <span style={{ fontSize: `calc(1.5rem * ${fontScale})` }} className="font-black">(0232) 368 89 85</span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -780,11 +816,15 @@ export default function TvDisplayPage() {
             )}
 
             {/* Marquee Ticker - Announcements */}
-            <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 z-50 overflow-hidden border-t-2 border-orange-400">
+            <div
+                className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 z-50 overflow-hidden border-t-2 border-orange-400"
+                style={{ height: `calc(4rem * ${fontScale})` }}
+            >
                 <div
-                    className="flex items-center h-full whitespace-nowrap text-white font-black text-xl"
+                    className="flex items-center h-full whitespace-nowrap text-white font-black"
                     style={{
-                        animation: 'marquee 45s linear infinite'
+                        animation: 'marquee 45s linear infinite',
+                        fontSize: `calc(1.25rem * ${fontScale})`
                     }}
                 >
                     <span className="px-8">📋 RANDEVUSU OLAN BİREYLER GEREKLİ EVRAKLARI HAZIR BULUNDURMALARI GEREKMEKTEDİR</span>
