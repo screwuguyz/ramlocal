@@ -58,6 +58,39 @@ export function useCaseAssignment({
     [cases]
   );
 
+  // Bu ay bu öğretmene kaç dosya atanmış
+  const countCasesThisMonth = useCallback(
+    (teacherId: string) => {
+      const currentYm = ymOf(getTodayYmd());
+      let count = 0;
+
+      // History'den bu ayın dosyalarını say
+      Object.entries(history).forEach(([date, dayCases]) => {
+        if (ymOf(date) === currentYm) {
+          dayCases.forEach((c) => {
+            if (c.assignedTo === teacherId && !c.absencePenalty) {
+              count++;
+            }
+          });
+        }
+      });
+
+      // Bugünün cases'lerinden de say
+      cases.forEach((c) => {
+        if (
+          c.assignedTo === teacherId &&
+          !c.absencePenalty &&
+          ymOf(c.createdAt) === currentYm
+        ) {
+          count++;
+        }
+      });
+
+      return count;
+    },
+    [cases, history]
+  );
+
   // Gerçek yıllık yükü hesapla
   const getRealYearlyLoad = useCallback(
     (teacherId: string): number => {
@@ -155,12 +188,14 @@ export function useCaseAssignment({
             (a, b) => getPreviousYearLoad(a.id) - getPreviousYearLoad(b.id)
           );
         } else {
-          // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
+          // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Bu ay en az dosya alan, 4) Rastgele
           testers.sort((a, b) => {
             const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
             if (byLoad !== 0) return byLoad;
             const byCount = countCasesToday(a.id) - countCasesToday(b.id);
             if (byCount !== 0) return byCount;
+            const byMonthly = countCasesThisMonth(a.id) - countCasesThisMonth(b.id);
+            if (byMonthly !== 0) return byMonthly;
             return Math.random() - 0.5;
           });
         }
@@ -172,13 +207,13 @@ export function useCaseAssignment({
           prev.map((t) =>
             t.id === chosen.id
               ? {
-                  ...t,
-                  yearlyLoad: t.yearlyLoad + newCase.score,
-                  monthly: {
-                    ...(t.monthly || {}),
-                    [ym]: (t.monthly?.[ym] || 0) + newCase.score,
-                  },
-                }
+                ...t,
+                yearlyLoad: t.yearlyLoad + newCase.score,
+                monthly: {
+                  ...(t.monthly || {}),
+                  [ym]: (t.monthly?.[ym] || 0) + newCase.score,
+                },
+              }
               : t
           )
         );
@@ -211,12 +246,14 @@ export function useCaseAssignment({
           (a, b) => getPreviousYearLoad(a.id) - getPreviousYearLoad(b.id)
         );
       } else {
-        // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Rastgele
+        // Sıralama: 1) Yıllık yük en az, 2) Bugün en az dosya alan, 3) Bu ay en az dosya alan, 4) Rastgele
         available.sort((a, b) => {
           const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
           if (byLoad !== 0) return byLoad;
           const byCount = countCasesToday(a.id) - countCasesToday(b.id);
           if (byCount !== 0) return byCount;
+          const byMonthly = countCasesThisMonth(a.id) - countCasesThisMonth(b.id);
+          if (byMonthly !== 0) return byMonthly;
           return Math.random() - 0.5;
         });
       }
@@ -228,14 +265,14 @@ export function useCaseAssignment({
         prev.map((t) =>
           t.id === chosen.id
             ? {
-                ...t,
-                yearlyLoad: t.yearlyLoad + newCase.score,
-                monthly: {
-                  ...(t.monthly || {}),
-                  [ym]: (t.monthly?.[ym] || 0) + newCase.score,
-                  },
-                }
-              : t
+              ...t,
+              yearlyLoad: t.yearlyLoad + newCase.score,
+              monthly: {
+                ...(t.monthly || {}),
+                [ym]: (t.monthly?.[ym] || 0) + newCase.score,
+              },
+            }
+            : t
         )
       );
 
@@ -251,6 +288,7 @@ export function useCaseAssignment({
       settings,
       hasTestToday,
       countCasesToday,
+      countCasesThisMonth,
       getRealYearlyLoad,
       lastAssignedTeacherToday,
       onTeachersUpdate,
