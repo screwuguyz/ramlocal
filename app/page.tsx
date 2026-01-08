@@ -2540,6 +2540,14 @@ export default function DosyaAtamaApp() {
               <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-125 group-hover:animate-bounce">🗄️</div>
               <div className="text-sm text-purple-700 font-semibold">Arşiv</div>
             </Button>
+            <a
+              href="/bildirim"
+              className="group p-6 rounded-xl bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-emerald-200 animate-card-pop h-auto flex flex-col items-center justify-center"
+              style={{ animationDelay: '0.8s' }}
+            >
+              <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-125 group-hover:animate-bounce">🔔</div>
+              <div className="text-sm text-emerald-700 font-semibold">Bildirim Aç</div>
+            </a>
           </div>
 
           <div className="text-xs text-slate-400 animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
