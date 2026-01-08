@@ -142,6 +142,29 @@ export default function PhysiotherapistList() {
         }
     }
 
+    async function testWebPushNotify(t: Teacher) {
+        try {
+            const res = await fetch("/api/push-send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    teacherId: t.id,
+                    title: "Test Web Push",
+                    message: `${t.name} için web push testi`,
+                    url: "/"
+                }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                alert("Web Push hatası: " + (json.error || "Bilinmiyor"));
+            } else {
+                alert(`Sonuç: ${json.sent} gönderildi, ${json.failed} başarısız.`);
+            }
+        } catch (e: any) {
+            alert("Web Push isteği başarısız: " + e.message);
+        }
+    }
+
     return (
         <div className="space-y-4">
             {/* Fizyoterapist Ekle */}
@@ -171,7 +194,12 @@ export default function PhysiotherapistList() {
                 return (
                     <div key={t.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
                         <div className="space-y-1 min-w-0 flex-shrink">
-                            <div className="font-medium">{t.name}</div>
+                            <div className="font-medium">
+                                {t.name}
+                                <Button size="sm" variant="outline" className="ml-2 h-6 text-xs" onClick={() => testWebPushNotify(t)}>
+                                    🔔 Test Push
+                                </Button>
+                            </div>
                             <div className="text-xs text-muted-foreground">
                                 Fizyoterapist {t.birthDate ? ` • 🎂 ${t.birthDate}` : ""}
                                 {/* Pushover Key Yönetimi */}
