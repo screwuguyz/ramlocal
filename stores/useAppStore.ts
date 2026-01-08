@@ -51,6 +51,11 @@ interface AppState {
     addAnnouncement: (announcement: Announcement) => void;
     removeAnnouncement: (id: string) => void;
 
+    // === Announcement Popup ===
+    announcementPopupData: Announcement | null;
+    showAnnouncementPopup: (announcement: Announcement) => void;
+    hideAnnouncementPopup: () => void;
+
     // === PDF Entries ===
     pdfEntries: PdfAppointment[];
     setPdfEntries: (entries: PdfAppointment[]) => void;
@@ -120,6 +125,7 @@ const initialState = {
     history: {},
     eArchive: [],
     announcements: [],
+    announcementPopupData: null,
     pdfEntries: [],
     pdfDate: null,
     pdfDateIso: null,
@@ -196,6 +202,10 @@ export const useAppStore = create<AppState>()(
                 set((state) => ({
                     announcements: state.announcements.filter((a) => a.id !== id),
                 })),
+
+            // === Announcement Popup ===
+            showAnnouncementPopup: (announcement) => set({ announcementPopupData: announcement }),
+            hideAnnouncementPopup: () => set({ announcementPopupData: null }),
 
             // === PDF Entries ===
             setPdfEntries: (pdfEntries) => set({ pdfEntries }),

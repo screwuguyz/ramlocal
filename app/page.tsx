@@ -35,6 +35,7 @@ import { Calendar as CalendarIcon, Trash2, Search, UserMinus, Plus, FileSpreadsh
 // === YENİ MODÜLER BİLEŞENLER ===
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionModal from "@/components/modals/VersionModal";
+import AnnouncementPopupModal from "@/components/modals/AnnouncementPopupModal";
 import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
@@ -100,6 +101,7 @@ export default function DosyaAtamaApp() {
     soundOn, setSoundOn,
     toasts, addToast: toast, removeToast,
     assignmentPopup, showAssignmentPopup, hideAssignmentPopup,
+    announcementPopupData, showAnnouncementPopup, hideAnnouncementPopup,
     isAdmin, setIsAdmin,
     hydrated, setHydrated
   } = useAppStore();
@@ -119,6 +121,7 @@ export default function DosyaAtamaApp() {
   const lastAbsencePenaltyRef = React.useRef<string>("");
   const supabaseTeacherCountRef = React.useRef<number>(0);
   const studentRef = React.useRef<HTMLInputElement | null>(null);
+  const seenAnnouncementIdsRef = React.useRef<Set<string>>(new Set());
 
   // ---- Öneri/Şikayet modal durumu
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -474,7 +477,22 @@ export default function DosyaAtamaApp() {
       setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
       if (Array.isArray(s.announcements)) {
         const today = getTodayYmd();
-        setAnnouncements((s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today));
+        const todayAnnouncements = (s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today);
+
+        // Yeni duyuru kontrolü - admin değilse popup göster
+        if (!isAdmin) {
+          for (const ann of todayAnnouncements) {
+            if (!seenAnnouncementIdsRef.current.has(ann.id)) {
+              seenAnnouncementIdsRef.current.add(ann.id);
+              // Yeni duyuru bulundu - popup göster ve ses çal
+              playAnnouncementSound();
+              showAnnouncementPopup(ann);
+              break; // Sadece bir tane göster
+            }
+          }
+        }
+
+        setAnnouncements(todayAnnouncements);
       }
       if (s.settings) updateSettings(s.settings);
       // Tema ayarlarını Supabase'den yükle
@@ -4616,6 +4634,11 @@ export default function DosyaAtamaApp() {
         </div>
       )}
 
+      {/* Duyuru Popup Modal */}
+      <AnnouncementPopupModal
+        announcement={announcementPopupData}
+        onClose={hideAnnouncementPopup}
+      />
     </>
   );
 }
