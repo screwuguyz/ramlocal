@@ -178,6 +178,29 @@ export default function TeacherList() {
         }
     }
 
+    async function testWebPushNotify(t: Teacher) {
+        try {
+            const res = await fetch("/api/push-send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    teacherId: t.id,
+                    title: "Test Web Push",
+                    message: `${t.name} için web push testi`,
+                    url: "/"
+                }),
+            });
+            const json = await res.json();
+            if (!res.ok) {
+                alert("Web Push hatası: " + (json.error || "Bilinmiyor"));
+            } else {
+                alert(`Sonuç: ${json.sent} gönderildi, ${json.failed} başarısız.`);
+            }
+        } catch (e: any) {
+            alert("Web Push isteği başarısız: " + e.message);
+        }
+    }
+
     return (
         <div className="space-y-4">
             {/* Öğretmen Ekle */}
@@ -213,6 +236,9 @@ export default function TeacherList() {
                         <div className="space-y-1 min-w-0 flex-shrink">
                             <div className="font-medium">
                                 {t.name}
+                                <Button size="sm" variant="outline" className="ml-2 h-6 text-xs" onClick={() => testWebPushNotify(t)}>
+                                    🔔 Test Push
+                                </Button>
                             </div>
                             <div className="text-xs text-muted-foreground">
                                 Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {isBackupToday ? " • Yedek" : ""} {t.birthDate ? ` • 🎂 ${t.birthDate}` : ""}
