@@ -15,7 +15,6 @@ import {
 import { uid } from "@/lib/utils";
 import { getTodayYmd } from "@/lib/date";
 import type { Teacher } from "@/types";
-import PushSubscriptionButton from "@/components/notifications/PushSubscriptionButton";
 
 export default function TeacherList() {
     const {
@@ -212,9 +211,8 @@ export default function TeacherList() {
                 return (
                     <div key={t.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
                         <div className="space-y-1 min-w-0 flex-shrink">
-                            <div className="font-medium flex items-center gap-2">
+                            <div className="font-medium">
                                 {t.name}
-                                <PushSubscriptionButton teacherId={t.id} size="icon" />
                             </div>
                             <div className="text-xs text-muted-foreground">
                                 Yıllık Yük: {t.yearlyLoad} {t.isTester ? " • Testör" : ""} {locked ? " • Bugün test aldı" : ""} {isBackupToday ? " • Yedek" : ""} {t.birthDate ? ` • 🎂 ${t.birthDate}` : ""}
