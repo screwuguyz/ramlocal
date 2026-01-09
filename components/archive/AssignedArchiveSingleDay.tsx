@@ -48,6 +48,11 @@ export default function AssignedArchiveSingleDay({
     const todayYmd = ymdLocal(new Date());
     // Bugün hiç kayıt olmasa bile 'bugün' seçilebilir olsun
     set.add(todayYmd);
+    // Add ALL dates from cases too
+    cases.forEach((c) => {
+      const caseDate = c.createdAt.slice(0, 10);
+      if (caseDate) set.add(caseDate);
+    });
     return Array.from(set).sort();
   }, [history, cases]);
 
