@@ -200,6 +200,13 @@ export function useSupabaseSync(): SupabaseSyncHook {
     // Sync current state to server (only for admin users)
     const syncToServer = useCallback(async () => {
         try {
+            // PROTECTION: Block sync from localhost to prevent production data overwrites
+            if (typeof window !== "undefined" &&
+                (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                console.log("[syncToServer] 🛑 BLOCKED - Running on localhost, not syncing to production");
+                return;
+            }
+
             // Check if user is admin before syncing
             const sessionRes = await fetch("/api/session");
             const sessionData = sessionRes.ok ? await sessionRes.json() : { isAdmin: false };
