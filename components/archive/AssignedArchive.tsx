@@ -47,8 +47,11 @@ export default function AssignedArchive({
 }) {
   const days = useMemo(() => {
     const set = new Set<string>(Object.keys(history));
-    const todayYmd = ymdLocal(new Date());
-    if (cases.some((c) => c.createdAt.slice(0, 10) === todayYmd)) set.add(todayYmd);
+    // Add ALL dates from cases, not just today
+    cases.forEach((c) => {
+      const caseDate = c.createdAt.slice(0, 10);
+      if (caseDate) set.add(caseDate);
+    });
     return Array.from(set).sort();
   }, [history, cases]);
 
