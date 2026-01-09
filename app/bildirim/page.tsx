@@ -164,13 +164,17 @@ export default function BildirimPage() {
     const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+        <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Background Decorations */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-teal-200/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+            <div className="w-full max-w-md relative z-10">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50 transition-all duration-300 hover:shadow-3xl">
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full mb-4">
-                            <Smartphone className="w-8 h-8 text-white" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/30 animate-float">
+                            <Smartphone className="w-10 h-10 text-white" />
                         </div>
                         <h1 className="text-2xl font-bold text-slate-800">Bildirim Aktivasyonu</h1>
                         <p className="text-slate-500 mt-2">Dosya atandığında telefona bildirim al</p>

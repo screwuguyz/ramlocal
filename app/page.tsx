@@ -3388,61 +3388,40 @@ export default function DosyaAtamaApp() {
 
         {/* Admin alanı - Tab Sistemi */}
         {isAdmin && (
-          <Card className="border-2">
-            {/* Tab Navigation */}
-            <div className="border-b">
-              <div className="flex flex-wrap gap-2 p-3 bg-slate-50">
-                <Button
-                  variant={adminTab === "files" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("files")}
-                  className="min-h-9"
-                >
-                  📁 Dosya Atama
-                </Button>
-                <Button
-                  variant={adminTab === "teachers" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("teachers")}
-                  className="min-h-9"
-                >
-                  👨‍🏫 Öğretmenler
-                </Button>
-                <Button
-                  variant={adminTab === "physiotherapists" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("physiotherapists")}
-                  className="min-h-9"
-                >
-                  🩺 Fizyoterapist
-                </Button>
-                <Button
-                  variant={adminTab === "reports" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("reports")}
-                  className="min-h-9"
-                >
-                  📊 Raporlar
-                </Button>
-                <Button
-                  variant={adminTab === "announcements" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("announcements")}
-                  className="min-h-9"
-                >
-                  📢 Duyuru
-                </Button>
-                <Button
-                  variant={adminTab === "backup" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setAdminTab("backup")}
-                  className="min-h-9"
-                >
-                  💾 Yedekleme
-                </Button>
-
+          <Card className="border-2 overflow-hidden">
+            {/* Tab Navigation - Modern Tasarım */}
+            <div className="border-b bg-gradient-to-r from-slate-50 via-white to-slate-50">
+              <div className="flex items-center gap-1 p-2 overflow-x-auto no-scrollbar">
+                {[
+                  { id: "files", icon: "📁", label: "Dosya Atama" },
+                  { id: "teachers", icon: "👨‍🏫", label: "Öğretmenler" },
+                  { id: "physiotherapists", icon: "🩺", label: "Fizyoterapist" },
+                  { id: "reports", icon: "📊", label: "Raporlar" },
+                  { id: "announcements", icon: "📢", label: "Duyuru" },
+                  { id: "backup", icon: "💾", label: "Yedekleme" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setAdminTab(tab.id as any)}
+                    className={`
+                      relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
+                      transition-all duration-200 ease-out whitespace-nowrap
+                      ${adminTab === tab.id
+                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      }
+                    `}
+                  >
+                    <span className="text-base">{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {adminTab === tab.id && (
+                      <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/50 rounded-full" />
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
+
 
             {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
             <div className="flex flex-wrap items-center gap-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
