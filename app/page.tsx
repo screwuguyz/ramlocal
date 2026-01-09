@@ -3261,7 +3261,7 @@ export default function DosyaAtamaApp() {
             <div className="text-sm opacity-90">👨‍🏫 Aktif Öğretmen</div>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-default">
-            <div className="text-3xl font-bold">{cases.filter(c => !c.absencePenalty).length}</div>
+            <div className="text-3xl font-bold">{cases.filter(c => !c.absencePenalty && c.createdAt.slice(0, 10) === getTodayYmd()).length}</div>
             <div className="text-sm opacity-90">📁 Bugün Atanan</div>
           </div>
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-default">
