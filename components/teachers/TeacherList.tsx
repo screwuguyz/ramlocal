@@ -316,6 +316,17 @@ export default function TeacherList() {
                                     <div className="flex items-center gap-2">
                                         {/* Hızlı Aksiyonlar */}
                                         <Button
+                                            variant={t.isTester ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => handleToggleTester(t.id)}
+                                            className={`h-8 ${t.isTester ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                                            title="Test dosyalarını bu öğretmene atanabilir hale getirir"
+                                        >
+                                            <FlaskConical className="w-3.5 h-3.5 mr-1" />
+                                            {t.isTester ? 'Testör ✓' : 'Testör'}
+                                        </Button>
+
+                                        <Button
                                             variant={t.isAbsent ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleToggleAbsent(t.id)}
@@ -344,15 +355,6 @@ export default function TeacherList() {
                                             </PopoverTrigger>
                                             <PopoverContent className="w-56 p-2" align="end">
                                                 <div className="space-y-1">
-                                                    <Button
-                                                        variant={t.isTester ? "default" : "ghost"}
-                                                        size="sm"
-                                                        className="w-full justify-start h-9"
-                                                        onClick={() => handleToggleTester(t.id)}
-                                                    >
-                                                        <FlaskConical className="w-4 h-4 mr-2" />
-                                                        {t.isTester ? "Testör (Açık)" : "Testör Yap"}
-                                                    </Button>
 
                                                     <Button
                                                         variant="ghost"

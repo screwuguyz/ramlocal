@@ -1683,6 +1683,30 @@ export default function DosyaAtamaApp() {
   // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
   function doRollover() {
     const dayOfCases = cases[0]?.createdAt.slice(0, 10) || getTodayYmd();
+
+    // ✅ GÜVENLIK: Rollover öncesi, şu an izinli olan öğretmenlerin absenceRecords'ta o gün için kaydı yoksa ekle
+    // Bu sayede site kapansa bile ertesi gün açıldığında izin puanı doğru hesaplanır
+    const currentTeachers = useAppStore.getState().teachers;
+    const currentAbsenceRecords = useAppStore.getState().absenceRecords;
+    let updatedAbsenceRecords = [...currentAbsenceRecords];
+    let recordsChanged = false;
+
+    currentTeachers.forEach(t => {
+      if (t.active && t.isAbsent && !t.isPhysiotherapist) {
+        // Bu öğretmen şu an izinli, o gün için kayıt var mı?
+        const hasRecord = updatedAbsenceRecords.some(r => r.teacherId === t.id && r.date === dayOfCases);
+        if (!hasRecord) {
+          updatedAbsenceRecords.push({ teacherId: t.id, date: dayOfCases });
+          recordsChanged = true;
+          console.log(`[doRollover] İzin kaydı eklendi: ${t.name} - ${dayOfCases}`);
+        }
+      }
+    });
+
+    if (recordsChanged) {
+      setAbsenceRecords(updatedAbsenceRecords);
+    }
+
     applyAbsencePenaltyForDay(dayOfCases);
     applyBackupBonusForDay(dayOfCases);
     const sourceCases = casesRef.current.length ? casesRef.current : cases;
@@ -1694,6 +1718,10 @@ export default function DosyaAtamaApp() {
     setHistory(nextHistory);
     setCases([]); // bugünkü liste sıfırlansın (kilitler de sıfırlanır)
     setLastRollover(getTodayYmd());
+
+    // ✅ Rollover sonrası tüm öğretmenlerin isAbsent durumunu sıfırla (yeni gün başladı)
+    const resetTeachers = currentTeachers.map(t => ({ ...t, isAbsent: false }));
+    setTeachers(resetTeachers);
   }
 
   // Uygulama açıldığında kaçırılmış rollover varsa uygula, sonra bir sonraki gece için zamanla
