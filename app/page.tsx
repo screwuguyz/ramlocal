@@ -205,6 +205,14 @@ export default function DosyaAtamaApp() {
   const [loginRemember, setLoginRemember] = useState(true);
   const [showVersionPopup, setShowVersionPopup] = useState(false);
 
+  // Test Bitti Mi? Dialog State
+  const [testNotFinishedDialog, setTestNotFinishedDialog] = useState<{
+    open: boolean;
+    pendingCase: CaseFile | null;
+    chosenTeacher: Teacher | null;
+    skipTeacherIds: string[];
+  }>({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
+
   // Sound Effect
   useEffect(() => {
     // Sound on logic managed by store or here? Store has soundOn.
@@ -1199,7 +1207,7 @@ export default function DosyaAtamaApp() {
 
     // Normal dosyada: bugün test almış olsa da normal dosya verilebilir (Fizyoterapistler hariç)
     // FIX (v2.3): İsim bazlı engelleme de eklendi (Furkan Ata)
-    console.log("--- ATAMA VERSİYON 2.3 (Fzt Fix) ---");
+    console.log("--- ATAMA VERSİYON 2.4 (Test Dialog) ---");
     let available = teachers.filter(
       (t) => !t.isPhysiotherapist && !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name) && !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit
     );
@@ -1216,11 +1224,6 @@ export default function DosyaAtamaApp() {
     } else {
       // Sıralama
       available.sort((a, b) => {
-        // const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
-        // UI ile tutarlılık için direkt stored yearlyLoad kullanıyoruz:
-        // const byLoad = a.yearlyLoad - b.yearlyLoad;
-        // FIX: Sıralama yaparken veritabanındaki değere değil, her zaman anlık hesaplanan 2026 değerine bak.
-        // (Zaten yukarıdaki sync kodu veritabanını da güncelleyecek ama atama anında garanti olsun)
         const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
         if (byLoad !== 0) return byLoad;
         const byCount = countCasesToday(a.id) - countCasesToday(b.id);
@@ -1234,12 +1237,10 @@ export default function DosyaAtamaApp() {
     // DEBUG: Canlı atama analizi (Kullanıcı ayarlarından açılabilir)
     if (settings.debugMode) {
       const debugInfo = available.slice(0, 3).map(t => `${t.name}: ${getRealYearlyLoad(t.id)} (Gün: ${countCasesToday(t.id)})`).join("\n");
-      // ERAY ANALİZİ
       const eray = teachers.find(t => t.name.toUpperCase().includes("ERAY"));
       let erayLog = "Bulunamadı";
       if (eray) {
         erayLog = `Yük:${getRealYearlyLoad(eray.id)}, Fzt:${eray.isPhysiotherapist}, Abs:${eray.isAbsent}, Act:${eray.active}, Bak:${eray.backupDay}, Cnt:${countCasesToday(eray.id)}, Lim:${settings.dailyLimit}`;
-        // Rotasyon kontrolü
         if (lastTid === eray.id) erayLog += " [SON_ALAN/ROT_BLOCK]";
         if (eray.backupDay === todayYmd) erayLog += " [YEDEK_BLOCK]";
         if (countCasesToday(eray.id) >= settings.dailyLimit) erayLog += " [LIMIT_BLOCK]";
@@ -1259,6 +1260,141 @@ export default function DosyaAtamaApp() {
     newCase.assignedTo = chosen.id;
     notifyTeacher(chosen.pushoverKey || "", "Dosya Atandı", `Öğrenci: ${newCase.student}`, 0, chosen.id);
     return chosen;
+  }
+
+  // 🆕 Test Bitti Mi Dialog ile Atama (skipTeacherIds: daha önce "bitmedi" denilen öğretmenler)
+  function autoAssignWithTestCheck(newCase: CaseFile, skipTeacherIds: string[] = []): { chosen: Teacher | null; needsConfirm: boolean; pendingCase?: CaseFile; availableList?: Teacher[] } {
+    const todayYmd = getTodayYmd();
+    const lastTid = lastAssignedTeacherToday();
+
+    // Test dosyası normal akışla gider
+    if (newCase.isTest) {
+      const chosen = autoAssign(newCase);
+      return { chosen, needsConfirm: false };
+    }
+
+    // Normal dosya için available listesi
+    let available = teachers.filter(
+      (t) => !t.isPhysiotherapist && !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name) && !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit && !skipTeacherIds.includes(t.id)
+    );
+    if (!available.length) return { chosen: null, needsConfirm: false };
+
+    // Rotasyon
+    if (available.length > 1 && lastTid) {
+      available = available.filter(t => t.id !== lastTid);
+    }
+
+    // Sıralama
+    available.sort((a, b) => {
+      const byLoad = getRealYearlyLoad(a.id) - getRealYearlyLoad(b.id);
+      if (byLoad !== 0) return byLoad;
+      const byCount = countCasesToday(a.id) - countCasesToday(b.id);
+      if (byCount !== 0) return byCount;
+      return Math.random() - 0.5;
+    });
+
+    const chosen = available[0];
+
+    // 🔔 TEST BİTTİ Mİ? Seçilen öğretmen bugün test aldıysa onay iste
+    if (hasTestToday(chosen.id)) {
+      return {
+        chosen,
+        needsConfirm: true,
+        pendingCase: newCase,
+        availableList: available
+      };
+    }
+
+    // Normal atama yap
+    const ym = ymOf(newCase.createdAt);
+    updateTeacher(chosen.id, {
+      yearlyLoad: chosen.yearlyLoad + newCase.score,
+      monthly: { ...(chosen.monthly || {}), [ym]: (chosen.monthly?.[ym] || 0) + newCase.score },
+    });
+    newCase.assignedTo = chosen.id;
+    notifyTeacher(chosen.pushoverKey || "", "Dosya Atandı", `Öğrenci: ${newCase.student}`, 0, chosen.id);
+    return { chosen, needsConfirm: false };
+  }
+
+  // Dialog'da "Bitti" seçildiğinde çağrılır
+  function confirmTestFinished() {
+    const { pendingCase, chosenTeacher } = testNotFinishedDialog;
+    if (!pendingCase || !chosenTeacher) return;
+
+    const ym = ymOf(pendingCase.createdAt);
+    updateTeacher(chosenTeacher.id, {
+      yearlyLoad: chosenTeacher.yearlyLoad + pendingCase.score,
+      monthly: { ...(chosenTeacher.monthly || {}), [ym]: (chosenTeacher.monthly?.[ym] || 0) + pendingCase.score },
+    });
+    pendingCase.assignedTo = chosenTeacher.id;
+    notifyTeacher(chosenTeacher.pushoverKey || "", "Dosya Atandı", `Öğrenci: ${pendingCase.student}`, 0, chosenTeacher.id);
+
+    addCaseAction(pendingCase);
+    playAssignSound();
+    showAssignmentPopup({
+      teacherName: chosenTeacher.name,
+      studentName: pendingCase.student,
+      score: pendingCase.score
+    });
+
+    // Reset form
+    setStudent("");
+    setFileNo("");
+    setIsNew(false);
+    setDiagCount(0);
+    setType("YONLENDIRME");
+    setIsTestCase(false);
+    setFilterYM(ymOf(pendingCase.createdAt));
+    setManualTeacherId("");
+    setManualReason("");
+
+    setTestNotFinishedDialog({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
+  }
+
+  // Dialog'da "Bitmedi" seçildiğinde çağrılır - bu öğretmeni atla, sonrakine bak
+  function skipTestNotFinished() {
+    const { pendingCase, chosenTeacher, skipTeacherIds } = testNotFinishedDialog;
+    if (!pendingCase || !chosenTeacher) return;
+
+    // Bu öğretmeni skip listesine ekle ve tekrar dene
+    const newSkipList = [...skipTeacherIds, chosenTeacher.id];
+    const result = autoAssignWithTestCheck(pendingCase, newSkipList);
+
+    if (result.needsConfirm && result.chosen && result.pendingCase) {
+      // Bir sonraki aday da test almış, tekrar sor
+      setTestNotFinishedDialog({
+        open: true,
+        pendingCase: result.pendingCase,
+        chosenTeacher: result.chosen,
+        skipTeacherIds: newSkipList
+      });
+    } else if (result.chosen) {
+      // Atama başarılı
+      addCaseAction(pendingCase);
+      playAssignSound();
+      showAssignmentPopup({
+        teacherName: result.chosen.name,
+        studentName: pendingCase.student,
+        score: pendingCase.score
+      });
+
+      // Reset form
+      setStudent("");
+      setFileNo("");
+      setIsNew(false);
+      setDiagCount(0);
+      setType("YONLENDIRME");
+      setIsTestCase(false);
+      setFilterYM(ymOf(pendingCase.createdAt));
+      setManualTeacherId("");
+      setManualReason("");
+
+      setTestNotFinishedDialog({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
+    } else {
+      // Uygun öğretmen kalmadı
+      toast("⚠️ Uygun öğretmen bulunamadı!");
+      setTestNotFinishedDialog({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
+    }
   }
 
   const [triedAdd, setTriedAdd] = useState(false);
@@ -1284,6 +1420,12 @@ export default function DosyaAtamaApp() {
       diagCount,
       isTest: isTestCase,
     };
+
+    // Eğer PDF randevusundan geldiyse, kaynak bilgisini ekle
+    if (selectedPdfEntryId && activePdfEntry) {
+      newCase.sourcePdfEntry = activePdfEntry;
+    }
+
     // Eğer admin öğretmen seçtiyse, manuel atama uygula
     if (manualTeacherId) {
       newCase.assignedTo = manualTeacherId;
@@ -1304,41 +1446,69 @@ export default function DosyaAtamaApp() {
           score: newCase.score
         });
       }
+
+      addCaseAction(newCase);
+
+      // Atama başarılı olduysa ve PDF randevusundan geldiyse, randevu listesinden sil
+      if (selectedPdfEntryId) {
+        setPdfEntries(pdfEntries.filter(e => e.id !== selectedPdfEntryId));
+        setSelectedPdfEntryId(null);
+      }
+
+      // reset inputs
+      setStudent("");
+      setFileNo("");
+      setIsNew(false);
+      setDiagCount(0);
+      setType("YONLENDIRME");
+      setIsTestCase(false);
+      setFilterYM(ymOf(createdAt));
+      setManualTeacherId("");
+      setManualReason("");
     } else {
-      const chosenAuto = autoAssign(newCase);
-      if (chosenAuto) {
+      // 🆕 Otomatik atama - Test kontrolü ile
+      const result = autoAssignWithTestCheck(newCase);
+
+      if (result.needsConfirm && result.chosen && result.pendingCase) {
+        // Test alan öğretmene atanacak - dialog göster
+        setTestNotFinishedDialog({
+          open: true,
+          pendingCase: result.pendingCase,
+          chosenTeacher: result.chosen,
+          skipTeacherIds: []
+        });
+        // Form resetleme ve case ekleme dialog callbacklerinde yapılacak
+        return;
+      }
+
+      if (result.chosen) {
         playAssignSound();
         showAssignmentPopup({
-          teacherName: chosenAuto.name,
+          teacherName: result.chosen.name,
           studentName: newCase.student,
           score: newCase.score
         });
       }
-    }
-    // Eğer PDF randevusundan geldiyse, kaynak bilgisini ekle
-    if (selectedPdfEntryId && activePdfEntry) {
-      newCase.sourcePdfEntry = activePdfEntry;
-    }
 
-    addCaseAction(newCase);
+      addCaseAction(newCase);
 
-    // Atama başarılı olduysa ve PDF randevusundan geldiyse, randevu listesinden sil
-    if (selectedPdfEntryId) {
-      setPdfEntries(pdfEntries.filter(e => e.id !== selectedPdfEntryId));
-      setSelectedPdfEntryId(null);
+      // Atama başarılı olduysa ve PDF randevusundan geldiyse, randevu listesinden sil
+      if (selectedPdfEntryId) {
+        setPdfEntries(pdfEntries.filter(e => e.id !== selectedPdfEntryId));
+        setSelectedPdfEntryId(null);
+      }
+
+      // reset inputs
+      setStudent("");
+      setFileNo("");
+      setIsNew(false);
+      setDiagCount(0);
+      setType("YONLENDIRME");
+      setIsTestCase(false);
+      setFilterYM(ymOf(createdAt));
+      setManualTeacherId("");
+      setManualReason("");
     }
-
-    // reset inputs
-    setStudent("");
-    setFileNo("");
-    setIsNew(false);
-    setDiagCount(0);
-    setType("YONLENDIRME");
-    setIsTestCase(false);
-    setFilterYM(ymOf(createdAt));
-    // Manuel seçimleri temizle
-    setManualTeacherId("");
-    setManualReason("");
   }
   // Dosya eklendiğinde E-Arşive de ekle
   useEffect(() => {
@@ -4646,6 +4816,67 @@ export default function DosyaAtamaApp() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 🆕 Test Bitti Mi? Dialog */}
+      {testNotFinishedDialog.open && testNotFinishedDialog.chosenTeacher && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]" onClick={() => setTestNotFinishedDialog({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] })}>
+          <Card className="w-[420px] shadow-2xl border-0 animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg">
+              <CardTitle className="text-white flex items-center gap-2">
+                <span className="text-2xl">⏱️</span>
+                <span>Test Bitti Mi?</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                  <span className="text-3xl">🧪</span>
+                </div>
+                <p className="text-lg font-medium text-slate-900 mb-2">
+                  <span className="text-amber-600 font-bold">{testNotFinishedDialog.chosenTeacher.name}</span>
+                </p>
+                <p className="text-slate-600 text-sm">
+                  Bu öğretmen bugün test dosyası aldı.
+                  <br />
+                  Yeni dosya atanacak ama test henüz bitmemiş olabilir.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <span>📁</span>
+                  <span className="font-medium">Atanacak Dosya:</span>
+                  <span>{testNotFinishedDialog.pendingCase?.student}</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-700 mt-1">
+                  <span>⭐</span>
+                  <span className="font-medium">Puan:</span>
+                  <span>{testNotFinishedDialog.pendingCase?.score}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={confirmTestFinished}
+                >
+                  ✅ Test Bitti, Ata
+                </Button>
+                <Button
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={skipTestNotFinished}
+                >
+                  ⏭️ Bitmedi, Atla
+                </Button>
+              </div>
+
+              <p className="text-xs text-center text-slate-500">
+                "Atla" seçerseniz dosya sıradaki uygun öğretmene verilecek
+              </p>
+            </CardContent>
+          </Card>
         </div>
       )}
 
