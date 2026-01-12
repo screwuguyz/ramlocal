@@ -18,27 +18,32 @@ export function Select({
   const [label, setLabel] = useState<string>("");
   return (
     <SelectCtx.Provider value={{ value, onValueChange, open, setOpen, label, setLabel }}>
-      <div className="relative inline-block">{children}</div>
+      <div className="relative w-full">{children}</div>
     </SelectCtx.Provider>
   );
 }
 
 export function SelectTrigger(
-  { className, ...props }: React.ComponentPropsWithoutRef<"button">
+  { className, children, ...props }: React.ComponentPropsWithoutRef<"button">
 ) {
   const ctx = useContext(SelectCtx)!;
   return (
     <button type="button"
       onClick={() => ctx.setOpen(!ctx.open)}
-      className={`flex h-10 w-full items-center justify-between rounded-md border px-3 text-sm bg-white ${className || ""}`}
+      className={`flex h-10 w-full items-center justify-between rounded-md border px-3 text-sm bg-white hover:bg-gray-50 transition-colors ${className || ""}`}
       {...props}
-    />
+    >
+      {children}
+      <svg className={`h-4 w-4 opacity-50 transition-transform ${ctx.open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
   );
 }
 
 export function SelectValue({ placeholder }: { placeholder?: string }) {
   const ctx = useContext(SelectCtx)!;
-  return <span>{ctx.label || ctx.value || placeholder || "Seç"}</span>;
+  return <span className="truncate">{ctx.label || ctx.value || placeholder || "Seç"}</span>;
 }
 
 export function SelectContent(
@@ -57,9 +62,14 @@ export function SelectContent(
 
   if (!ctx.open) return null;
   return (
-    <div ref={ref}
-      className={`absolute z-50 mt-1 min-w-[8rem] w-full max-h-[300px] overflow-y-auto rounded-md border bg-white shadow p-1 ${className || ""}`}>
-      {children}
+    <div
+      ref={ref}
+      className={`absolute left-0 right-0 z-[9999] mt-1 rounded-md border bg-white shadow-lg ${className || ""}`}
+      style={{ maxHeight: '240px', overflowY: 'auto' }}
+    >
+      <div className="p-1">
+        {children}
+      </div>
     </div>
   );
 }
@@ -69,10 +79,13 @@ export function SelectItem(
     { children: React.ReactNode; value: string; className?: string } & React.ComponentPropsWithoutRef<"div">
 ) {
   const ctx = useContext(SelectCtx)!;
+  const isSelected = ctx.value === value;
   return (
-    <div role="option"
+    <div
+      role="option"
+      aria-selected={isSelected}
       onClick={() => { ctx.onValueChange?.(value); ctx.setLabel(String(children)); ctx.setOpen(false); }}
-      className={`cursor-pointer px-2 py-1 text-sm rounded hover:bg-gray-100 ${className || ""}`}
+      className={`cursor-pointer px-3 py-2 text-sm rounded-md transition-colors ${isSelected ? 'bg-blue-100 text-blue-900 font-medium' : 'hover:bg-gray-100'} ${className || ""}`}
       {...props}
     >
       {children}
