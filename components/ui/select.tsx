@@ -9,7 +9,7 @@ type Ctx = {
   open: boolean;
   setOpen: (o: boolean) => void;
   setLabel: (s: string) => void;
-  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  triggerRef: React.MutableRefObject<HTMLButtonElement | null>;
 };
 const SelectCtx = createContext<Ctx | null>(null);
 
@@ -18,7 +18,7 @@ export function Select({
 }: { children: React.ReactNode; value?: string; onValueChange?: (v: string) => void; }) {
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState<string>("");
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   return (
     <SelectCtx.Provider value={{ value, onValueChange, open, setOpen, label, setLabel, triggerRef }}>
       <div className="relative w-full">{children}</div>
