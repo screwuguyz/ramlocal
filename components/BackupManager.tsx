@@ -96,6 +96,17 @@ export default function BackupManager({ currentState, onRestore }: Props) {
   const createBackup = async (type: "manual" | "auto" = "manual") => {
     setLoading(true);
     setMessage(null);
+
+    // Debug: currentState kontrolü
+    if (!currentState || Object.keys(currentState).length === 0) {
+      console.error("[BackupManager] currentState boş veya undefined!", currentState);
+      setMessage({ type: "error", text: "State verisi yüklenemedi. Sayfayı yenileyin." });
+      setLoading(false);
+      return;
+    }
+
+    console.log("[BackupManager] Yedek oluşturuluyor...", { type, stateKeys: Object.keys(currentState) });
+
     try {
       const res = await fetch("/api/backup", {
         method: "POST",
@@ -106,15 +117,24 @@ export default function BackupManager({ currentState, onRestore }: Props) {
           description: type === "manual" ? "Manuel yedek" : "Otomatik yedek",
         }),
       });
+
+      console.log("[BackupManager] API yanıtı:", res.status, res.statusText);
+
       const data = await res.json();
+
       if (data.ok) {
         setMessage({ type: "success", text: "✅ Yedek oluşturuldu!" });
         fetchBackups();
       } else {
-        setMessage({ type: "error", text: data.error || "Yedek oluşturulamadı" });
+        console.error("[BackupManager] API hatası:", data);
+        const errorMsg = res.status === 401
+          ? "Yetkilendirme hatası. Admin olarak giriş yapın."
+          : (data.error || "Yedek oluşturulamadı");
+        setMessage({ type: "error", text: errorMsg });
       }
-    } catch (err) {
-      setMessage({ type: "error", text: "Bağlantı hatası" });
+    } catch (err: any) {
+      console.error("[BackupManager] Bağlantı hatası:", err);
+      setMessage({ type: "error", text: `Bağlantı hatası: ${err?.message || "Bilinmeyen"}` });
     } finally {
       setLoading(false);
     }
