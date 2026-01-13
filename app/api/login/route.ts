@@ -12,24 +12,10 @@ if (process.env.NODE_ENV === "production" && (!ENV_EMAIL || !ENV_PASSWORD)) {
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limiting - prevent brute force
-  const clientIp = getClientIp(req);
-  const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.LOGIN);
-
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { ok: false, error: "Too many login attempts. Please try again later." },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': String(RATE_LIMITS.LOGIN.limit),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': String(rateLimit.resetTime),
-          'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
-        }
-      }
-    );
-  }
+  // Rate limiting disabled for easier access
+  // TODO: Re-enable rate limiting in production if needed
+  // const clientIp = getClientIp(req);
+  // const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.LOGIN);
 
   const body = await req.json().catch(() => ({}));
   const email = String(body?.email ?? "").trim().toLowerCase();
