@@ -37,6 +37,7 @@
     "react-day-picker": "^9.11.1",
     "react-dom": "^18.3.1",
     "react-qr-code": "^2.0.18",
+    "react-tilt": "^1.0.2",
     "tailwind-merge": "^3.3.1",
     "web-push": "^3.6.7",
     "zod": "^3.23.8",

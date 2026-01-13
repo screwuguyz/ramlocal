@@ -22,6 +22,9 @@ body {
   /* Subtle Pattern Background */
   background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
   background-size: 24px 24px;
+  perspective: 1000px;
+  /* 3D Tilt Derinliği */
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Scrollbar Customization */
