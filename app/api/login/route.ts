@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set("ram_admin", "1", {
     httpOnly: true,
-    sameSite: "strict", // SECURITY FIX: Changed from 'lax' to 'strict' for better CSRF protection
+    sameSite: "lax", // Keep 'lax' for compatibility
     path: "/",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 7, // SECURITY FIX: Reduced from 30 days to 7 days
+    maxAge: 60 * 60 * 24 * 30, // 30 days
   });
   return res;
 }
