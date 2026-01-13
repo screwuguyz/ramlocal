@@ -7,8 +7,19 @@ const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"; // OpenAI-compatible
 const MODEL = process.env.OPENAI_MODEL || (AI_PROVIDER === "groq" ? "llama-3.1-8b-instant" : "gpt-3.5-turbo");
 
+// Type for the request body
+type ExplainRequestBody = {
+  question?: string;
+  caseFile?: Record<string, unknown>;
+  selectedTeacher?: Record<string, unknown>;
+  rules?: string[];
+  context?: unknown;
+  messages?: Array<{ role: string; content: string }>;
+  otherTeachers?: unknown[];
+};
+
 export async function POST(req: NextRequest) {
-  let body: any = null;
+  let body: ExplainRequestBody | null = null;
   try {
     // Sağlayıcı ve anahtar seçimi
     let apiBase = OPENAI_API_URL;
@@ -88,12 +99,8 @@ export async function POST(req: NextRequest) {
 
     const userPrompt = `${safeQuestion}\n\n${ruleText}\n${ctxText}`;
 
-    // TLS ayarı (son çare): Kurumsal self-signed CA nedeniyle TLS hatası alınıyorsa,
-    // .env.local içine OPENAI_INSECURE_TLS=1 ekleyin. Bu global bir ayardır ve güvensizdir.
-    if (process.env.OPENAI_INSECURE_TLS === "1") {
-      // eslint-disable-next-line no-process-env
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-    }
+    // SECURITY FIX: Removed NODE_TLS_REJECT_UNAUTHORIZED option
+    // If you have SSL issues with OpenAI/Groq, fix your certificate chain
 
     // Mesaj geçmişi (opsiyonel) desteği: varsa kullanıcı/assistant mesajlarını ekle
     const chatMessages: Array<{ role: "system"|"user"|"assistant"; content: string }> = [
@@ -170,10 +177,18 @@ export async function OPTIONS() {
 }
 
 function addCors(res: NextResponse) {
-  // İzinli origin: herkese açık (local → vercel testi için)
-  res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  // Bazı tarayıcılar preflight'ta farklı header'lar ister; '*' daha toleranslıdır
-  res.headers.set("Access-Control-Allow-Headers", "*");
-  res.headers.set("Vary", "Origin");
+  // SECURITY FIX: CORS restricted to same origin only
+  // If you need to allow specific domains, use ALLOWED_ORIGINS env variable
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+
+  // For same-origin requests, no CORS headers needed
+  // For cross-origin, only allow explicitly listed origins
+  if (allowedOrigins.length > 0) {
+    res.headers.set("Access-Control-Allow-Origin", allowedOrigins[0]);
+    res.headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
+    res.headers.set("Vary", "Origin");
+  }
+  // If no ALLOWED_ORIGINS, CORS is disabled (same-origin only)
 }

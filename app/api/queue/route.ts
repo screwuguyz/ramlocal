@@ -3,10 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// Allow insecure TLS for local dev
-if (process.env.ALLOW_INSECURE_TLS === "1") {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-}
+// SECURITY FIX: Removed NODE_TLS_REJECT_UNAUTHORIZED option
 
 export async function POST(req: NextRequest) {
     try {

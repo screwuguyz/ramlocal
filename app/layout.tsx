@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
@@ -93,9 +94,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</style>
       </head>
       <body className="min-h-screen bg-slate-50 antialiased selection:bg-teal-200 selection:text-teal-900">
-        <ThemeProvider>
-          <div className="relative z-10">{children}</div>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <div className="relative z-10">{children}</div>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
