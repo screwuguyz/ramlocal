@@ -706,7 +706,6 @@ export default function DosyaAtamaApp() {
     if (entry.fileNo) setFileNo(entry.fileNo);
     setSelectedPdfEntryId(entry.id);
     toast("PDF kaydı forma aktarıldı");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handlePrintPdfList() {
