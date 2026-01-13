@@ -114,19 +114,18 @@ export function findBestTeacher(
         activeTeachers = activeTeachers.filter(t => t.id !== lastAssignedId);
     }
 
-    // Bugünkü cases'lerden öğretmen başına toplam skorları hesapla
-    const todayScores: Record<string, number> = {};
+    // Bugünkü cases'lerden öğretmen başına dosya sayısını hesapla
     const todayCounts: Record<string, number> = {};
     cases.forEach(c => {
-        if (c.assignedTo) {
-            todayScores[c.assignedTo] = (todayScores[c.assignedTo] || 0) + (c.score || 0);
+        if (c.assignedTo && !c.absencePenalty) {
             todayCounts[c.assignedTo] = (todayCounts[c.assignedTo] || 0) + 1;
         }
     });
 
-    // Gerçek yıllık yük = yearlyLoad + bugünkü skorlar
+    // Yıllık yük = teacher.yearlyLoad (atama anında güncelleniyor, güvenilir)
+    // NOT: Bugünkü skorları EKLEMEMEYE dikkat - yearlyLoad zaten güncel
     const getEffectiveLoad = (t: Teacher): number => {
-        return t.yearlyLoad + (todayScores[t.id] || 0);
+        return t.yearlyLoad;
     };
 
     // Bugün aldığı dosya sayısı
