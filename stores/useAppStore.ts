@@ -114,8 +114,15 @@ interface AppState {
 }
 
 // ---- Helper: Generate unique ID
+// SECURITY FIX: Using crypto.randomUUID() instead of Math.random()
 function uid(): string {
-    return Math.random().toString(36).slice(2, 9);
+    try {
+        // Use crypto.randomUUID() for secure random IDs
+        return crypto.randomUUID();
+    } catch {
+        // Fallback for older environments (shouldn't happen in modern Node/browsers)
+        return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    }
 }
 
 // ---- Initial State

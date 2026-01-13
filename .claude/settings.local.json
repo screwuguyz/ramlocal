@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npm install:*)",
+      "Bash(del /F /Q \"C:\\\\Users\\\\ataaf\\\\.claude-worktrees\\\\ram-dosya-atama-gunluk-rapor\\\\optimistic-saha\\\\lib\\\\session.ts\")",
+      "Bash(if exist \"C:\\\\Users\\\\ataaf\\\\.claude-worktrees\\\\ram-dosya-atama-gunluk-rapor\\\\optimistic-saha\\\\lib\\\\lib\\\\supabaseClient.ts\" del /F /Q \"C:\\\\Users\\\\ataaf\\\\.claude-worktrees\\\\ram-dosya-atama-gunluk-rapor\\\\optimistic-saha\\\\lib\\\\lib\\\\supabaseClient.ts\")",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

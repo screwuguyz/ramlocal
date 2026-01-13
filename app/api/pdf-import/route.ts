@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import pdfParse from "pdf-parse";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { checkRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 
 type PdfEntry = {
   id: string;
@@ -213,6 +214,24 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
 }
 
 export async function GET(req: NextRequest) {
+  // Rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimit = checkRateLimit(clientIp, RATE_LIMITS.API);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': String(RATE_LIMITS.API.limit),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(rateLimit.resetTime),
+        }
+      }
+    );
+  }
+
   try {
     const url = new URL(req.url);
     const dateQuery = url.searchParams.get("date"); // örn: "2025-11-21"
@@ -254,6 +273,24 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limiting for uploads
+  const clientIp = getClientIp(req);
+  const rateLimit = checkRateLimit(clientIp, RATE_LIMITS.UPLOAD);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many uploads. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': String(RATE_LIMITS.UPLOAD.limit),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(rateLimit.resetTime),
+        }
+      }
+    );
+  }
+
   try {
     const form = await req.formData();
     const file = form.get("pdf");
@@ -330,12 +367,23 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  // Rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimit = checkRateLimit(clientIp, RATE_LIMITS.MUTATION);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const url = new URL(req.url);
-  const bypassAuth = url.searchParams.get("bypassAuth") === "true";
   const dateQuery = url.searchParams.get("date"); // Silinecek tarih (opsiyonel)
   const isAdmin = req.cookies.get("ram_admin")?.value === "1";
 
-  if (!isAdmin && !bypassAuth) {
+  // SECURITY FIX: Removed bypassAuth vulnerability
+  if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!SUPA_URL || !SUPA_SERVICE_KEY) {

@@ -57,20 +57,12 @@ export async function POST(req: NextRequest) {
     const timeout = setTimeout(() => controller.abort(), 12000); // 12 saniye (resim için daha uzun)
     let res: Response;
     try {
-      // Kurumsal/self-signed sertifika zinciri sorunları için sadece GELİŞTİRMEDE geçici çözüm:
-      // ⚠️ SECURITY: Only allow in development, never in production
-      const insecure = process.env.NODE_ENV === "development" && process.env.ALLOW_INSECURE_TLS === "1";
-      const prevTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-      if (insecure) {
-        console.warn("[api/notify] ALLOW_INSECURE_TLS=1 → Disabling TLS verification for local dev");
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-      }
+      // SECURITY FIX: Removed NODE_TLS_REJECT_UNAUTHORIZED option
       res = await fetch("https://api.pushover.net/1/messages.json", {
         method: "POST",
         body: formData,
         signal: controller.signal,
       });
-      if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTls;
     } finally {
       clearTimeout(timeout);
     }

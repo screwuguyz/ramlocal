@@ -4,12 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// Optional: allow insecure TLS for local corporate proxies (development only)
-// ⚠️ SECURITY: Only allow in development, never in production
-if (process.env.NODE_ENV === "development" && process.env.ALLOW_INSECURE_TLS === "1") {
-  console.warn("[api/state] ALLOW_INSECURE_TLS=1 → Disabling TLS verification for local dev");
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-}
+// SECURITY FIX: Removed NODE_TLS_REJECT_UNAUTHORIZED option
+// If you have SSL issues, fix the certificate, don't disable verification
 
 import type {
   Teacher,
