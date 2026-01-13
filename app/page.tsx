@@ -135,27 +135,28 @@ export default function DosyaAtamaApp() {
   // ---- Girdi durumları
 
   // 🎉 Havai Fişek Animasyonu
+  // 🎉 Havai Fişek Animasyonu
   function triggerFireworks() {
-    const duration = 2000;
+    const duration = 3000;
     const end = Date.now() + duration;
 
     // Kenarlardan konfeti yağmuru
     (function frame() {
       confetti({
-        particleCount: 4,
+        particleCount: 15, // Artırıldı
         angle: 60,
-        spread: 55,
-        origin: { x: 0 },
+        spread: 70,
+        origin: { x: 0, y: 0.7 },
         colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
-        zIndex: 9999
+        zIndex: 2147483647 // En yüksek katman
       });
       confetti({
-        particleCount: 4,
+        particleCount: 15, // Artırıldı
         angle: 120,
-        spread: 55,
-        origin: { x: 1 },
+        spread: 70,
+        origin: { x: 1, y: 0.7 },
         colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
-        zIndex: 9999
+        zIndex: 2147483647
       });
 
       if (Date.now() < end) {
@@ -166,11 +167,11 @@ export default function DosyaAtamaApp() {
     // Ortadan patlama
     setTimeout(() => {
       confetti({
-        particleCount: 150,
-        spread: 100,
+        particleCount: 300, // Devasa patlama
+        spread: 180,
         origin: { y: 0.6 },
-        startVelocity: 40,
-        zIndex: 9999
+        startVelocity: 60,
+        zIndex: 2147483647
       });
     }, 200);
   }
@@ -1414,6 +1415,7 @@ export default function DosyaAtamaApp() {
 
     addCaseAction(pendingCase);
     playAssignSound();
+    triggerFireworks();
     showAssignmentPopup({
       teacherName: chosenTeacher.name,
       studentName: pendingCase.student,
