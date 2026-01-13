@@ -146,22 +146,25 @@ export default function TvDisplayPage() {
         };
 
         fetchWeather();
-        const weatherInterval = setInterval(fetchWeather, 30 * 60 * 1000); // 30 dakikada bir güncelle
+        const weatherInterval = setInterval(fetchWeather, 60 * 60 * 1000); // 1 saatte bir güncelle (CPU optimizasyonu)
         return () => clearInterval(weatherInterval);
     }, []);
 
-    // Carousel otomatik döngü (8 saniye - 9 slayt)
+    // Carousel otomatik döngü (12 saniye - 9 slayt) - CPU optimized
     const TOTAL_SLIDES = 9;
     useEffect(() => {
         const slideInterval = setInterval(() => {
-            setCurrentSlide(prev => (prev + 1) % TOTAL_SLIDES);
-            // Farkındalık mesajını döndür (son slayta geçerken)
-            if (currentSlide === TOTAL_SLIDES - 2) {
-                setCurrentAwarenessMessage(awarenessMessages[Math.floor(Math.random() * awarenessMessages.length)]);
-            }
-        }, 8000); // 8 saniye
+            setCurrentSlide(prev => {
+                const nextSlide = (prev + 1) % TOTAL_SLIDES;
+                // Farkındalık mesajını döndür (son slayta geçerken)
+                if (nextSlide === TOTAL_SLIDES - 1) {
+                    setCurrentAwarenessMessage(awarenessMessages[Math.floor(Math.random() * awarenessMessages.length)]);
+                }
+                return nextSlide;
+            });
+        }, 12000); // 12 saniye (CPU optimizasyonu için 8'den yükseltildi)
         return () => clearInterval(slideInterval);
-    }, [currentSlide]);
+    }, []); // Empty dependency - interval sadece mount'ta oluşturulur
 
 
     // YouTube API yükleme

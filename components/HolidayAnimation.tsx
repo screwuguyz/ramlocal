@@ -135,9 +135,9 @@ export default function HolidayAnimation() {
     useEffect(() => {
         if (!holiday) return;
 
-        // Başlangıç partikülleri oluştur
+        // Başlangıç partikülleri oluştur (CPU optimizasyonu: 50 -> 30)
         const initialParticles: Particle[] = [];
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 30; i++) {
             initialParticles.push({
                 id: i,
                 x: Math.random() * 100,
@@ -169,7 +169,7 @@ export default function HolidayAnimation() {
 
                 return { ...p, y: newY, x: newX };
             }));
-        }, 50);
+        }, 100); // CPU optimizasyonu: 50ms -> 100ms
 
         // Mesajı 10 saniye sonra gizle
         const messageTimer = setTimeout(() => setShowMessage(false), 10000);

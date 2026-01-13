@@ -129,7 +129,17 @@ export function useQueueSync() {
     }, [fetchTickets]);
 
     // Setup realtime subscription
+    // QUEUE_ENABLED env var ile kontrol edilir (varsayılan: kapalı)
+    const isQueueEnabled = process.env.NEXT_PUBLIC_QUEUE_ENABLED === "1";
+
     useEffect(() => {
+        // Queue devre dışıysa hiçbir şey yapma (CPU tasarrufu)
+        if (!isQueueEnabled) {
+            console.log("[useQueueSync] Queue disabled via NEXT_PUBLIC_QUEUE_ENABLED");
+            setLoading(false);
+            return;
+        }
+
         // Initial fetch
         fetchTickets();
 
@@ -195,7 +205,7 @@ export function useQueueSync() {
                 supabase.removeChannel(channelRef.current);
             }
         };
-    }, [fetchTickets]);
+    }, [fetchTickets, isQueueEnabled]);
 
     // Computed values
     const waitingTickets = tickets
