@@ -1237,7 +1237,7 @@ export default function DosyaAtamaApp() {
     // FIX (v2.3): İsim bazlı engelleme de eklendi (Furkan Ata)
     console.log("--- ATAMA VERSİYON 2.4 (Test Dialog) ---");
     let available = teachers.filter(
-      (t) => !t.isPhysiotherapist && !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit
+      (t) => !t.isPhysiotherapist && !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name) && !t.isAbsent && t.active && t.backupDay !== todayYmd && countCasesToday(t.id) < settings.dailyLimit
     );
     if (!available.length) return null;
 
