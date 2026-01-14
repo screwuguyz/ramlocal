@@ -143,18 +143,18 @@ export default function DosyaAtamaApp() {
     // Kenarlardan konfeti yağmuru
     (function frame() {
       confetti({
-        particleCount: 15, // Artırıldı
+        particleCount: 15,
         angle: 60,
         spread: 70,
-        origin: { x: 0, y: 0.7 },
+        origin: { x: 0, y: 0.5 }, // Tam ortaya çekildi
         colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
-        zIndex: 2147483647 // En yüksek katman
+        zIndex: 2147483647
       });
       confetti({
-        particleCount: 15, // Artırıldı
+        particleCount: 15,
         angle: 120,
         spread: 70,
-        origin: { x: 1, y: 0.7 },
+        origin: { x: 1, y: 0.5 }, // Tam ortaya çekildi
         colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
         zIndex: 2147483647
       });
