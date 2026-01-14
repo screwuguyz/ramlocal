@@ -1975,8 +1975,8 @@ export default function DosyaAtamaApp() {
     setCases([]); // bugünkü liste sıfırlansın (kilitler de sıfırlanır)
     setLastRollover(getTodayYmd());
 
-    // ✅ Rollover sonrası tüm öğretmenlerin isAbsent durumunu sıfırla (yeni gün başladı)
-    const resetTeachers = currentTeachers.map(t => ({ ...t, isAbsent: false }));
+    // ✅ Rollover sonrası tüm öğretmenlerin isAbsent ve isTester durumunu sıfırla (yeni gün başladı)
+    const resetTeachers = currentTeachers.map(t => ({ ...t, isAbsent: false, isTester: false }));
     setTeachers(resetTeachers);
   }
 
