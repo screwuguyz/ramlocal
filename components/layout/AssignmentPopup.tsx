@@ -11,41 +11,13 @@ import { CheckCircle } from "lucide-react";
 export default function AssignmentPopup() {
     const assignmentPopup = useAppStore((state) => state.assignmentPopup);
 
-    React.useEffect(() => {
-        if (assignmentPopup) {
-            import("canvas-confetti").then((confetti) => {
-                const duration = 3000;
-                const end = Date.now() + duration;
-
-                const frame = () => {
-                    confetti.default({
-                        particleCount: 2,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 },
-                        colors: ['#0d9488', '#f97316', '#14b8a6']
-                    });
-                    confetti.default({
-                        particleCount: 2,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 },
-                        colors: ['#0d9488', '#f97316', '#14b8a6']
-                    });
-
-                    if (Date.now() < end) {
-                        requestAnimationFrame(frame);
-                    }
-                };
-                frame();
-            });
-        }
-    }, [assignmentPopup]);
+    // Confetti effect is handled globally in page.tsx now
+    // to prevent double animation and positioning issues.
 
     if (!assignmentPopup) return null;
 
     return (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 top-0 left-0 h-screen w-screen z-[100000] flex items-center justify-center pointer-events-none">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-8 rounded-3xl shadow-2xl transform animate-bounce-in pointer-events-auto">
                 <div className="flex flex-col items-center text-center">
                     <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
