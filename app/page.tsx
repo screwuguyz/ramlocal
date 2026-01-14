@@ -3423,6 +3423,12 @@ export default function DosyaAtamaApp() {
   // ---------- TEK RETURN: BİLEŞEN ÇIKIŞI ----------
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-indigo-50 relative selection:bg-emerald-100 selection:text-emerald-900">
+      {/* Animasyonlu arka plan deseni */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
 
       <ThemeToggle />
       <div className="container mx-auto p-4 space-y-6 relative z-10">
