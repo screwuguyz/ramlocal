@@ -38,6 +38,8 @@ export default function TeacherList() {
     // UI states for inline editing
     const [editKeyOpen, setEditKeyOpen] = useState<Record<string, boolean>>({});
     const [editPushover, setEditPushover] = useState<Record<string, string>>({});
+    const [editingLoadId, setEditingLoadId] = useState<string | null>(null);
+    const [editLoadValue, setEditLoadValue] = useState<string>("");
 
     // ---- Helpers
     function hasTestToday(tid: string) {
@@ -296,9 +298,44 @@ export default function TeacherList() {
                                         </div>
 
                                         <div className="flex items-center gap-3 mt-2 text-sm text-slate-500">
-                                            <span className="inline-flex items-center gap-1">
-                                                📊 <span className="font-medium text-slate-700">{t.yearlyLoad}</span> puan
-                                            </span>
+                                            {editingLoadId === t.id ? (
+                                                <span className="inline-flex items-center gap-1">
+                                                    📊 <input
+                                                        type="number"
+                                                        className="w-16 px-1 py-0.5 text-sm font-medium text-slate-700 border border-indigo-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                                        value={editLoadValue}
+                                                        autoFocus
+                                                        onChange={(e) => setEditLoadValue(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === "Enter") {
+                                                                const newVal = Math.max(0, parseInt(editLoadValue) || 0);
+                                                                updateTeacher(t.id, { yearlyLoad: newVal });
+                                                                setEditingLoadId(null);
+                                                                addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                            } else if (e.key === "Escape") {
+                                                                setEditingLoadId(null);
+                                                            }
+                                                        }}
+                                                        onBlur={() => {
+                                                            const newVal = Math.max(0, parseInt(editLoadValue) || 0);
+                                                            updateTeacher(t.id, { yearlyLoad: newVal });
+                                                            setEditingLoadId(null);
+                                                            addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                        }}
+                                                    /> puan
+                                                </span>
+                                            ) : (
+                                                <span
+                                                    className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-100 rounded px-1 -mx-1 transition-colors"
+                                                    onClick={() => {
+                                                        setEditingLoadId(t.id);
+                                                        setEditLoadValue(String(t.yearlyLoad || 0));
+                                                    }}
+                                                    title="Puanı düzenlemek için tıklayın"
+                                                >
+                                                    📊 <span className="font-medium text-slate-700">{t.yearlyLoad}</span> puan ✏️
+                                                </span>
+                                            )}
                                             {t.birthDate && (
                                                 <span className="inline-flex items-center gap-1">
                                                     <Cake className="w-3.5 h-3.5 text-pink-400" /> {t.birthDate}
