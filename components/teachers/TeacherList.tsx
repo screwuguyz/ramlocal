@@ -257,10 +257,31 @@ export default function TeacherList() {
 
             {/* Aktif Öğretmenler */}
             <div>
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Aktif Öğretmenler ({activeTeachers.length})
-                </h3>
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Aktif Öğretmenler ({activeTeachers.length})
+                    </h3>
+                    <div className="flex gap-2">
+                        <span className="text-xs font-bold text-red-500 border border-red-500 px-2 py-1 rounded">DEBUG v3 (KORUMALI)</span>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                                // @ts-ignore
+                                if (window.forceSync) {
+                                    // @ts-ignore
+                                    window.forceSync();
+                                    alert("Zorla kayıt tetiklendi!");
+                                } else {
+                                    alert("Sync fonksiyonu bulunamadı (Sayfayı yenileyin)");
+                                }
+                            }}
+                        >
+                            💾 ZORLA KAYDET
+                        </Button>
+                    </div>
+                </div>
                 <div className="grid gap-3">
                     {activeTeachers.map((t) => {
                         const locked = hasTestToday(t.id);

@@ -390,6 +390,12 @@ export function useSupabaseSync(): SupabaseSyncHook {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount
 
+    // Expose sync for debug button
+    useEffect(() => {
+        // @ts-ignore
+        window.forceSync = syncToServer;
+    }, [syncToServer]);
+
     return {
         fetchCentralState,
         syncToServer,
