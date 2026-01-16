@@ -491,6 +491,20 @@ export default function TeacherList() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
+                                                        className="w-full justify-start h-9 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                                        onClick={() => {
+                                                            if (confirm(`${t.name} fizyoterapist olarak işaretlenecek ve sıralamaya dahil olmayacak. Emin misiniz?`)) {
+                                                                updateTeacher(t.id, { isPhysiotherapist: true });
+                                                                addToast(`${t.name} fizyoterapiste taşındı.`);
+                                                            }
+                                                        }}
+                                                    >
+                                                        🏥 Fizyoterapiste Taşı
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         className="w-full justify-start h-9"
                                                         onClick={() => handleToggleActive(t.id)}
                                                     >
