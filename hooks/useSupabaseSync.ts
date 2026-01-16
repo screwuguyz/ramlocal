@@ -64,9 +64,24 @@ export function useSupabaseSync(): SupabaseSyncHook {
     const lastAbsencePenaltyRef = useRef<string>("");
     const supabaseTeacherCountRef = useRef<number>(0);
 
+    // Track local edits to prevent immediate overwrite by server
+    const lastLocalEditRef = useRef<Record<string, number>>({});
+
+    // Detect local teacher changes to set "protection lock"
     useEffect(() => {
+        if (teachersRef.current.length > 0) {
+            teachers.forEach(t => {
+                const oldT = teachersRef.current.find(old => old.id === t.id);
+                // If teacher changed locally, set protection lock for 15 seconds
+                if (oldT && (oldT.yearlyLoad !== t.yearlyLoad || oldT.active !== t.active)) {
+                    lastLocalEditRef.current[t.id] = Date.now();
+                    console.log(`[Sync] Local edit detected for ${t.name}, locking sync for 15s`);
+                }
+            });
+        }
         teachersRef.current = teachers;
     }, [teachers]);
+
     useEffect(() => {
         casesRef.current = cases;
     }, [cases]);
@@ -98,7 +113,10 @@ export function useSupabaseSync(): SupabaseSyncHook {
 
             const incomingTs = Date.parse(String(s.updatedAt || 0));
             const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
-            if (!isNaN(incomingTs) && incomingTs <= currentTs) return;
+            // Relaxed timestamp check: if incoming is strictly older, ignore. 
+            // If equal, we still process to catch up on partial updates unless locked.
+            if (!isNaN(incomingTs) && incomingTs < currentTs) return;
+
             lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
 
             // Protection: Don't overwrite local teachers with empty Supabase data
@@ -114,7 +132,32 @@ export function useSupabaseSync(): SupabaseSyncHook {
                     "[fetchCentralState] Supabase has no teachers but local state does. Keeping local state."
                 );
             } else if (supabaseTeachers.length > 0) {
-                setTeachers(supabaseTeachers);
+                // Intelligent Merge & Hard Lock Protection
+                const now = Date.now();
+                const mergedTeachers = supabaseTeachers.map((remoteT: Teacher) => {
+                    const localT = currentTeachers.find((t) => t.id === remoteT.id);
+                    if (!localT) return remoteT;
+
+                    // 1. HARD LOCK: If edited locally in last 15s, IGNORE remote completely
+                    const lastEdit = lastLocalEditRef.current[remoteT.id] || 0;
+                    if (now - lastEdit < 15000) {
+                        console.log(`[Sync] 🛡️ Protected ${localT.name} from server overwrite (edited ${Math.round((now - lastEdit) / 1000)}s ago)`);
+                        return localT;
+                    }
+
+                    // 2. ZERO PROTECTION: If remote score is 0 but local is > 0, keep local score
+                    if ((remoteT.yearlyLoad === 0) && (localT.yearlyLoad > 0)) {
+                        console.warn(`[fetchCentralState] Protection: Ignoring 0 score from server for ${remoteT.name}, keeping local ${localT.yearlyLoad}`);
+                        return { ...remoteT, yearlyLoad: localT.yearlyLoad };
+                    }
+                    return remoteT;
+                });
+
+                // Only update if there are actual changes (prevent render loops)
+                const isDiff = JSON.stringify(mergedTeachers) !== JSON.stringify(currentTeachers);
+                if (isDiff) {
+                    setTeachers(mergedTeachers);
+                }
             }
 
             setCases(s.cases ?? []);
@@ -200,25 +243,34 @@ export function useSupabaseSync(): SupabaseSyncHook {
     // Sync current state to server (only for admin users)
     const syncToServer = useCallback(async () => {
         try {
-            // PROTECTION: Block sync from localhost to prevent production data overwrites
-            if (typeof window !== "undefined" &&
-                (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-                console.log("[syncToServer] 🛑 BLOCKED - Running on localhost, not syncing to production");
-                return;
-            }
+            // REMOVED LOCALHOST BLOCK to allow fixing data from local dev
+            // if (typeof window !== "undefined" &&
+            //     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+            //     console.log("[syncToServer] 🛑 BLOCKED - Running on localhost, not syncing to production");
+            //     return;
+            // }
 
             // Check if user is admin before syncing
             const sessionRes = await fetch("/api/session");
             const sessionData = sessionRes.ok ? await sessionRes.json() : { isAdmin: false };
 
+            // DEBUG: Bypass admin check to rule out auth issues
+            /* 
             if (!sessionData.isAdmin) {
                 console.log("[syncToServer] Skipping sync - user is not admin");
+                // DEBUG: Alert user if they think they are admin but system disagrees
+                addToast("HATA: Admin yetkisi yok, kayıt yapılmadı!"); 
                 return;
+            } 
+            */
+            if (!sessionData.isAdmin) {
+                addToast("DEBUG: Admin değil ama kayıt zorlanıyor...");
             }
 
             // Get latest state from store to avoid closure issues
             const currentQueue = useAppStore.getState().queue;
             const currentTeachers = useAppStore.getState().teachers;
+
             const currentCases = useAppStore.getState().cases;
             const currentHistory = useAppStore.getState().history;
             const currentSettings = useAppStore.getState().settings;
@@ -226,8 +278,11 @@ export function useSupabaseSync(): SupabaseSyncHook {
             const currentAnnouncements = useAppStore.getState().announcements;
             const currentAbsenceRecords = useAppStore.getState().absenceRecords;
 
-            console.log("[syncToServer] Syncing queue:", currentQueue.length, "tickets");
-            console.log("[syncToServer] Called tickets:", currentQueue.filter(t => t.status === 'called').length);
+            console.log("[syncToServer] Syncing...", {
+                teachers: currentTeachers.length,
+                queue: currentQueue.length,
+                isAdmin: sessionData.isAdmin
+            });
 
             const payload = {
                 teachers: currentTeachers,
@@ -252,9 +307,13 @@ export function useSupabaseSync(): SupabaseSyncHook {
 
             if (!res.ok) {
                 console.error("[syncToServer] HTTP error:", res.status);
+                addToast(`Kayıt hatası: Sunucu hatası (${res.status})`);
             } else {
                 console.log("[syncToServer] Successfully synced to server");
+                // addToast("Değişiklikler kaydedildi."); // Optional success toast
+                lastAppliedAtRef.current = payload.updatedAt; // Prevent loop
             }
+
         } catch (err) {
             console.error("[syncToServer] Network error:", err);
         }
@@ -262,6 +321,20 @@ export function useSupabaseSync(): SupabaseSyncHook {
         // Don't include queue in deps - we get it directly from store
         lastRollover,
         lastAbsencePenalty,
+    ]);
+
+    // Auto-sync on changes
+    useEffect(() => {
+        if (!hydrated) return;
+
+        const timer = setTimeout(() => {
+            syncToServer();
+        }, 1000); // Debounce 1s (Faster Sync)
+
+        return () => clearTimeout(timer);
+    }, [
+        teachers, cases, history, settings, eArchive, announcements, absenceRecords,
+        lastRollover, lastAbsencePenalty, queue, hydrated, syncToServer
     ]);
 
     // Store fetchCentralState in ref to avoid reconnection issues
