@@ -40,6 +40,7 @@ export default function TeacherList() {
 
     const [newTeacherName, setNewTeacherName] = useState("");
     const [newTeacherBirthDate, setNewTeacherBirthDate] = useState("");
+    const [newTeacherStartScore, setNewTeacherStartScore] = useState("");
 
     // UI states for inline editing
     const [editKeyOpen, setEditKeyOpen] = useState<Record<string, boolean>>({});
@@ -53,26 +54,29 @@ export default function TeacherList() {
         return cases.some(c => c.isTest && !c.absencePenalty && c.assignedTo === tid && c.createdAt.slice(0, 10) === today);
     }
 
+    // Ortalama puanı hesapla (placeholder için)
+    const activeTeachersList = teachers.filter(t => t.active && !t.isPhysiotherapist);
+    const calculatedAvgLoad = activeTeachersList.length > 0
+        ? Math.round(activeTeachersList.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachersList.length)
+        : 75;
+
     // ---- Actions
     function handleAddTeacher() {
         const name = newTeacherName.trim();
         if (!name) return;
         const birthDate = newTeacherBirthDate.trim() || undefined;
 
-        // Aktif öğretmenlerin ortalama puanını hesapla (adil başlangıç için)
-        const activeTeachers = teachers.filter(t => t.active && !t.isPhysiotherapist);
-        let avgLoad = activeTeachers.length > 0
-            ? Math.round(activeTeachers.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachers.length)
-            : 75; // Varsayılan puan
+        // Kullanıcı bir puan girdiyse onu kullan, yoksa ortalamayı al
+        let initialLoad = newTeacherStartScore.trim() ? parseInt(newTeacherStartScore) : calculatedAvgLoad;
 
-        // Güvenlik: Eğer ortalama 0 veya çok düşükse, varsayılan kullan
-        if (avgLoad < 10) avgLoad = 75;
+        // Güvenlik: Eğer ortalama 0 veya çok düşükse ve kullanıcı girmediyse varsayılan kullan
+        if (initialLoad < 10 && !newTeacherStartScore.trim()) initialLoad = 75;
 
         const newTeacher: Teacher = {
             id: uid(),
             name,
             isAbsent: false,
-            yearlyLoad: avgLoad,
+            yearlyLoad: initialLoad,
             monthly: {},
             active: true,
             isTester: false,
@@ -82,7 +86,8 @@ export default function TeacherList() {
         addTeacher(newTeacher);
         setNewTeacherName("");
         setNewTeacherBirthDate("");
-        addToast(`Öğretmen eklendi: ${name}`);
+        setNewTeacherStartScore("");
+        addToast(`Öğretmen eklendi: ${name} (${initialLoad} puan)`);
     }
 
     function handleToggleAbsent(tid: string) {
@@ -247,6 +252,19 @@ export default function TeacherList() {
                             placeholder="AA-GG"
                             maxLength={5}
                             className="h-10 bg-white border-slate-200"
+                        />
+                    </div>
+                    <div className="w-28">
+                        <Label className="text-xs text-slate-600 mb-1 flex items-center gap-1">
+                            📊 Başlangıç Puanı
+                        </Label>
+                        <Input
+                            type="number"
+                            value={newTeacherStartScore}
+                            onChange={(e) => setNewTeacherStartScore(e.target.value)}
+                            placeholder={`${calculatedAvgLoad}`}
+                            className="h-10 bg-white border-slate-200 text-center"
+                            title={`Ortalama puan: ${calculatedAvgLoad}`}
                         />
                     </div>
                     <Button onClick={handleAddTeacher} className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700">
