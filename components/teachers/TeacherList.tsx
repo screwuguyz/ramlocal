@@ -51,17 +51,17 @@ export default function TeacherList() {
         if (!name) return;
         const birthDate = newTeacherBirthDate.trim() || undefined;
 
-        // En düşük puanlı aktif öğretmenin puanını bul
-        const activeTeachers = teachers.filter(t => t.active);
-        const minLoad = activeTeachers.length > 0
-            ? Math.min(...activeTeachers.map(t => t.yearlyLoad))
+        // Aktif öğretmenlerin ortalama puanını hesapla (adil başlangıç için)
+        const activeTeachers = teachers.filter(t => t.active && !t.isPhysiotherapist);
+        const avgLoad = activeTeachers.length > 0
+            ? Math.round(activeTeachers.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachers.length)
             : 0;
 
         const newTeacher: Teacher = {
             id: uid(),
             name,
             isAbsent: false,
-            yearlyLoad: minLoad,
+            yearlyLoad: avgLoad,
             monthly: {},
             active: true,
             isTester: false,
