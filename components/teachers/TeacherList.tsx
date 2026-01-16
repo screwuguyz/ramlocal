@@ -345,11 +345,11 @@ export default function TeacherList() {
                                                                 );
                                                                 updateTeacher(t.id, { yearlyLoad: newVal });
 
-                                                                // Hemen Supabase'e kaydet (realtime sync'ten önce)
                                                                 try {
-                                                                    await fetch("/api/state", {
+                                                                    const res = await fetch("/api/state", {
                                                                         method: "POST",
                                                                         headers: { "Content-Type": "application/json" },
+                                                                        credentials: "include",
                                                                         body: JSON.stringify({
                                                                             teachers: updatedTeachers,
                                                                             cases,
@@ -364,7 +364,12 @@ export default function TeacherList() {
                                                                             updatedAt: new Date().toISOString(),
                                                                         }),
                                                                     });
-                                                                    addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                                    if (res.ok) {
+                                                                        addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                                    } else {
+                                                                        const data = await res.json().catch(() => ({}));
+                                                                        addToast(`Hata: ${data.error || res.status}`);
+                                                                    }
                                                                 } catch (err) {
                                                                     addToast(`Hata: Puan kaydedilemedi!`);
                                                                 }
