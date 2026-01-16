@@ -61,9 +61,12 @@ export default function TeacherList() {
 
         // Aktif öğretmenlerin ortalama puanını hesapla (adil başlangıç için)
         const activeTeachers = teachers.filter(t => t.active && !t.isPhysiotherapist);
-        const avgLoad = activeTeachers.length > 0
+        let avgLoad = activeTeachers.length > 0
             ? Math.round(activeTeachers.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachers.length)
-            : 0;
+            : 75; // Varsayılan puan
+
+        // Güvenlik: Eğer ortalama 0 veya çok düşükse, varsayılan kullan
+        if (avgLoad < 10) avgLoad = 75;
 
         const newTeacher: Teacher = {
             id: uid(),
