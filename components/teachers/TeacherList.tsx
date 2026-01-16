@@ -330,8 +330,12 @@ export default function TeacherList() {
                                                     onClick={() => {
                                                         const pw = window.prompt("Puan düzenlemek için şifre girin:");
                                                         if (pw === "Tuna.280225") {
-                                                            setEditingLoadId(t.id);
-                                                            setEditLoadValue(String(t.yearlyLoad || 0));
+                                                            const newValStr = window.prompt(`${t.name} için yeni puan girin:`, String(t.yearlyLoad || 0));
+                                                            if (newValStr !== null) {
+                                                                const newVal = Math.max(0, parseInt(newValStr) || 0);
+                                                                updateTeacher(t.id, { yearlyLoad: newVal });
+                                                                addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                            }
                                                         } else if (pw !== null) {
                                                             alert("Yanlış şifre!");
                                                         }
