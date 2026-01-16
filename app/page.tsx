@@ -157,9 +157,11 @@ export default function DosyaAtamaApp() {
       const mergedTeachers = incomingTeachers.map((remoteT: any) => {
         const localT = currentTeachers.find(t => t.id === remoteT.id);
         if (localT) {
-          // ZERO SCORE PROTECTION
-          if (remoteT.yearlyLoad === 0 && localT.yearlyLoad > 0) {
-            // console.log(`[Protection] Keeping local score ${localT.yearlyLoad} for ${localT.name} against server 0`);
+          // ZERO SCORE PROTECTION (Expanded to include null/undefined)
+          const remoteLoad = remoteT.yearlyLoad || 0;
+          if (remoteLoad <= 0 && localT.yearlyLoad > 0) {
+            // console.log(`[Protection] Keeping local score ${localT.yearlyLoad} for ${localT.name} against server ${remoteLoad}`);
+            toast(`🛡️ Puan Korundu: ${localT.name} (${localT.yearlyLoad})`);
             return { ...remoteT, yearlyLoad: localT.yearlyLoad };
           }
         }
