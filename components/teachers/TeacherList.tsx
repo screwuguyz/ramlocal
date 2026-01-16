@@ -268,10 +268,16 @@ export default function TeacherList() {
                             size="sm"
                             variant="destructive"
                             onClick={() => {
-                                const syncFn = useAppStore.getState().syncFunction;
+                                const state = useAppStore.getState();
+                                const t = state.teachers.find(t => t.name.includes("ANIL") || t.name.includes("Anıl"));
+                                const score = t ? t.yearlyLoad : "Bulunamadı";
+
+                                alert(`Zorla Kayıt Başlatılıyor...\nLocal Puan: ${score}`);
+
+                                const syncFn = state.syncFunction;
                                 if (syncFn) {
                                     syncFn();
-                                    alert("Zorla kayıt tetiklendi (Store üzerinden)!");
+                                    // alert("Zorla kayıt tetiklendi (Store üzerinden)!");
                                 } else {
                                     alert("Sync fonksiyonu hala yüklenmedi! Lütfen bekleyin...");
                                 }

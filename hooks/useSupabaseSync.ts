@@ -148,6 +148,8 @@ export function useSupabaseSync(): SupabaseSyncHook {
                     // 2. ZERO PROTECTION: If remote score is 0 but local is > 0, keep local score
                     if ((remoteT.yearlyLoad === 0) && (localT.yearlyLoad > 0)) {
                         console.warn(`[fetchCentralState] Protection: Ignoring 0 score from server for ${remoteT.name}, keeping local ${localT.yearlyLoad}`);
+                        // DEBUG: Kullanıcıya koruma kalkanının çalıştığını söyle
+                        // addToast(`🛡️ KORUMA: ${localT.name} için sunucudan gelen 0 puan engellendi.`);
                         return { ...remoteT, yearlyLoad: localT.yearlyLoad };
                     }
                     return remoteT;
@@ -271,6 +273,14 @@ export function useSupabaseSync(): SupabaseSyncHook {
             const currentQueue = useAppStore.getState().queue;
             const currentTeachers = useAppStore.getState().teachers;
 
+            // DEBUG: Check specific teacher
+            const debugTeacher = currentTeachers.find(t => t.name.includes("ANIL") || t.name.includes("Anıl"));
+            if (debugTeacher) {
+                // Sadece kullanıcıya bilgi vermek için alert (geçici)
+                // alert(`DEBUG: Sunucuya gönderilecek puan: ${debugTeacher.name} = ${debugTeacher.yearlyLoad}`);
+                console.log(`[syncToServer] Sending: ${debugTeacher.name} = ${debugTeacher.yearlyLoad}`);
+            }
+
             const currentCases = useAppStore.getState().cases;
             const currentHistory = useAppStore.getState().history;
             const currentSettings = useAppStore.getState().settings;
@@ -310,7 +320,12 @@ export function useSupabaseSync(): SupabaseSyncHook {
                 addToast(`Kayıt hatası: Sunucu hatası (${res.status})`);
             } else {
                 console.log("[syncToServer] Successfully synced to server");
-                // addToast("Değişiklikler kaydedildi."); // Optional success toast
+
+                // Başarılı olursa kullanıcıya bildir (DEBUG için)
+                if (debugTeacher && debugTeacher.yearlyLoad > 0) {
+                    addToast(`✅ Sunucuya KAYDEDİLDİ: ${debugTeacher.name} = ${debugTeacher.yearlyLoad}`);
+                }
+
                 lastAppliedAtRef.current = payload.updatedAt; // Prevent loop
             }
 
