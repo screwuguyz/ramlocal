@@ -87,6 +87,16 @@ export default function TeacherList() {
         };
 
         addTeacher(newTeacher);
+
+        // AUTO-SYNC: Hemen sunucuya gönder
+        setTimeout(() => {
+            const state = useAppStore.getState();
+            if (state.syncFunction) {
+                console.log("Auto-syncing new teacher...");
+                state.syncFunction();
+            }
+        }, 100);
+
         setNewTeacherName("");
         setNewTeacherBirthDate("");
         setNewTeacherStartScore("");
