@@ -118,12 +118,148 @@ export default function DosyaAtamaApp() {
   const lastAbsencePenalty = useAppStore(s => s.lastAbsencePenalty);
   const setLastAbsencePenalty = useAppStore(s => s.setLastAbsencePenalty);
 
-  // Refler ve Local UI State
-  const { fetchCentralState, syncToServer } = useSupabaseSync();
 
   const lastAppliedAtRef = React.useRef<string>("")
   const teachersRef = React.useRef<Teacher[]>([]);
   const casesRef = React.useRef<CaseFile[]>([]);
+
+  // ... (Refs continue)
+
+  // RESTORED: Manual Fetch with ZERO PROTECTION
+  const [centralLoaded, setCentralLoaded] = useState(false);
+  const fetchCentralState = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/state?ts=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) return;
+
+      const s = await res.json();
+      if (s._error) {
+        logger.error("[fetchCentralState] Supabase error:", s._error);
+        return;
+      }
+
+      const incomingTs = Date.parse(String(s.updatedAt || 0));
+      const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
+      if (!isNaN(incomingTs) && incomingTs <= currentTs) {
+        return;
+      }
+      lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
+
+      // ZERO PROTECTION & MERGE LOGIC
+      const incomingTeachers = s.teachers || [];
+      const currentTeachers = teachersRef.current || [];
+
+      // 1. New Teacher Protection: If local has a teacher not in remote (and we have teachers), don't delete immediately
+      // (This is a simple safeguard: if server has 0 teachers but we have some, ignore.
+      // If server has teachers but misses one we just added... that's harder in this simple logic, 
+      // but we will prioritize "Zero Score Protection" first)
+
+      const mergedTeachers = incomingTeachers.map((remoteT: any) => {
+        const localT = currentTeachers.find(t => t.id === remoteT.id);
+        if (localT) {
+          // ZERO SCORE PROTECTION
+          if (remoteT.yearlyLoad === 0 && localT.yearlyLoad > 0) {
+            // console.log(`[Protection] Keeping local score ${localT.yearlyLoad} for ${localT.name} against server 0`);
+            return { ...remoteT, yearlyLoad: localT.yearlyLoad };
+          }
+        }
+        return remoteT;
+      });
+
+      // Simple set
+      if (mergedTeachers.length > 0 || currentTeachers.length === 0) {
+        setTeachers(mergedTeachers);
+      }
+
+      // Standard sets
+      setCases(s.cases ?? []);
+      setHistory(s.history ?? {});
+      setLastRollover(s.lastRollover ?? "");
+      setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
+
+      if (Array.isArray(s.announcements)) {
+        const today = getTodayYmd();
+        const todayAnnouncements = (s.announcements || []).filter((a: any) => (a.createdAt || "").slice(0, 10) === today);
+        setAnnouncements(todayAnnouncements);
+      }
+
+      if (s.settings) updateSettings(s.settings);
+      if (s.themeSettings) loadThemeFromSupabase(s.themeSettings);
+      if (Array.isArray(s.eArchive) && s.eArchive.length > 0) setEArchive(s.eArchive);
+      if (Array.isArray(s.absenceRecords)) setAbsenceRecords(s.absenceRecords);
+
+      // Simple queue sync
+      if (Array.isArray(s.queue)) setQueue(s.queue);
+
+      setCentralLoaded(true);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [hydrated, setQueue, setTeachers, setCases, setHistory, setLastRollover, setLastAbsencePenalty, setAnnouncements, updateSettings, setEArchive, setAbsenceRecords]);
+
+  // RESTORED: Initial Fetch
+  useEffect(() => {
+    fetchCentralState();
+  }, [fetchCentralState]);
+
+  // RESTORED: Realtime Subscription
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_REALTIME === "1") return;
+    const channel = supabase
+      .channel("realtime:app_state")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_state" },
+        (payload: any) => {
+          if (payload?.new?.id === "global") fetchCentralState();
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchCentralState]);
+
+  // RESTORED: Manual Sync Loop (The "Old System" that worked)
+  useEffect(() => {
+    if (!isAdmin || !hydrated || !centralLoaded) return;
+
+    const ctrl = new AbortController();
+    const nowTs = new Date().toISOString();
+
+    // Don't update ref here immediately to allow debounce to work, 
+    // but we need to update it on success to prevent re-fetch loop.
+
+    const payload = {
+      teachers,
+      cases,
+      history,
+      lastRollover,
+      lastAbsencePenalty,
+      announcements,
+      settings,
+      themeSettings: { themeMode: getThemeMode(), colorScheme: "default" },
+      eArchive,
+      absenceRecords,
+      queue,
+      updatedAt: nowTs,
+    };
+
+    const t = window.setTimeout(() => {
+      // Optimistic update of ref to prevent self-echo if fetch happens fast
+      lastAppliedAtRef.current = nowTs;
+
+      fetch("/api/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal,
+      }).catch(err => {
+        if (err.name !== 'AbortError') console.error("Sync failed", err);
+      });
+    }, 1000); // 1 second debounce (slightly coarser than before to be safe)
+
+    return () => { window.clearTimeout(t); ctrl.abort(); };
+  }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, queue, isAdmin, hydrated, centralLoaded]);
+
   const lastAbsencePenaltyRef = React.useRef<string>("");
   const supabaseTeacherCountRef = React.useRef<number>(0);
   const studentRef = React.useRef<HTMLInputElement | null>(null);
@@ -482,7 +618,7 @@ export default function DosyaAtamaApp() {
     }
   }, []);
 
-  // fetchCentralState logic removed - replaced by useSupabaseSync hook
+
 
   function handlePdfFileChange(file: File | null) {
     setPdfFile(file);
