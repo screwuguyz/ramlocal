@@ -1993,7 +1993,10 @@ export default function DosyaAtamaApp() {
     setLastRollover(getTodayYmd());
 
     // ✅ Rollover sonrası tüm öğretmenlerin isAbsent ve isTester durumunu sıfırla (yeni gün başladı)
-    const resetTeachers = currentTeachers.map(t => ({ ...t, isAbsent: false, isTester: false }));
+    // NOT: useAppStore.getState().teachers kullanılmalı çünkü applyBackupBonusForDay ve 
+    // applyAbsencePenaltyForDay içinde teachers güncellenmiş olabilir
+    const latestTeachers = useAppStore.getState().teachers;
+    const resetTeachers = latestTeachers.map(t => ({ ...t, isAbsent: false, isTester: false }));
     setTeachers(resetTeachers);
   }
 
