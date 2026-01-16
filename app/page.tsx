@@ -736,7 +736,7 @@ export default function DosyaAtamaApp() {
   const [filterYM, setFilterYM] = useState<string>(ymOf(nowISO()));
   // Admin oturum durumu (Store'dan geliyor: isAdmin)
 
-  const [centralLoaded, setCentralLoaded] = useState(false)
+
   // Login modal durumu (Yukarıda tanımlı)
 
   const [viewMode, setViewMode] = useState<"landing" | "main" | "teacher-tracking" | "archive">("landing");
