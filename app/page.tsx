@@ -231,15 +231,13 @@ export default function DosyaAtamaApp() {
   }, [fetchCentralState]);
 
   // RESTORED: Manual Sync Loop (The "Old System" that worked)
-  useEffect(() => {
-    if (!isAdmin || !hydrated || !centralLoaded) return;
+  // RESTORED: Manual Sync Loop (The "Old System" that worked)
+  // UPDATED: Exposed to Store + Removed !isAdmin lock for debugging
+  const syncToSupabase = React.useCallback(async () => {
+    // if (!isAdmin) return; // DEBUG: Unlock for everyone to ensure saving
+    if (!hydrated || !centralLoaded) return;
 
-    const ctrl = new AbortController();
     const nowTs = new Date().toISOString();
-
-    // Don't update ref here immediately to allow debounce to work, 
-    // but we need to update it on success to prevent re-fetch loop.
-
     const payload = {
       teachers,
       cases,
@@ -255,22 +253,38 @@ export default function DosyaAtamaApp() {
       updatedAt: nowTs,
     };
 
-    const t = window.setTimeout(() => {
-      // Optimistic update of ref to prevent self-echo if fetch happens fast
-      lastAppliedAtRef.current = nowTs;
+    // Optimistic update
+    lastAppliedAtRef.current = nowTs;
 
-      fetch("/api/state", {
+    try {
+      const res = await fetch("/api/state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        signal: ctrl.signal,
-      }).catch(err => {
-        if (err.name !== 'AbortError') console.error("Sync failed", err);
       });
-    }, 1000); // 1 second debounce (slightly coarser than before to be safe)
-
-    return () => { window.clearTimeout(t); ctrl.abort(); };
+      if (!res.ok) {
+        console.error("Sync failed:", await res.text());
+        toast("Kayıt başarısız (Sync)");
+      } else {
+        // console.log("Auto-sync success");
+      }
+    } catch (err) {
+      console.error("Sync network error:", err);
+    }
   }, [teachers, cases, history, lastRollover, lastAbsencePenalty, announcements, settings, eArchive, absenceRecords, queue, isAdmin, hydrated, centralLoaded]);
+
+  // Register sync function to store for "Force Save" button
+  useEffect(() => {
+    useAppStore.setState({ syncFunction: syncToSupabase });
+  }, [syncToSupabase]);
+
+  // Auto-sync effect with debounce
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      syncToSupabase();
+    }, 1000);
+    return () => { window.clearTimeout(t); };
+  }, [syncToSupabase]);
 
   const lastAbsencePenaltyRef = React.useRef<string>("");
   const supabaseTeacherCountRef = React.useRef<number>(0);
