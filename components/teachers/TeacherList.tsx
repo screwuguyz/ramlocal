@@ -263,7 +263,7 @@ export default function TeacherList() {
                         Aktif Öğretmenler ({activeTeachers.length})
                     </h3>
                     <div className="flex gap-2">
-                        <span className="text-xs font-bold text-red-500 border border-red-500 px-2 py-1 rounded">DEBUG v6 (API+DIRECT)</span>
+                        <span className="text-xs font-bold text-red-500 border border-red-500 px-2 py-1 rounded">DEBUG v7 (NEW PROTECT)</span>
                         <Button
                             size="sm"
                             variant="destructive"

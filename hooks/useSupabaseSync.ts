@@ -69,11 +69,14 @@ export function useSupabaseSync(): SupabaseSyncHook {
 
     // Detect local teacher changes to set "protection lock"
     useEffect(() => {
-        if (teachersRef.current.length > 0) {
+        if (teachers.length > 0) {
             teachers.forEach(t => {
                 const oldT = teachersRef.current.find(old => old.id === t.id);
-                // If teacher changed locally, set protection lock for 15 seconds
-                if (oldT && (oldT.yearlyLoad !== t.yearlyLoad || oldT.active !== t.active)) {
+                // If teacher is NEW or changed locally, set protection lock for 15 seconds
+                if (!oldT) {
+                    lastLocalEditRef.current[t.id] = Date.now();
+                    console.log(`[Sync] New teacher detected ${t.name}, locking sync for 15s`);
+                } else if (oldT.yearlyLoad !== t.yearlyLoad || oldT.active !== t.active) {
                     lastLocalEditRef.current[t.id] = Date.now();
                     console.log(`[Sync] Local edit detected for ${t.name}, locking sync for 15s`);
                 }
@@ -134,7 +137,7 @@ export function useSupabaseSync(): SupabaseSyncHook {
             } else if (supabaseTeachers.length > 0) {
                 // Intelligent Merge & Hard Lock Protection
                 const now = Date.now();
-                const mergedTeachers = supabaseTeachers.map((remoteT: Teacher) => {
+                let mergedTeachers = supabaseTeachers.map((remoteT: Teacher) => {
                     const localT = currentTeachers.find((t) => t.id === remoteT.id);
                     if (!localT) return remoteT;
 
@@ -153,6 +156,21 @@ export function useSupabaseSync(): SupabaseSyncHook {
                         return { ...remoteT, yearlyLoad: localT.yearlyLoad };
                     }
                     return remoteT;
+                });
+
+                // 3. NEW TEACHER PROTECTION: If a teacher exists locally but not on remote, AND was recently edited/added, keep it!
+                const remoteIds = new Set(supabaseTeachers.map((t: Teacher) => t.id));
+                const localOnlyTeachers = currentTeachers.filter(t => !remoteIds.has(t.id));
+
+                localOnlyTeachers.forEach(localT => {
+                    const lastEdit = lastLocalEditRef.current[localT.id] || 0;
+                    // If added/edited in last 15 seconds, assume it's a new teacher waiting to sync
+                    if (now - lastEdit < 15000) {
+                        console.log(`[Sync] 🛡️ Keeping new/unsynced teacher ${localT.name} (added ${Math.round((now - lastEdit) / 1000)}s ago)`);
+                        mergedTeachers.push(localT);
+                    } else {
+                        console.warn(`[Sync] Dropping orphan teacher ${localT.name} (not in server, no recent edits)`);
+                    }
                 });
 
                 // Only update if there are actual changes (prevent render loops)
