@@ -111,6 +111,10 @@ interface AppState {
 
     // === Reset ===
     resetState: () => void;
+
+    // === Sync Debug ===
+    syncFunction: (() => Promise<void>) | null;
+    setSyncFunction: (fn: (() => Promise<void>) | null) => void;
 }
 
 // ---- Helper: Generate unique ID
@@ -148,6 +152,7 @@ const initialState = {
     toasts: [],
     assignmentPopup: null,
     queue: [],
+    syncFunction: null,
 };
 
 // ---- Create Store
@@ -291,6 +296,9 @@ export const useAppStore = create<AppState>()(
 
             // === Reset ===
             resetState: () => set(initialState),
+
+            // === Sync Debug ===
+            setSyncFunction: (fn) => set({ syncFunction: fn }),
         }),
         {
             name: "ram-dosya-atama-store",

@@ -390,14 +390,13 @@ export function useSupabaseSync(): SupabaseSyncHook {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run once on mount
 
-    // Expose sync for debug button - FORCE ASSIGN
+    // Expose sync for debug button - STORE ASSIGN
     useEffect(() => {
         if (syncToServer) {
-            console.log("[useSupabaseSync] Binding window.forceSync (v4 fix)");
-            // @ts-ignore
-            window.forceSync = syncToServer;
+            console.log("[useSupabaseSync] Registering sync function to store");
+            useAppStore.getState().setSyncFunction(syncToServer);
         }
-    }); // Run on every render to ensure it sticks
+    }, [syncToServer]);
 
     return {
         fetchCentralState,

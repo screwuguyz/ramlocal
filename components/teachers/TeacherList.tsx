@@ -263,18 +263,17 @@ export default function TeacherList() {
                         Aktif Öğretmenler ({activeTeachers.length})
                     </h3>
                     <div className="flex gap-2">
-                        <span className="text-xs font-bold text-red-500 border border-red-500 px-2 py-1 rounded">DEBUG v4 (KORUMALI)</span>
+                        <span className="text-xs font-bold text-red-500 border border-red-500 px-2 py-1 rounded">DEBUG v5 (STORE)</span>
                         <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => {
-                                // @ts-ignore
-                                if (window.forceSync) {
-                                    // @ts-ignore
-                                    window.forceSync();
-                                    alert("Zorla kayıt tetiklendi!");
+                                const syncFn = useAppStore.getState().syncFunction;
+                                if (syncFn) {
+                                    syncFn();
+                                    alert("Zorla kayıt tetiklendi (Store üzerinden)!");
                                 } else {
-                                    alert("Sync fonksiyonu bulunamadı (Sayfayı yenileyin)");
+                                    alert("Sync fonksiyonu hala yüklenmedi! Lütfen bekleyin...");
                                 }
                             }}
                         >
