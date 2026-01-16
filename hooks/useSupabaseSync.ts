@@ -392,8 +392,15 @@ export function useSupabaseSync(): SupabaseSyncHook {
 
     // Expose sync for debug button
     useEffect(() => {
-        // @ts-ignore
-        window.forceSync = syncToServer;
+        if (syncToServer) {
+            console.log("[useSupabaseSync] Binding window.forceSync");
+            // @ts-ignore
+            window.forceSync = syncToServer;
+        }
+        return () => {
+            // @ts-ignore
+            // delete window.forceSync; // Don't delete on cleanup to avoid flicker
+        };
     }, [syncToServer]);
 
     return {
