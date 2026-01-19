@@ -183,8 +183,20 @@ export default function DosyaAtamaApp() {
         setTeachers(mergedTeachers);
       }
 
-      // Standard sets
-      setCases(s.cases ?? []);
+      // CASE ORPHAN PROTECTION: Local'de olup sunucuda olmayan case'leri koru
+      // Bu, yeni eklenen ama henüz sunucuya gitmemiş dosyaları korur
+      const incomingCases = s.cases || [];
+      const currentCases = casesRef.current || [];
+      const incomingCaseIds = new Set(incomingCases.map((c: any) => c.id));
+      const orphanCases = currentCases.filter(c => !incomingCaseIds.has(c.id));
+
+      if (orphanCases.length > 0) {
+        console.log(`[Protection] Keeping ${orphanCases.length} local cases not yet in server`);
+        // toast(`🛡️ ${orphanCases.length} dosya korundu`);
+        setCases([...incomingCases, ...orphanCases]);
+      } else {
+        setCases(incomingCases);
+      }
       setHistory(s.history ?? {});
       setLastRollover(s.lastRollover ?? "");
       setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
