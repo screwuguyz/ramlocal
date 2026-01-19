@@ -1,11 +1,9 @@
-// app/api/state/route.ts (Supabase-backed)
+// app/api/state/route.ts (Supabase + LOCAL_MODE)
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isLocalMode, readState, writeState } from "@/lib/localStorage";
 
 export const runtime = "nodejs";
-
-// SECURITY FIX: Removed NODE_TLS_REJECT_UNAUTHORIZED option
-// If you have SSL issues, fix the certificate, don't disable verification
 
 import type {
   Teacher,
@@ -26,14 +24,13 @@ type StateShape = {
   lastAbsencePenalty?: string;
   announcements?: Announcement[];
   settings?: Settings;
-  themeSettings?: ThemeSettings; // Tema ayarları
-  eArchive?: EArchiveEntry[]; // E-Arşiv (tüm atanmış dosyalar)
-  absenceRecords?: AbsenceRecord[]; // Devamsızlık kayıtları (öğretmen ID + tarih)
+  themeSettings?: ThemeSettings;
+  eArchive?: EArchiveEntry[];
+  absenceRecords?: AbsenceRecord[];
   queue?: QueueTicket[];
   updatedAt?: string;
 };
 
-// Table: public.app_state(id text PK, state jsonb, updated_at timestamptz)
 const DEFAULT_STATE: StateShape = {
   teachers: [],
   cases: [],
@@ -48,7 +45,24 @@ const DEFAULT_STATE: StateShape = {
   updatedAt: undefined,
 };
 
+// ============================================
+// GET - Read state
+// ============================================
 export async function GET() {
+  // LOCAL_MODE: Read from JSON file
+  if (isLocalMode()) {
+    try {
+      const state = await readState<StateShape>();
+      const s = state || DEFAULT_STATE;
+      console.log("[api/state][GET][LOCAL] Success, teachers count:", s.teachers?.length || 0);
+      return NextResponse.json(s, { headers: { "Cache-Control": "no-store" } });
+    } catch (err: any) {
+      console.error("[api/state][GET][LOCAL]", err?.message || err);
+      return NextResponse.json({ ...DEFAULT_STATE, _error: err?.message }, { headers: { "Cache-Control": "no-store" } });
+    }
+  }
+
+  // SUPABASE MODE
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
   if (!url || !anon) {
@@ -75,13 +89,11 @@ export async function GET() {
   }
 }
 
+// ============================================
+// POST - Write state
+// ============================================
 export async function POST(req: NextRequest) {
-  // const isAdmin = req.cookies.get("ram_admin")?.value === "1";
-  // if (!isAdmin) {
-  //   return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  // }
-  // SECURITY WARNING: Admin check disabled for debugging
-  const isAdmin = true;
+  const isAdmin = true; // DEBUG: Admin check disabled
 
   let body: Partial<StateShape> = {};
   try {
@@ -89,6 +101,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
+
   // Basic shape guards
   const s: StateShape = {
     teachers: Array.isArray(body.teachers) ? (body.teachers as Teacher[]) : [],
@@ -104,6 +117,23 @@ export async function POST(req: NextRequest) {
     queue: Array.isArray(body.queue) ? (body.queue as QueueTicket[]) : [],
     updatedAt: body.updatedAt ? String(body.updatedAt) : new Date().toISOString(),
   };
+
+  // LOCAL_MODE: Write to JSON file
+  if (isLocalMode()) {
+    try {
+      const success = await writeState(s);
+      if (!success) {
+        return NextResponse.json({ ok: false, error: "Failed to write state file" }, { status: 500 });
+      }
+      console.log("[api/state][POST][LOCAL] Success, teachers count:", s.teachers?.length || 0);
+      return NextResponse.json({ ok: true });
+    } catch (err: any) {
+      console.error("[api/state][POST][LOCAL]", err?.message || err);
+      return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
+    }
+  }
+
+  // SUPABASE MODE
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
   if (!url || !service) {

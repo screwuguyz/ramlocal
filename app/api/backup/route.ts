@@ -1,6 +1,16 @@
-// app/api/backup/route.ts - Yedekleme API
+// app/api/backup/route.ts - Yedekleme API (Supabase + LOCAL_MODE)
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
+import {
+  isLocalMode,
+  listBackups,
+  createBackup,
+  getBackupById,
+  deleteBackupById,
+  writeState,
+  LocalBackup
+} from "@/lib/localStorage";
 
 export const runtime = "nodejs";
 
@@ -8,49 +18,42 @@ const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPA_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const TABLE_NAME = "app_backups";
 
-type BackupEntry = {
-  id: string;
-  created_at: string;
-  backup_type: "manual" | "auto";
-  state_snapshot: any;
-  description?: string;
-};
-
-// Yedekleri listele
+// ============================================
+// GET - List backups
+// ============================================
 export async function GET(req: NextRequest) {
   const isAdmin = req.cookies.get("ram_admin")?.value === "1";
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // LOCAL_MODE
+  if (isLocalMode()) {
+    try {
+      const backups = await listBackups();
+      return NextResponse.json({ backups });
+    } catch (err: any) {
+      console.error("[backup][GET][LOCAL]", err);
+      return NextResponse.json({ error: err?.message }, { status: 500 });
+    }
+  }
+
+  // SUPABASE MODE
   if (!SUPA_URL || !SUPA_SERVICE_KEY) {
     return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
   }
 
   try {
     const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
-
-    // Önce tablo var mı kontrol et, yoksa oluştur
     const { error: tableCheckError } = await client
       .from(TABLE_NAME)
       .select("id")
       .limit(1);
 
     if (tableCheckError?.code === "42P01") {
-      // Tablo yok, oluştur
-      // Not: Bu sadece bilgi amaçlı, Supabase'de tablo manuel oluşturulmalı
       return NextResponse.json({
         backups: [],
-        warning: "Yedekleme tablosu henüz oluşturulmamış. Supabase dashboard'dan 'app_backups' tablosu oluşturun.",
-        tableSchema: `
-          CREATE TABLE app_backups (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            backup_type TEXT DEFAULT 'manual',
-            state_snapshot JSONB,
-            description TEXT
-          );
-        `
+        warning: "Yedekleme tablosu henüz oluşturulmamış."
       });
     }
 
@@ -61,7 +64,6 @@ export async function GET(req: NextRequest) {
       .limit(50);
 
     if (error) throw error;
-
     return NextResponse.json({ backups: data || [] });
   } catch (err: any) {
     console.error("backup GET error", err);
@@ -69,15 +71,13 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Yeni yedek oluştur
+// ============================================
+// POST - Create backup
+// ============================================
 export async function POST(req: NextRequest) {
   const isAdmin = req.cookies.get("ram_admin")?.value === "1";
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!SUPA_URL || !SUPA_SERVICE_KEY) {
-    return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
   }
 
   try {
@@ -88,18 +88,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "State verisi gerekli" }, { status: 400 });
     }
 
+    // LOCAL_MODE
+    if (isLocalMode()) {
+      const backup: LocalBackup = {
+        id: randomUUID(),
+        created_at: new Date().toISOString(),
+        backup_type: backupType,
+        description: description || `${backupType === "auto" ? "Otomatik" : "Manuel"} yedek - ${new Date().toLocaleString("tr-TR")}`,
+        state_snapshot: state,
+      };
+
+      const success = await createBackup(backup);
+      if (!success) {
+        return NextResponse.json({ error: "Yedek oluşturulamadı" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        backup: { id: backup.id, created_at: backup.created_at },
+        message: "Yedek başarıyla oluşturuldu"
+      });
+    }
+
+    // SUPABASE MODE
+    if (!SUPA_URL || !SUPA_SERVICE_KEY) {
+      return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
+    }
+
     const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
 
-    // Eski yedekleri temizle (30 günden eski olanları sil)
+    // Clean old backups
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    await client.from(TABLE_NAME).delete().lt("created_at", thirtyDaysAgo.toISOString());
 
-    await client
-      .from(TABLE_NAME)
-      .delete()
-      .lt("created_at", thirtyDaysAgo.toISOString());
-
-    // Yeni yedek oluştur
     const { data, error } = await client
       .from(TABLE_NAME)
       .insert({
@@ -111,39 +133,53 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
-
-    return NextResponse.json({
-      ok: true,
-      backup: data,
-      message: "Yedek başarıyla oluşturuldu"
-    });
+    return NextResponse.json({ ok: true, backup: data, message: "Yedek başarıyla oluşturuldu" });
   } catch (err: any) {
     console.error("backup POST error", err);
     return NextResponse.json({ error: err?.message }, { status: 500 });
   }
 }
 
-// Yedekten geri yükle
+// ============================================
+// PUT - Restore from backup
+// ============================================
 export async function PUT(req: NextRequest) {
   const isAdmin = req.cookies.get("ram_admin")?.value === "1";
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!SUPA_URL || !SUPA_SERVICE_KEY) {
-    return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
-  }
-
   try {
     const { backupId } = await req.json();
-
     if (!backupId) {
       return NextResponse.json({ error: "Yedek ID gerekli" }, { status: 400 });
     }
 
-    const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
+    // LOCAL_MODE
+    if (isLocalMode()) {
+      const backup = await getBackupById(backupId);
+      if (!backup || !backup.state_snapshot) {
+        return NextResponse.json({ error: "Yedek bulunamadı" }, { status: 404 });
+      }
 
-    // Yedeği bul
+      const success = await writeState(backup.state_snapshot);
+      if (!success) {
+        return NextResponse.json({ error: "Geri yükleme başarısız" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        state: backup.state_snapshot,
+        message: "Yedek başarıyla geri yüklendi"
+      });
+    }
+
+    // SUPABASE MODE
+    if (!SUPA_URL || !SUPA_SERVICE_KEY) {
+      return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
+    }
+
+    const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
     const { data: backup, error: fetchError } = await client
       .from(TABLE_NAME)
       .select("state_snapshot")
@@ -154,37 +190,25 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Yedek bulunamadı" }, { status: 404 });
     }
 
-    // app_state tablosunu güncelle
     const { error: updateError } = await client
       .from("app_state")
-      .upsert({
-        id: "global",
-        state: backup.state_snapshot,
-        updated_at: new Date().toISOString(),
-      });
+      .upsert({ id: "global", state: backup.state_snapshot, updated_at: new Date().toISOString() });
 
     if (updateError) throw updateError;
-
-    return NextResponse.json({
-      ok: true,
-      state: backup.state_snapshot,
-      message: "Yedek başarıyla geri yüklendi"
-    });
+    return NextResponse.json({ ok: true, state: backup.state_snapshot, message: "Yedek başarıyla geri yüklendi" });
   } catch (err: any) {
     console.error("backup PUT error", err);
     return NextResponse.json({ error: err?.message }, { status: 500 });
   }
 }
 
-// Yedek sil
+// ============================================
+// DELETE - Delete backup
+// ============================================
 export async function DELETE(req: NextRequest) {
   const isAdmin = req.cookies.get("ram_admin")?.value === "1";
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!SUPA_URL || !SUPA_SERVICE_KEY) {
-    return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
   }
 
   try {
@@ -195,28 +219,24 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Yedek ID gerekli" }, { status: 400 });
     }
 
-    const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
+    // LOCAL_MODE
+    if (isLocalMode()) {
+      const success = await deleteBackupById(backupId);
+      return NextResponse.json({ ok: success, message: success ? "Yedek silindi" : "Yedek bulunamadı" });
+    }
 
-    const { error } = await client
-      .from(TABLE_NAME)
-      .delete()
-      .eq("id", backupId);
+    // SUPABASE MODE
+    if (!SUPA_URL || !SUPA_SERVICE_KEY) {
+      return NextResponse.json({ error: "Supabase config missing" }, { status: 500 });
+    }
+
+    const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
+    const { error } = await client.from(TABLE_NAME).delete().eq("id", backupId);
 
     if (error) throw error;
-
     return NextResponse.json({ ok: true, message: "Yedek silindi" });
   } catch (err: any) {
     console.error("backup DELETE error", err);
     return NextResponse.json({ error: err?.message }, { status: 500 });
   }
 }
-
-
-
-
-
-
-
-
-
-

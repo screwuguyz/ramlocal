@@ -226,8 +226,21 @@ export default function DosyaAtamaApp() {
     fetchCentralState();
   }, [fetchCentralState]);
 
-  // RESTORED: Realtime Subscription
+  // RESTORED: Realtime Subscription (Supabase mode)
+  // LOCAL_MODE: Use polling instead of realtime
   useEffect(() => {
+    const isLocalMode = process.env.NEXT_PUBLIC_LOCAL_MODE === "true" || process.env.NEXT_PUBLIC_LOCAL_MODE === "1";
+
+    // LOCAL_MODE: Poll every 5 seconds
+    if (isLocalMode) {
+      console.log("[LOCAL_MODE] Using 5-second polling instead of Supabase realtime");
+      const interval = setInterval(() => {
+        fetchCentralState();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+
+    // SUPABASE MODE: Use realtime subscription
     if (process.env.NEXT_PUBLIC_DISABLE_REALTIME === "1") return;
     const channel = supabase
       .channel("realtime:app_state")
