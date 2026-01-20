@@ -199,10 +199,10 @@ export default function DailyReportView({
       if (!ymd.startsWith(monthKey)) return;
       const key = `${c.assignedTo}|${ymd}`;
       const cur = m.get(key) || { points: 0, count: 0 };
-      // Fix: Absence penalty ve Backup bonus puanlarını toplama dahil etme
-      // Bunlar sistem dengeleme puanlarıdır, günlük yapılan iş puanı değildir.
+      // Tüm puanları dahil et (sistem puanları dahil: devamsızlık cezası, yedek başkan bonusu)
+      cur.points += c.score;
+      // Sadece gerçek dosya atamaları için count artır
       if (!c.absencePenalty && !c.backupBonus) {
-        cur.points += c.score;
         cur.count += 1;
       }
       m.set(key, cur);
@@ -220,11 +220,13 @@ export default function DailyReportView({
     // Seçili yılın toplam puanını hesapla (Dinamik Yıllık Yük)
     let calculatedYearlyLoad = 0;
 
-    // 1. History'den topla
+    // 1. History'den topla (tüm puanları dahil et: dosya atamaları + sistem puanları)
     Object.entries(history).forEach(([date, dayCases]) => {
       if (date.startsWith(String(year))) {
         dayCases.forEach(c => {
-          if (c.assignedTo === t.id) calculatedYearlyLoad += c.score;
+          if (c.assignedTo === t.id) {
+            calculatedYearlyLoad += c.score;
+          }
         });
       }
     });

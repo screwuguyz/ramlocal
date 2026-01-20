@@ -36,8 +36,8 @@ export default function YearlyReport({ teachers, cases, history }: Props) {
   // Tüm dosyaları birleştir
   const allCases = useMemo(() => {
     const fromHistory = Object.values(history).flat();
-    // Backup bonuslar dahil ediliyor
-    return [...cases, ...fromHistory].filter(c => !c.absencePenalty);
+    // Backup bonuslar dahil ediliyor -> ARTIK EDİLMİYOR (Fix)
+    return [...cases, ...fromHistory].filter(c => !c.absencePenalty && !c.backupBonus);
   }, [cases, history]);
 
   // Yıllık veriler

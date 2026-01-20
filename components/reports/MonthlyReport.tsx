@@ -21,7 +21,7 @@ export default function MonthlyReport({ teachers, cases = [], history = {} }: Pr
   const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
   const months = getMonths();
 
-  // Tüm dosyaları al (cases + history)
+  // Tüm dosyaları al (cases + history) - sistem puanları dahil (devamsızlık cezası, yedek başkan bonusu)
   const allCases = useMemo(() => {
     const fromHistory = Object.values(history).flat();
     const fromToday = cases || [];
