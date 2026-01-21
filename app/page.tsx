@@ -181,15 +181,19 @@ export default function DosyaAtamaApp() {
       }
 
       // CASE ORPHAN PROTECTION: Local'de olup sunucuda olmayan case'leri koru
-      // Bu, yeni eklenen ama henüz sunucuya gitmemiş dosyaları korur
+      // UPDATED: Sadece son 60 saniyede oluşturulan dosyaları koru (yeni eklenmiş ama henüz sync olmamış)
+      // Bu, silinmiş eski dosyaların geri gelmesini engeller
       const incomingCases = s.cases || [];
       const currentCases = casesRef.current || [];
       const incomingCaseIds = new Set(incomingCases.map((c: any) => c.id));
-      const orphanCases = currentCases.filter(c => !incomingCaseIds.has(c.id));
+      const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
+      const orphanCases = currentCases.filter(c =>
+        !incomingCaseIds.has(c.id) &&
+        c.createdAt > sixtySecondsAgo // Sadece çok yeni case'leri koru
+      );
 
       if (orphanCases.length > 0) {
-        console.log(`[Protection] Keeping ${orphanCases.length} local cases not yet in server`);
-        // toast(`🛡️ ${orphanCases.length} dosya korundu`);
+        console.log(`[Protection] Keeping ${orphanCases.length} recent local cases not yet in server`);
         setCases([...incomingCases, ...orphanCases]);
       } else {
         setCases(incomingCases);
@@ -256,7 +260,7 @@ export default function DosyaAtamaApp() {
   // RESTORED: Manual Sync Loop (The "Old System" that worked)
   // UPDATED: Exposed to Store + Removed !isAdmin lock for debugging
   const syncToSupabase = React.useCallback(async () => {
-    // if (!isAdmin) return; // DEBUG: Unlock for everyone to ensure saving
+    if (!isAdmin) return; // Only admin can sync to server
     if (!hydrated || !centralLoaded) return;
 
     const nowTs = new Date().toISOString();
