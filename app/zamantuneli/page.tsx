@@ -106,11 +106,25 @@ export default function TimeMachinePage() {
             const data = await res.json();
             if (data.teachers) setTeachers(data.teachers);
             if (data.cases) setCases(data.cases);
-            if (data.history) setHistory(data.history);
+
+            // HISTORY DEDUPE: Remove duplicate entries from history (same id in same day)
+            if (data.history) {
+                const rawHistory = data.history;
+                const cleanedHistory: Record<string, CaseFile[]> = {};
+                Object.keys(rawHistory).forEach(date => {
+                    const dayCases = rawHistory[date] || [];
+                    const seen = new Set<string>();
+                    cleanedHistory[date] = dayCases.filter((c: any) => {
+                        if (!c.id || seen.has(c.id)) return false;
+                        seen.add(c.id);
+                        return true;
+                    });
+                });
+                setHistory(cleanedHistory);
+            }
             if (data.settings) setSettings(prev => ({ ...prev, ...data.settings }));
         } catch (err) {
             console.error(err);
-            // alert("Veri çekilemedi!"); 
         } finally {
             setLoading(false);
         }
@@ -564,31 +578,64 @@ export default function TimeMachinePage() {
                         <h3 className="text-lg font-bold mb-4">{currentSimDate} - Arşiv Kayıtları</h3>
                         <AssignedArchiveView
                             history={history}
-                            cases={cases} // Now showing current cases too, not just rolled-over history
+                            cases={cases}
+                            selectedDay={currentSimDate}
                             teacherName={(id) => teachers.find(t => t.id === id)?.name || "—"}
                             caseDesc={caseDesc}
                             settings={settings}
                             onRemove={async (id, date) => {
+                                // 1. Remove from history
                                 const newDateCases = (history[date] || []).filter(c => c.id !== id);
                                 const newHistory = { ...history, [date]: newDateCases };
                                 setHistory(newHistory);
-                                // save
-                                await fetch("/api/state", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ history: newHistory })
-                                });
+
+                                // 2. Also remove from current cases if it was there (ghost file protection)
+                                const newCases = cases.filter(c => c.id !== id);
+                                if (newCases.length !== cases.length) {
+                                    setCases(newCases);
+                                }
+
+                                // 3. Save to backend (Safe now because API handles merge)
+                                try {
+                                    await fetch("/api/state", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            history: newHistory,
+                                            cases: newCases
+                                        })
+                                    });
+                                    // alert("✅ Kayıt silindi.");
+                                } catch (err) {
+                                    console.error(err);
+                                    alert("❌ Silme işlemi başarısız!");
+                                }
                             }}
                             onUpdate={async (id, date, newScore) => {
                                 const newDateCases = (history[date] || []).map(c => c.id === id ? { ...c, score: Number(newScore) } : c);
                                 const newHistory = { ...history, [date]: newDateCases };
                                 setHistory(newHistory);
-                                // save
-                                await fetch("/api/state", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ history: newHistory })
-                                });
+
+                                // Check if it's also in cases
+                                let newCases = cases;
+                                if (cases.some(c => c.id === id)) {
+                                    newCases = cases.map(c => c.id === id ? { ...c, score: Number(newScore) } : c);
+                                    setCases(newCases);
+                                }
+
+                                try {
+                                    await fetch("/api/state", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            history: newHistory,
+                                            cases: newCases
+                                        })
+                                    });
+                                } catch (err) {
+                                    console.error(err);
+                                    alert("❌ Güncelleme başarısız!");
+                                }
                             }}
                         />
                     </div>

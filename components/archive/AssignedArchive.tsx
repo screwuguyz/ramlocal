@@ -36,6 +36,7 @@ export default function AssignedArchive({
   settings,
   onRemove,
   onUpdate,
+  selectedDay,
 }: {
   history: Record<string, CaseFile[]>;
   cases: CaseFile[];
@@ -44,6 +45,7 @@ export default function AssignedArchive({
   settings: Settings;
   onRemove?: (id: string, date: string) => void;
   onUpdate?: (id: string, date: string, newScore: number) => void;
+  selectedDay?: string;
 }) {
   const days = useMemo(() => {
     const set = new Set<string>(Object.keys(history));
@@ -55,20 +57,22 @@ export default function AssignedArchive({
     return Array.from(set).sort();
   }, [history, cases]);
 
-  const [day, setDay] = useState<string>(() => {
-    const today = ymdLocal(new Date());
-    if (days.length === 0) return today;
-    return days.includes(today) ? today : days[days.length - 1];
-  });
+  const [day, setDay] = useState<string>(selectedDay || "");
 
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editScore, setEditScore] = useState<string>("");
 
   useEffect(() => {
-    if (days.length === 0) return;
-    if (!days.includes(day)) setDay(days[days.length - 1]);
-  }, [days, day]);
+    if (selectedDay) {
+      setDay(selectedDay);
+    } else {
+      const today = ymdLocal(new Date());
+      if (days.length > 0) {
+        setDay(days.includes(today) ? today : days[days.length - 1]);
+      }
+    }
+  }, [selectedDay, days]);
 
   const list = useMemo(() => {
     // History ve cases birleştirilirken aynı ID'liler çiftlenebilir; önce dedupe et

@@ -93,28 +93,52 @@ export async function GET() {
 // POST - Write state
 // ============================================
 export async function POST(req: NextRequest) {
-  const isAdmin = true; // DEBUG: Admin check disabled
+  // 1. Admin Verification
+  const adminCookie = req.cookies.get("ram_admin");
+  const roleCookie = req.cookies.get("ram_role");
+  const isSuperAdmin = roleCookie?.value === "superadmin";
+  const isRamAdmin = adminCookie?.value === "1" || roleCookie?.value === "admin";
 
-  let body: Partial<StateShape> = {};
+  if (!isSuperAdmin && !isRamAdmin) {
+    console.warn("[api/state][POST] Unauthorized access attempt");
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: any = {};
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Basic shape guards
+  // 2. Fetch Existing State for Merging
+  let currentState: StateShape = DEFAULT_STATE;
+  if (isLocalMode()) {
+    currentState = (await readState<StateShape>()) || DEFAULT_STATE;
+  } else {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (url && service) {
+      const admin = createClient(url, service);
+      const { data } = await admin.from("app_state").select("state").eq("id", "global").maybeSingle();
+      if (data?.state) currentState = data.state as StateShape;
+    }
+  }
+
+  // 3. Merge Body into Current State
+  // We only update fields that are present in the body
   const s: StateShape = {
-    teachers: Array.isArray(body.teachers) ? (body.teachers as Teacher[]) : [],
-    cases: Array.isArray(body.cases) ? (body.cases as CaseFile[]) : [],
-    history: (body.history && typeof body.history === "object") ? (body.history as Record<string, CaseFile[]>) : {},
-    lastRollover: String(body.lastRollover ?? ""),
-    lastAbsencePenalty: body.lastAbsencePenalty ? String(body.lastAbsencePenalty) : undefined,
-    announcements: Array.isArray(body.announcements) ? (body.announcements as Announcement[]) : [],
-    settings: body.settings as Settings | undefined,
-    themeSettings: body.themeSettings as ThemeSettings | undefined,
-    eArchive: Array.isArray(body.eArchive) ? (body.eArchive as EArchiveEntry[]) : [],
-    absenceRecords: Array.isArray(body.absenceRecords) ? (body.absenceRecords as AbsenceRecord[]) : [],
-    queue: Array.isArray(body.queue) ? (body.queue as QueueTicket[]) : [],
+    teachers: Array.isArray(body.teachers) ? body.teachers : currentState.teachers,
+    cases: Array.isArray(body.cases) ? body.cases : currentState.cases,
+    history: (body.history && typeof body.history === "object") ? body.history : currentState.history,
+    lastRollover: body.lastRollover !== undefined ? String(body.lastRollover) : currentState.lastRollover,
+    lastAbsencePenalty: body.lastAbsencePenalty !== undefined ? String(body.lastAbsencePenalty) : currentState.lastAbsencePenalty,
+    announcements: Array.isArray(body.announcements) ? body.announcements : currentState.announcements,
+    settings: body.settings !== undefined ? body.settings : currentState.settings,
+    themeSettings: body.themeSettings !== undefined ? body.themeSettings : currentState.themeSettings,
+    eArchive: Array.isArray(body.eArchive) ? body.eArchive : currentState.eArchive,
+    absenceRecords: Array.isArray(body.absenceRecords) ? body.absenceRecords : currentState.absenceRecords,
+    queue: Array.isArray(body.queue) ? body.queue : currentState.queue,
     updatedAt: body.updatedAt ? String(body.updatedAt) : new Date().toISOString(),
   };
 
@@ -125,10 +149,8 @@ export async function POST(req: NextRequest) {
       if (!success) {
         return NextResponse.json({ ok: false, error: "Failed to write state file" }, { status: 500 });
       }
-      console.log("[api/state][POST][LOCAL] Success, teachers count:", s.teachers?.length || 0);
       return NextResponse.json({ ok: true });
     } catch (err: any) {
-      console.error("[api/state][POST][LOCAL]", err?.message || err);
       return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
     }
   }
@@ -137,8 +159,7 @@ export async function POST(req: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
   if (!url || !service) {
-    console.error("[api/state][POST] Missing env vars: URL=", !!url, "SERVICE_KEY=", !!service);
-    return NextResponse.json({ ok: false, error: "Missing Supabase envs (URL or SERVICE_ROLE_KEY)" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Missing Supabase envs" }, { status: 500 });
   }
   try {
     const admin = createClient(url, service);
@@ -146,14 +167,9 @@ export async function POST(req: NextRequest) {
       .from("app_state")
       .upsert({ id: "global", state: s, updated_at: new Date().toISOString() })
       .single();
-    if (error) {
-      console.error("[api/state][POST] Supabase error:", error);
-      throw error;
-    }
-    console.log("[api/state][POST] Success, teachers count:", s.teachers?.length || 0);
+    if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("[api/state][POST]", err?.message || err);
     return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
   }
 }
