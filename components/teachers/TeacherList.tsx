@@ -18,6 +18,8 @@ import { uid } from "@/lib/utils";
 import { getTodayYmd } from "@/lib/date";
 import type { Teacher } from "@/types";
 
+import ScoreAdjustmentModal from "@/components/modals/ScoreAdjustmentModal";
+
 export default function TeacherList() {
     const {
         teachers,
@@ -48,6 +50,9 @@ export default function TeacherList() {
     const [editingLoadId, setEditingLoadId] = useState<string | null>(null);
     const [editLoadValue, setEditLoadValue] = useState<string>("");
 
+    // Score Adjustment Modal State
+    const [scoreAdjustTeacher, setScoreAdjustTeacher] = useState<Teacher | null>(null);
+
     // ---- Helpers
     function hasTestToday(tid: string) {
         const today = getTodayYmd();
@@ -59,6 +64,47 @@ export default function TeacherList() {
     const calculatedAvgLoad = activeTeachersList.length > 0
         ? Math.round(activeTeachersList.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachersList.length)
         : 75;
+
+    function handleScoreConfirm(delta: number, reason: string) {
+        if (!scoreAdjustTeacher) return;
+
+        const currentYearly = scoreAdjustTeacher.yearlyLoad;
+        const newYearly = Math.max(0, currentYearly + delta);
+
+        // Update Monthly (Current Month)
+        const today = getTodayYmd();
+        const currentMonthKey = today.slice(0, 7); // YYYY-MM
+        const currentMonthly = scoreAdjustTeacher.monthly?.[currentMonthKey] || 0;
+        const newMonthly = Math.max(0, currentMonthly + delta);
+
+        const nextMonthly = { ...scoreAdjustTeacher.monthly };
+        nextMonthly[currentMonthKey] = newMonthly;
+
+        updateTeacher(scoreAdjustTeacher.id, {
+            yearlyLoad: newYearly,
+            monthly: nextMonthly
+        });
+
+        // Add "Adjustment Case" to 'cases' so it appears in Daily Report
+        const adjustmentCase: any = {
+            id: uid(),
+            student: "Puan Denkleştirme",
+            score: delta,
+            assignedTo: scoreAdjustTeacher.id,
+            createdAt: today + "T12:00:00.000Z",
+            type: "DESTEK",
+            isNew: false,
+            diagCount: 0,
+            isTest: false,
+            assignReason: reason
+        };
+
+        setCases([...cases, adjustmentCase]);
+
+        addToast(`${scoreAdjustTeacher.name}: ${reason} (Yeni Puan: ${newYearly})`);
+        setScoreAdjustTeacher(null);
+    }
+
 
     // ---- Actions
     function handleAddTeacher() {
@@ -236,6 +282,14 @@ export default function TeacherList() {
 
     return (
         <div className="space-y-6">
+            <ScoreAdjustmentModal
+                isOpen={!!scoreAdjustTeacher}
+                onClose={() => setScoreAdjustTeacher(null)}
+                targetTeacher={scoreAdjustTeacher}
+                allTeachers={teachers}
+                onConfirm={handleScoreConfirm}
+            />
+
             {/* Öğretmen Ekle - Premium Tasarım */}
             <div className="bg-gradient-to-r from-indigo-50 via-white to-purple-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
@@ -445,6 +499,19 @@ export default function TeacherList() {
                                             </PopoverTrigger>
                                             <PopoverContent className="w-56 p-2" align="end">
                                                 <div className="space-y-1">
+
+                                                    {/* NEW: Score Adjustment Button */}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="w-full justify-start h-9 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                                        onClick={() => setScoreAdjustTeacher(t)}
+                                                    >
+                                                        <span className="w-4 h-4 mr-2 text-center font-bold">±</span>
+                                                        Puan Denkleştir
+                                                    </Button>
+
+                                                    <div className="h-px bg-slate-100 my-1" />
 
                                                     <Button
                                                         variant="ghost"

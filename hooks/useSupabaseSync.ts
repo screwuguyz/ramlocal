@@ -24,7 +24,7 @@ interface SupabaseSyncHook {
     isConnected: boolean;
 }
 
-export function useSupabaseSync(): SupabaseSyncHook {
+export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): SupabaseSyncHook {
     const clientId = useRef(uid());
     const channelRef = useRef<RealtimeChannel | null>(null);
     const lastAppliedAtRef = useRef<string>("");
@@ -409,6 +409,11 @@ export function useSupabaseSync(): SupabaseSyncHook {
                     const targetId = payload?.new?.id ?? payload?.old?.id;
                     if (targetId && targetId !== "global") return;
                     console.log("[Realtime] app_state changed, fetching...");
+
+                    if (onRealtimeEvent) {
+                        onRealtimeEvent(payload);
+                    }
+
                     fetchRef.current(); // Use ref instead of direct call
                 }
             )
