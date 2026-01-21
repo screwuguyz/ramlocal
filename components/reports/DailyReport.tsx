@@ -186,7 +186,17 @@ export default function DailyReportView({
       .filter(([day]) => day.startsWith(ym))
       .flatMap(([, arr]) => arr);
     const inToday = cases.filter((c) => c.createdAt.slice(0, 7) === ym);
-    return [...inHistory, ...inToday].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    // DEDUPE: Same case ID should only count once (history takes priority for past days)
+    const combined = [...inHistory, ...inToday];
+    const seen = new Set<string>();
+    const deduped = combined.filter(c => {
+      if (!c.id || seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+
+    return deduped.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
   const data = useMemo(() => getCasesForMonth(monthKey), [monthKey, cases, history]);

@@ -198,7 +198,21 @@ export default function DosyaAtamaApp() {
       } else {
         setCases(incomingCases);
       }
-      setHistory(s.history ?? {});
+
+      // HISTORY DEDUPE: Remove duplicate entries from history (same id in same day)
+      const rawHistory = s.history ?? {};
+      const cleanedHistory: Record<string, any[]> = {};
+      Object.keys(rawHistory).forEach(date => {
+        const dayCases = rawHistory[date] || [];
+        const seen = new Set<string>();
+        cleanedHistory[date] = dayCases.filter((c: any) => {
+          if (!c.id || seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
+      });
+      setHistory(cleanedHistory);
+
       setLastRollover(s.lastRollover ?? "");
       setLastAbsencePenalty(s.lastAbsencePenalty ?? "");
 
