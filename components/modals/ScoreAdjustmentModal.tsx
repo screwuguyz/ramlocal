@@ -29,12 +29,11 @@ export default function ScoreAdjustmentModal({
     const [offset, setOffset] = useState<string>("5"); // Default offset (e.g. Min - 5)
     const [fixedValue, setFixedValue] = useState<string>("");
 
-    if (!targetTeacher) return null;
-
     // Calculate Statistics (Active & Present teachers only)
     const stats = useMemo(() => {
-        // Filter: Active, Not the target teacher, Not absent (optional, but usually we compare to working teachers)
-        // Actually, usually we want to compare to the "pack".
+        if (!targetTeacher) return { min: 0, avg: 0, max: 0, count: 0 };
+
+        // Filter: Active, Not the target teacher, Not absent (optional)
         const activeTeachers = allTeachers.filter(t => t.active && t.id !== targetTeacher.id);
 
         if (activeTeachers.length === 0) return { min: 0, avg: 0, max: 0, count: 0 };
@@ -50,12 +49,15 @@ export default function ScoreAdjustmentModal({
 
     // Calculate Proposed New Score based on inputs
     const proposedScore = useMemo(() => {
+        if (!targetTeacher) return 0;
         const off = parseInt(offset) || 0;
         if (mode === "min_relative") return Math.max(0, stats.min - off);
         if (mode === "avg_relative") return Math.max(0, stats.avg - off);
         if (mode === "fixed") return parseInt(fixedValue) || 0;
         return targetTeacher.yearlyLoad;
-    }, [mode, offset, fixedValue, stats]);
+    }, [mode, offset, fixedValue, stats, targetTeacher]);
+
+    if (!targetTeacher) return null;
 
     const delta = proposedScore - targetTeacher.yearlyLoad;
 
