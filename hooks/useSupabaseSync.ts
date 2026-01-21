@@ -284,7 +284,8 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
             } 
             */
             if (!sessionData.isAdmin) {
-                console.warn("[syncToServer] User is not admin, but attempting sync anyway (Store Assign feature)");
+                console.warn("[syncToServer] User is not admin, aborting sync.");
+                return;
             }
 
             // Get latest state from store to avoid closure issues
