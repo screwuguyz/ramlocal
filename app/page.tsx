@@ -256,47 +256,40 @@ export default function DosyaAtamaApp() {
 
   // RESTORED: Realtime Subscription (Supabase mode)
   // LOCAL_MODE: Use polling instead of realtime
+  // SUPABASE REALTIME HOOK (Must be top level)
+  useSupabaseSync((payload) => {
+    // payload.new contains the updated record "state" field
+    console.log("[Realtime] Update received", payload);
+
+    // SINGLE ADMIN SESSION CHECK
+    // If we are admin, check if the session ID has changed
+    if (isAdmin && adminSessionIdRef.current) {
+      const remoteSessionId = payload?.new?.state?.adminSessionId;
+      if (remoteSessionId && remoteSessionId !== adminSessionIdRef.current) {
+        console.warn("[Session] Session ID mismatch! Remote:", remoteSessionId, "Local:", adminSessionIdRef.current);
+        alert("Oturumunuz başka bir cihazda açıldığı için sonlandırıldı.");
+        doLogout();
+        return;
+      }
+    }
+
+    if (payload.new && payload.new.state) {
+      // Trigger fetch to update state
+      fetchCentralState();
+    }
+  });
+
+  // LOCAL_MODE: Poll every 5 seconds
   useEffect(() => {
     const isLocalMode = process.env.NEXT_PUBLIC_LOCAL_MODE === "true" || process.env.NEXT_PUBLIC_LOCAL_MODE === "1";
 
-    // LOCAL_MODE: Poll every 5 seconds
     if (isLocalMode) {
       const interval = setInterval(() => {
         fetchCentralState();
       }, 5000);
       return () => clearInterval(interval);
     }
-
-    // SUPABASE REALTIME
-    const sync = useSupabaseSync((payload) => {
-      // payload.new contains the updated record "state" field
-      // but payload structure depends on the "table" and events
-      // Our hook simplifies this.
-      console.log("[Realtime] Update received", payload);
-
-      // SINGLE ADMIN SESSION CHECK
-      // If we are admin, check if the session ID has changed
-      if (isAdmin && adminSessionIdRef.current) {
-        const remoteSessionId = payload?.new?.state?.adminSessionId;
-        if (remoteSessionId && remoteSessionId !== adminSessionIdRef.current) {
-          console.warn("[Session] Session ID mismatch! Remote:", remoteSessionId, "Local:", adminSessionIdRef.current);
-          alert("Oturumunuz başka bir cihazda açıldığı için sonlandırıldı.");
-          doLogout();
-          return;
-        }
-      }
-
-      if (payload.new && payload.new.state) {
-        // ... merge logic is complicated, mostly we trust fetchCentralState checks
-        // For now, let's just re-fetch to be safe and leverage dedupe logic
-        fetchCentralState();
-      }
-    });
-
-    return () => {
-      // cleanup if needed
-    };
-  }, [fetchCentralState, isAdmin]);
+  }, [fetchCentralState]);
 
 
   // RESTORED: Manual Sync Loop (The "Old System" that worked)
