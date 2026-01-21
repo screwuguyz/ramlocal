@@ -7,13 +7,19 @@ const ENV_EMAIL = (process.env.ADMIN_EMAIL || "").toLowerCase();
 const ENV_PASSWORD = (process.env.ADMIN_PASSWORD || "").trim();
 
 // Production'da şifre zorunlu olmalı
-if (process.env.NODE_ENV === "production" && (!ENV_EMAIL || !ENV_PASSWORD)) {
-  throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in production");
-}
+// Production'da şifre zorunlu olmalı (Check moved to handler)
+
 
 export async function POST(req: NextRequest) {
   // Rate limiting disabled for easier access
   // TODO: Re-enable rate limiting in production if needed
+
+  // Check env vars in production
+  if (process.env.NODE_ENV === "production" && (!ENV_EMAIL || !ENV_PASSWORD)) {
+    console.error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in production");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
   // const clientIp = getClientIp(req);
   // const rateLimit = checkRateLimit(`login:${clientIp}`, RATE_LIMITS.LOGIN);
 

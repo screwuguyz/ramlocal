@@ -45,7 +45,7 @@ export default function TeacherPerformanceReport({ teachers, cases, history }: P
 
   // Filtrelenmiş dosyalar
   const filteredCases = useMemo(() => {
-    let filtered = allCases.filter(c => {
+    const filtered = allCases.filter(c => {
       const caseYear = Number(c.createdAt.slice(0, 4));
       if (caseYear !== selectedYear) return false;
 

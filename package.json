@@ -1,5 +1,5 @@
 {
-  "name": "ram-dosya-atama",
+  "name": "ram-proje",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,8 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "npm run test && npm run test:e2e"
+    "test:all": "npm run test && npm run test:e2e",
+    "lint": "next lint"
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",

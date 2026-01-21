@@ -7,16 +7,12 @@ import webpush from "web-push";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // Configure web-push with VAPID keys
+// Configure web-push with VAPID keys
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
-if (vapidPublicKey && vapidPrivateKey) {
-    webpush.setVapidDetails(
-        "mailto:ataafurkan@gmail.com",
-        vapidPublicKey,
-        vapidPrivateKey
-    );
-}
+// VAPID details will be set inside the handler or lazy-loaded
+
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,6 +22,20 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: "Push notifications not configured" },
                 { status: 503 }
+            );
+        }
+
+        try {
+            webpush.setVapidDetails(
+                "mailto:ataafurkan@gmail.com",
+                vapidPublicKey,
+                vapidPrivateKey
+            );
+        } catch (err) {
+            console.error("[push-send] Invalid VAPID keys:", err);
+            return NextResponse.json(
+                { error: "Invalid VAPID configuration" },
+                { status: 500 }
             );
         }
 

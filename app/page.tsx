@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale/tr";
-import { Calendar } from "@/components/ui/calendar";
+
 import MonthlyReport from "@/components/reports/MonthlyReport";
 import DailyReport from "@/components/reports/DailyReport";
 import Statistics from "@/components/reports/Statistics";
@@ -26,16 +25,14 @@ import BackupManager from "@/components/BackupManager";
 import ThemeSettings from "@/components/ThemeSettings";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import ThemeToggle from "@/components/ThemeToggle";
-import { setSupabaseSyncCallback, loadThemeFromSupabase, getThemeMode, getColorScheme } from "@/lib/theme";
+import { setSupabaseSyncCallback, loadThemeFromSupabase, getThemeMode } from "@/lib/theme";
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
-import { Calendar as CalendarIcon, Trash2, Search, UserMinus, Plus, FileSpreadsheet, BarChart2, Volume2, VolumeX, X, Printer, Loader2, Inbox, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Search, UserMinus, Plus, FileSpreadsheet, Inbox, X, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import confetti from "canvas-confetti";
 
 
 // === YENİ MODÜLER BİLEŞENLER ===
-import FeedbackModal from "@/components/modals/FeedbackModal";
-import VersionModal from "@/components/modals/VersionModal";
 import AnnouncementPopupModal from "@/components/modals/AnnouncementPopupModal";
 import CalendarView from "@/components/reports/CalendarView";
 import QuickSearch from "@/components/search/QuickSearch";
@@ -45,9 +42,9 @@ import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCa
 // Monthly Recap removed by user request
 import { useAppStore } from "@/stores/useAppStore";
 // Merkezi tipler ve utility'ler
-import type { Teacher, CaseFile, EArchiveEntry, Announcement, PdfAppointment, Settings } from "@/types";
+import type { Teacher, CaseFile, EArchiveEntry, Announcement, PdfAppointment } from "@/types";
 import { uid, humanType, csvEscape } from "@/lib/utils";
-import { nowISO, getTodayYmd, ymdLocal, ymOf, daysInMonth } from "@/lib/date";
+import { nowISO, getTodayYmd, ymdLocal, ymOf } from "@/lib/date";
 import { LS_KEYS, APP_VERSION, CHANGELOG, DEFAULT_SETTINGS } from "@/lib/constants";
 import TeacherList from "@/components/teachers/TeacherList";
 import PhysiotherapistList from "@/components/teachers/PhysiotherapistList";
@@ -316,56 +313,13 @@ export default function DosyaAtamaApp() {
   const studentRef = React.useRef<HTMLInputElement | null>(null);
   const seenAnnouncementIdsRef = React.useRef<Set<string>>(new Set());
 
-  // ---- Öneri/Şikayet modal durumu
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [fbName, setFbName] = useState("");
-  const [fbEmail, setFbEmail] = useState("");
-  const [fbType, setFbType] = useState<"oneri" | "sikayet">("oneri");
-  const [fbMessage, setFbMessage] = useState("");
+
 
   // ---- Girdi durumları
 
   // 🎉 Havai Fişek Animasyonu
   // 🎉 Havai Fişek Animasyonu
-  function triggerFireworks() {
-    const duration = 3000;
-    const end = Date.now() + duration;
 
-    // Kenarlardan konfeti yağmuru
-    (function frame() {
-      confetti({
-        particleCount: 15,
-        angle: 60,
-        spread: 70,
-        origin: { x: 0, y: 0.5 }, // Tam ortaya çekildi
-        colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
-        zIndex: 2147483647
-      });
-      confetti({
-        particleCount: 15,
-        angle: 120,
-        spread: 70,
-        origin: { x: 1, y: 0.5 }, // Tam ortaya çekildi
-        colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42'],
-        zIndex: 2147483647
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    }());
-
-    // Ortadan patlama
-    setTimeout(() => {
-      confetti({
-        particleCount: 300, // Devasa patlama
-        spread: 180,
-        origin: { y: 0.6 },
-        startVelocity: 60,
-        zIndex: 2147483647
-      });
-    }, 200);
-  }
 
   const [student, setStudent] = useState("");
   const [fileNo, setFileNo] = useState("");
@@ -439,7 +393,7 @@ export default function DosyaAtamaApp() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginRemember, setLoginRemember] = useState(true);
-  const [showVersionPopup, setShowVersionPopup] = useState(false);
+
 
   // Test Bitti Mi? / Testör Koruma Dialog State
   const [testNotFinishedDialog, setTestNotFinishedDialog] = useState<{
@@ -448,7 +402,24 @@ export default function DosyaAtamaApp() {
     chosenTeacher: Teacher | null;
     skipTeacherIds: string[];
     confirmType?: 'testNotFinished' | 'testerProtection';
+
   }>({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
+
+  // Missing State Definitions
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [fbName, setFbName] = useState("");
+  const [fbEmail, setFbEmail] = useState("");
+  const [fbType, setFbType] = useState<string>("oneri");
+  const [fbMessage, setFbMessage] = useState("");
+  const [showVersionPopup, setShowVersionPopup] = useState(false);
+
+  function triggerFireworks() {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
 
   // Sound Effect
   useEffect(() => {
@@ -1559,7 +1530,7 @@ export default function DosyaAtamaApp() {
     const today = getTodayYmd();
 
     // Mevcut eArchive durumu (useAppStore'dan gelen)
-    let nextArchive = [...eArchive];
+    const nextArchive = [...eArchive];
     let changed = false;
 
     // 1. Cases'den gelenleri güncelle veya ekle
@@ -1901,7 +1872,7 @@ export default function DosyaAtamaApp() {
     // Bu sayede site kapansa bile ertesi gün açıldığında izin puanı doğru hesaplanır
     const currentTeachers = useAppStore.getState().teachers;
     const currentAbsenceRecords = useAppStore.getState().absenceRecords;
-    let updatedAbsenceRecords = [...currentAbsenceRecords];
+    const updatedAbsenceRecords = [...currentAbsenceRecords];
     let recordsChanged = false;
 
     currentTeachers.forEach(t => {

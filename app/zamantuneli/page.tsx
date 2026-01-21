@@ -145,7 +145,7 @@ export default function TimeMachinePage() {
         const simDate = params.get("simDate") || getTodayYmd();
 
         // Local Logic (Copied from page.tsx)
-        let nextHistory = { ...history };
+        const nextHistory = { ...history };
         let nextCases = [...cases];
         let nextTeachers = [...teachers];
 
