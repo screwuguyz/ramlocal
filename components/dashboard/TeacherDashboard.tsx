@@ -1,19 +1,17 @@
 import React, { useMemo, useState, useEffect } from "react";
 import StatCard from "./StatCard";
-import { CaseFile, Teacher, Announcement } from "@/types";
+import { CaseFile, Teacher, Announcement, PdfAppointment } from "@/types";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale/tr";
 import {
     FilePlus,
     Users,
-    Activity,
     Clock,
     Megaphone,
     CalendarDays,
     FileText,
-    TrendingUp,
-    Award,
-    AlertCircle
+    Target,
+    ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayYmd } from "@/lib/date";
@@ -23,13 +21,15 @@ interface TeacherDashboardProps {
     teachers: Teacher[];
     history: Record<string, CaseFile[]>;
     announcements: Announcement[];
+    pdfEntries?: PdfAppointment[];
 }
 
 export default function TeacherDashboard({
     cases,
     teachers,
     history,
-    announcements
+    announcements,
+    pdfEntries = []
 }: TeacherDashboardProps) {
     const [greeting, setGreeting] = useState("");
 
@@ -79,20 +79,102 @@ export default function TeacherDashboard({
             }));
     }, [cases, teachers]);
 
-    // Top teachers today (by case count)
-    const topTeachersToday = useMemo(() => {
-        const counts: Record<string, number> = {};
-        cases.filter(c => c.createdAt.startsWith(todayYmd) && c.assignedTo).forEach(c => {
-            counts[c.assignedTo!] = (counts[c.assignedTo!] || 0) + 1;
+    // --- Pending/Unassigned PDF Entries ---
+    const pendingEntries = useMemo(() => {
+        // Filter entries that are not yet assigned
+        return pdfEntries.filter(entry => {
+            const inCases = cases.some(c => {
+                const source = c.sourcePdfEntry;
+                if (!source) return false;
+                return source.id === entry.id || (
+                    source.time === entry.time &&
+                    source.name === entry.name &&
+                    (source.fileNo || "") === (entry.fileNo || "")
+                );
+            });
+            const inHistory = Object.values(history).some(dayCases =>
+                dayCases.some(c => {
+                    const source = c.sourcePdfEntry;
+                    if (!source) return false;
+                    return source.id === entry.id || (
+                        source.time === entry.time &&
+                        source.name === entry.name &&
+                        (source.fileNo || "") === (entry.fileNo || "")
+                    );
+                })
+            );
+            return !inCases && !inHistory;
         });
-        return Object.entries(counts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([id, count]) => ({
-                name: teachers.find(t => t.id === id)?.name || "Bilinmiyor",
-                count
-            }));
-    }, [cases, teachers, todayYmd]);
+    }, [pdfEntries, cases, history]);
+
+    // --- Prediction Logic ---
+    const predictedAssignments = useMemo(() => {
+        // Get eligible teachers
+        const eligibleTeachers = teachers.filter(t =>
+            t.active &&
+            !t.isAbsent &&
+            !t.isPhysiotherapist &&
+            t.backupDay !== todayYmd
+        );
+
+        if (eligibleTeachers.length === 0 || pendingEntries.length === 0) return [];
+
+        // Calculate current load for each teacher
+        const todayCounts: Record<string, number> = {};
+        cases.forEach(c => {
+            if (c.assignedTo && !c.absencePenalty && c.createdAt.startsWith(todayYmd)) {
+                todayCounts[c.assignedTo] = (todayCounts[c.assignedTo] || 0) + 1;
+            }
+        });
+
+        // Sort teachers by: 1) yearly load, 2) today's count
+        const sortedTeachers = [...eligibleTeachers].sort((a, b) => {
+            const aLoad = a.yearlyLoad;
+            const bLoad = b.yearlyLoad;
+            if (aLoad !== bLoad) return aLoad - bLoad;
+
+            const aToday = todayCounts[a.id] || 0;
+            const bToday = todayCounts[b.id] || 0;
+            return aToday - bToday;
+        });
+
+        // Simulate assignments for pending entries (max 5)
+        const predictions: { entry: PdfAppointment; teacher: Teacher; position: number }[] = [];
+        const simulatedCounts = { ...todayCounts };
+        let lastAssignedIdx = -1;
+
+        pendingEntries.slice(0, 5).forEach((entry, idx) => {
+            // Find best teacher (rotation: avoid same teacher consecutively)
+            let candidateTeachers = sortedTeachers.filter(t =>
+                (simulatedCounts[t.id] || 0) < 2 // Daily limit
+            );
+
+            // Rotation: prefer different teacher
+            if (candidateTeachers.length > 1 && lastAssignedIdx >= 0) {
+                const lastTeacher = sortedTeachers[lastAssignedIdx];
+                candidateTeachers = candidateTeachers.filter(t => t.id !== lastTeacher.id);
+                if (candidateTeachers.length === 0) {
+                    candidateTeachers = sortedTeachers.filter(t => (simulatedCounts[t.id] || 0) < 2);
+                }
+            }
+
+            // Re-sort by simulated load
+            candidateTeachers.sort((a, b) => {
+                const aLoad = a.yearlyLoad + (simulatedCounts[a.id] || 0) * 5;
+                const bLoad = b.yearlyLoad + (simulatedCounts[b.id] || 0) * 5;
+                return aLoad - bLoad;
+            });
+
+            if (candidateTeachers.length > 0) {
+                const chosen = candidateTeachers[0];
+                predictions.push({ entry, teacher: chosen, position: idx + 1 });
+                simulatedCounts[chosen.id] = (simulatedCounts[chosen.id] || 0) + 1;
+                lastAssignedIdx = sortedTeachers.findIndex(t => t.id === chosen.id);
+            }
+        });
+
+        return predictions;
+    }, [teachers, cases, pendingEntries, todayYmd]);
 
     return (
         <div className="space-y-8 animate-fade-in-up p-6">
@@ -156,10 +238,10 @@ export default function TeacherDashboard({
                     colorTheme="purple"
                 />
                 <StatCard
-                    title="Duyuru Sayısı"
-                    value={todayAnnouncements.length}
-                    icon={<Megaphone className="w-6 h-6" />}
-                    description="Bugünkü duyurular"
+                    title="Bekleyen Dosya"
+                    value={pendingEntries.length}
+                    icon={<Target className="w-6 h-6" />}
+                    description="Atama bekliyor"
                     colorTheme="orange"
                 />
             </div>
@@ -197,36 +279,54 @@ export default function TeacherDashboard({
                     </CardContent>
                 </Card>
 
-                {/* Top Teachers Today */}
-                <Card className="border shadow-md">
+                {/* Predicted Assignments */}
+                <Card className="border shadow-md bg-gradient-to-br from-indigo-50 to-white">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg flex items-center gap-2">
-                            <Award className="w-5 h-5 text-amber-500" />
-                            Bugünün Yıldızları
+                            <Target className="w-5 h-5 text-indigo-500" />
+                            Tahmini Atama Sırası
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {topTeachersToday.map((teacher, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${idx === 0 ? "bg-amber-500" :
-                                            idx === 1 ? "bg-slate-400" :
-                                                "bg-orange-400"
-                                        }`}>
-                                        {idx + 1}
+                            {predictedAssignments.map(({ entry, teacher, position }) => (
+                                <div key={entry.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-100 shadow-sm">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-500 text-white font-bold text-sm">
+                                        {position}
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-slate-800">{teacher.name}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-800 truncate">{entry.name}</p>
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <span>{entry.time || "Saat yok"}</span>
+                                            {entry.fileNo && <span>• {entry.fileNo}</span>}
+                                        </div>
                                     </div>
-                                    <span className="text-sm font-bold text-slate-600">{teacher.count} dosya</span>
+                                    <div className="flex items-center gap-2">
+                                        <ArrowRight className="w-4 h-4 text-indigo-400" />
+                                        <span className="text-sm font-semibold text-indigo-600 truncate max-w-[100px]">
+                                            {teacher.name}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
-                            {topTeachersToday.length === 0 && (
+                            {predictedAssignments.length === 0 && pendingEntries.length === 0 && (
                                 <div className="py-6 text-center text-slate-400 text-sm">
-                                    Henüz atama yapılmadı.
+                                    <Target className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                                    Bekleyen dosya yok.
+                                </div>
+                            )}
+                            {predictedAssignments.length === 0 && pendingEntries.length > 0 && (
+                                <div className="py-6 text-center text-slate-400 text-sm">
+                                    <Target className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                                    Uygun öğretmen bulunamadı.
                                 </div>
                             )}
                         </div>
+                        {pendingEntries.length > 5 && (
+                            <p className="text-xs text-center text-slate-400 mt-3">
+                                +{pendingEntries.length - 5} dosya daha bekliyor
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </div>
