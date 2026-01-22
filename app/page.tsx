@@ -35,6 +35,7 @@ import CalendarView from "@/components/reports/CalendarView";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
 import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCard";
 import Header from "@/components/dashboard/Header";
+import DashboardHome from "@/components/dashboard/DashboardHome";
 import TestDialog from "@/components/modals/TestDialog";
 import RulesModal from "@/components/modals/RulesModal";
 import PdfPanel from "@/components/modals/PdfPanel";
@@ -92,6 +93,7 @@ const LS_LAST_SEEN_VERSION = LS_KEYS.LAST_SEEN_VERSION;
 const MAX_DAILY_CASES = 2;
 
 const ADMIN_TABS = [
+  { id: "home", icon: "🏠", label: "Genel Bakış" },
   { id: "files", icon: "📁", label: "Dosya Atama" },
   { id: "teachers", icon: "👨‍🏫", label: "Öğretmenler" },
   { id: "physiotherapists", icon: "🩺", label: "Fizyoterapist" },
@@ -459,7 +461,7 @@ export default function DosyaAtamaApp() {
   // Versiyon bildirimi (Yukarıda tanımlı)
 
   // Admin panel tab sistemi
-  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "physiotherapists" | "reports" | "announcements" | "backup" | "timemachine">("files");
+  const [adminTab, setAdminTab] = useState<"home" | "files" | "teachers" | "physiotherapists" | "reports" | "announcements" | "backup" | "timemachine">("home");
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -2641,6 +2643,21 @@ export default function DosyaAtamaApp() {
                 ))}
               </div>
             </div>
+
+            {/* Dashboard Home View */}
+            {adminTab === "home" && (
+              <div className="p-6 bg-slate-50 min-h-[500px]">
+                <DashboardHome
+                  cases={cases}
+                  teachers={teachers}
+                  history={history}
+                  announcements={announcements}
+                  onNavigate={(id) => setAdminTab(id as any)}
+                  onNewFile={() => setAdminTab("files")}
+                  onAnnounce={() => setAdminTab("announcements")}
+                />
+              </div>
+            )}
 
 
             {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
