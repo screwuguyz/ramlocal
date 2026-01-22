@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import StatCard from "./StatCard";
-import { CaseFile, Teacher, Announcement, PdfAppointment } from "@/types";
+import { CaseFile, Teacher, Announcement, PdfAppointment, Settings } from "@/types";
 import { format, parseISO } from "date-fns";
 import { tr } from "date-fns/locale/tr";
 import {
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayYmd } from "@/lib/date";
+import { findBestTeacher } from "@/lib/scoring";
 
 interface TeacherDashboardProps {
     cases: CaseFile[];
@@ -22,6 +23,7 @@ interface TeacherDashboardProps {
     history: Record<string, CaseFile[]>;
     announcements: Announcement[];
     pdfEntries?: PdfAppointment[];
+    settings: Settings;
 }
 
 export default function TeacherDashboard({
@@ -29,7 +31,8 @@ export default function TeacherDashboard({
     teachers,
     history,
     announcements,
-    pdfEntries = []
+    pdfEntries = [],
+    settings
 }: TeacherDashboardProps) {
     const [greeting, setGreeting] = useState("");
 
@@ -107,91 +110,49 @@ export default function TeacherDashboard({
         });
     }, [pdfEntries, cases, history]);
 
-    // --- Prediction Logic ---
+    // --- Prediction Logic using real findBestTeacher ---
     const predictedAssignments = useMemo(() => {
-        // Get eligible teachers (matching lib/scoring.ts logic)
-        const eligibleTeachers = teachers.filter(t =>
-            t.active &&
-            !t.isAbsent &&
-            !t.isPhysiotherapist &&
-            !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name) &&
-            t.backupDay !== todayYmd
-        );
+        if (pendingEntries.length === 0 || !settings) return [];
 
-        if (eligibleTeachers.length === 0 || pendingEntries.length === 0) return [];
-
-        // Calculate current load for each teacher
-        const todayCounts: Record<string, number> = {};
-        cases.forEach(c => {
-            if (c.assignedTo && !c.absencePenalty && c.createdAt.startsWith(todayYmd)) {
-                todayCounts[c.assignedTo] = (todayCounts[c.assignedTo] || 0) + 1;
-            }
-        });
-
-        // Calculate monthly counts (matching lib/scoring.ts)
-        const getMonthlyCount = (teacherId: string): number => {
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-            let count = 0;
-
-            // From history
-            Object.entries(history).forEach(([date, dayCases]) => {
-                if (date.startsWith(ym)) {
-                    dayCases.forEach(c => {
-                        if (c.assignedTo === teacherId && !c.absencePenalty) count++;
-                    });
-                }
-            });
-
-            // From today's cases
-            cases.forEach(c => {
-                if (c.assignedTo === teacherId && c.createdAt.startsWith(ym) && !c.absencePenalty) count++;
-            });
-
-            return count;
-        };
-
-        // Simulate assignments for pending entries (max 5)
         const predictions: { entry: PdfAppointment; teacher: Teacher; position: number }[] = [];
-        const simulatedTodayCounts = { ...todayCounts };
-        const simulatedYearlyLoads: Record<string, number> = {};
-        teachers.forEach(t => { simulatedYearlyLoads[t.id] = t.yearlyLoad; });
+
+        // Clone cases array to simulate assignments
+        let simulatedCases = [...cases];
+
+        // Clone teachers with updated yearlyLoad for simulation
+        let simulatedTeachers = teachers.map(t => ({ ...t }));
 
         pendingEntries.slice(0, 5).forEach((entry, idx) => {
-            // Sort teachers matching lib/scoring.ts: 1) Yearly load, 2) Daily count, 3) Monthly count, 4) ID
-            const sorted = [...eligibleTeachers].sort((a, b) => {
-                // 1. Yearly load (simulated)
-                const aLoad = simulatedYearlyLoads[a.id] || a.yearlyLoad;
-                const bLoad = simulatedYearlyLoads[b.id] || b.yearlyLoad;
-                if (aLoad !== bLoad) return aLoad - bLoad;
+            // Use the REAL findBestTeacher function
+            const bestTeacher = findBestTeacher(simulatedTeachers, simulatedCases, settings, { history });
 
-                // 2. Daily count (simulated)
-                const aDaily = simulatedTodayCounts[a.id] || 0;
-                const bDaily = simulatedTodayCounts[b.id] || 0;
-                if (aDaily !== bDaily) return aDaily - bDaily;
+            if (bestTeacher) {
+                predictions.push({ entry, teacher: bestTeacher, position: idx + 1 });
 
-                // 3. Monthly count
-                const aMonthly = getMonthlyCount(a.id);
-                const bMonthly = getMonthlyCount(b.id);
-                if (aMonthly !== bMonthly) return aMonthly - bMonthly;
+                // Simulate the assignment for next iteration
+                const now = new Date().toISOString();
+                simulatedCases = [
+                    ...simulatedCases,
+                    {
+                        id: `simulated-${idx}`,
+                        student: entry.name,
+                        assignedTo: bestTeacher.id,
+                        createdAt: now,
+                        absencePenalty: false
+                    } as CaseFile
+                ];
 
-                // 4. ID for consistency
-                return a.id.localeCompare(b.id);
-            });
-
-            // Filter by daily limit (settings.dailyLimit = 2)
-            const available = sorted.filter(t => (simulatedTodayCounts[t.id] || 0) < 2);
-
-            if (available.length > 0) {
-                const chosen = available[0];
-                predictions.push({ entry, teacher: chosen, position: idx + 1 });
-                simulatedTodayCounts[chosen.id] = (simulatedTodayCounts[chosen.id] || 0) + 1;
-                simulatedYearlyLoads[chosen.id] = (simulatedYearlyLoads[chosen.id] || 0) + 5; // Score per file
+                // Update simulated teacher's yearlyLoad
+                simulatedTeachers = simulatedTeachers.map(t =>
+                    t.id === bestTeacher.id
+                        ? { ...t, yearlyLoad: t.yearlyLoad + 5 }
+                        : t
+                );
             }
         });
 
         return predictions;
-    }, [teachers, cases, pendingEntries, todayYmd, history]);
+    }, [teachers, cases, pendingEntries, settings, history]);
 
     return (
         <div className="space-y-8 animate-fade-in-up p-6">

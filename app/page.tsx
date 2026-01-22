@@ -2529,6 +2529,7 @@ export default function DosyaAtamaApp() {
               history={history}
               announcements={announcements}
               pdfEntries={pdfEntries}
+              settings={settings}
             />
 
             <DailyAppointmentsCard
