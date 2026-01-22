@@ -114,6 +114,7 @@ export default function TeacherDashboard({
             t.active &&
             !t.isAbsent &&
             !t.isPhysiotherapist &&
+            !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name) &&
             t.backupDay !== todayYmd
         );
 
