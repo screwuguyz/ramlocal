@@ -2522,15 +2522,6 @@ export default function DosyaAtamaApp() {
               </div>
             )}
 
-            {/* Teacher Dashboard - Non-admin overview */}
-            <TeacherDashboard
-              cases={cases}
-              teachers={teachers}
-              history={history}
-              announcements={announcements}
-              pdfEntries={pdfEntries}
-              settings={settings}
-            />
 
             <DailyAppointmentsCard
               pdfLoading={pdfLoading}
