@@ -72,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
 
         {/* Prevent pull-to-refresh on iOS */}
-        <style>{`
+        <style suppressHydrationWarning>{`
           html, body {
             overscroll-behavior-y: contain;
           }
