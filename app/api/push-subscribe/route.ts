@@ -1,12 +1,31 @@
 // ============================================
 // Push Subscribe API - PWA Web Push Subscriptions
+// LOCAL_MODE: Push notifications are disabled
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+
+const LOCAL_MODE = process.env.LOCAL_MODE === "true";
 
 export async function POST(request: NextRequest) {
+    // LOCAL_MODE: Push notifications require Supabase
+    if (LOCAL_MODE) {
+        return NextResponse.json(
+            { error: "Push notifications disabled in local mode" },
+            { status: 503 }
+        );
+    }
+
     try {
+        const { supabaseAdmin } = await import("@/lib/supabase-admin");
+
+        if (!supabaseAdmin) {
+            return NextResponse.json(
+                { error: "Supabase not configured" },
+                { status: 503 }
+            );
+        }
+
         const body = await request.json();
         const { teacherId, subscription } = body;
 
@@ -39,17 +58,28 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         console.error("[push-subscribe] Error:", err);
         return NextResponse.json(
-            { error: `Server error: ${err.message || err}` },
+            { error: `Server error: ${message}` },
             { status: 500 }
         );
     }
 }
 
 export async function DELETE(request: NextRequest) {
+    if (LOCAL_MODE) {
+        return NextResponse.json({ success: true });
+    }
+
     try {
+        const { supabaseAdmin } = await import("@/lib/supabase-admin");
+
+        if (!supabaseAdmin) {
+            return NextResponse.json({ success: true });
+        }
+
         const { searchParams } = new URL(request.url);
         const endpoint = searchParams.get("endpoint");
 
@@ -85,7 +115,17 @@ export async function DELETE(request: NextRequest) {
 
 // Get subscriptions for a teacher
 export async function GET(request: NextRequest) {
+    if (LOCAL_MODE) {
+        return NextResponse.json({ subscriptions: [] });
+    }
+
     try {
+        const { supabaseAdmin } = await import("@/lib/supabase-admin");
+
+        if (!supabaseAdmin) {
+            return NextResponse.json({ subscriptions: [] });
+        }
+
         const { searchParams } = new URL(request.url);
         const teacherId = searchParams.get("teacherId");
 

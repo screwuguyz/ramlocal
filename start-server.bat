@@ -4,9 +4,17 @@ REM RAM Dosya Atama - Local Server Startup
 REM ============================================
 REM Run this script to start the local server
 
+set PATH=%PATH%;C:\Program Files\nodejs
+
+cd /d "%~dp0"
+
 echo ============================================
 echo RAM Dosya Atama - Local Server
 echo ============================================
+
+REM Kill existing node processes to prevent port conflicts
+taskkill /F /IM node.exe >nul 2>nul
+
 
 REM Check if node is installed
 where node >nul 2>nul
@@ -40,17 +48,6 @@ if not exist "node_modules" (
     )
 )
 
-REM Check if .next exists (built)
-if not exist ".next" (
-    echo Building application...
-    call npm run build
-    if %ERRORLEVEL% NEQ 0 (
-        echo ERROR: Build failed!
-        pause
-        exit /b 1
-    )
-)
-
 REM Get local IP
 echo.
 echo ============================================
@@ -70,5 +67,8 @@ echo Press Ctrl+C to stop the server
 echo ============================================
 echo.
 
-REM Start server
-npm run start
+REM Open Chrome automatically after 7 seconds (give time for server to start)
+start "" /min cmd /c "timeout /t 7 >nul && start chrome http://localhost:3000"
+
+REM Start server in development mode (more stable for local deployment)
+npm run dev

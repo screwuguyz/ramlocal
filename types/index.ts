@@ -7,6 +7,7 @@ export type Teacher = {
     yearlyLoad: number;
     monthly?: Record<string, number>;
     active: boolean;
+    archived?: boolean;
     pushoverKey?: string;
     isTester: boolean;
     backupDay?: string;
@@ -22,6 +23,7 @@ export type CaseFile = {
     createdAt: string;      // ISO
     assignedTo?: string;    // teacher.id
     type: CaseType;
+    grade?: string; // New field for Grade (Sınıf)
     isNew: boolean;
     diagCount: number;
     isTest: boolean;
@@ -96,6 +98,7 @@ export type Settings = {
     videoUrl: string;
     videoPlaying: boolean;
     debugMode: boolean;
+    monthlySummaryMonth?: string; // YYYY-MM format. If present, shows summary popup to everyone
 };
 
 export type ThemeMode = "light" | "dark" | "system";

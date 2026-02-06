@@ -42,6 +42,8 @@ export default function PdfPanel({
 
     const pdfInputRef = useRef<HTMLInputElement>(null);
 
+    const [manualDate, setManualDate] = useState<string>("");
+
     if (!open) return null;
 
     async function handlePdfFileChange(file: File | null) {
@@ -57,21 +59,34 @@ export default function PdfPanel({
 
         try {
             const formData = new FormData();
-            formData.append("file", pdfFile);
+            formData.append("pdf", pdfFile);
 
-            const res = await fetch(API_ENDPOINTS.PDF_IMPORT, {
+            // If manual date is selected, pass it as query param
+            let url = API_ENDPOINTS.PDF_IMPORT;
+            if (manualDate) {
+                url += `?overrideDate=${manualDate}`;
+            }
+
+            const res = await fetch(url, {
                 method: "POST",
                 body: formData,
             });
 
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                data = null;
+            }
+
             if (!res.ok) {
-                setPdfUploadError("PDF yüklenemedi.");
-                addToast("Hata: PDF sunucuya yüklenemedi");
+                const errorMsg = data?.error || "PDF yüklenemedi (Sunucu hatası)";
+                setPdfUploadError(errorMsg);
+                addToast(`Hata: ${errorMsg}`);
                 return;
             }
 
-            const data = await res.json();
-            if (data.error) {
+            if (data?.error) {
                 setPdfUploadError(data.error);
                 addToast(`Hata: ${data.error}`);
                 return;
@@ -79,6 +94,8 @@ export default function PdfPanel({
 
             addToast(`Başarı: PDF yüklendi! ${data.entries?.length || 0} randevu bulundu.`);
             setPdfFile(null);
+            // Optionally clear manual date or keep it for next upload
+            // setManualDate(""); 
         } catch (err: any) {
             setPdfUploadError(err.message || "Bilinmeyen hata");
             addToast(`Hata: ${err.message}`);
@@ -103,6 +120,18 @@ export default function PdfPanel({
                         <CardTitle>RAM Randevu PDF Yükle</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                        <div className="bg-emerald-50/50 p-3 rounded-md border border-emerald-100">
+                            <label className="block text-sm font-medium text-emerald-900 mb-1">
+                                Manuel Tarih Seçimi (Otomatik okuma çalışmazsa):
+                            </label>
+                            <input
+                                type="date"
+                                className="block w-full text-sm p-2 border border-emerald-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
+                                value={manualDate}
+                                onChange={(e) => setManualDate(e.target.value)}
+                            />
+                        </div>
+
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <label
                                 className={`sm:flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging

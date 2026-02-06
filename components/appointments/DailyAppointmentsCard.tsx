@@ -121,17 +121,12 @@ export default function DailyAppointmentsCard({
                                         return (
                                             <tr
                                                 key={entry.id}
-                                                className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "relative opacity-75" : ""}`}
+                                                className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "opacity-75" : ""}`}
                                             >
-                                                {isAssigned && (
-                                                    <div className="absolute inset-0 pointer-events-none z-10">
-                                                        <div className="absolute top-1/2 left-0 right-0 h-1 bg-red-500 transform -translate-y-1/2 shadow-sm"></div>
-                                                    </div>
-                                                )}
-                                                <td className={`p-2 font-semibold relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.time}</td>
-                                                <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.name}</td>
-                                                <td className={`p-2 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.fileNo || "-"}</td>
-                                                <td className={`p-2 text-xs text-slate-600 relative z-0 ${isAssigned ? "text-red-600" : ""}`}>{entry.extra || "-"}</td>
+                                                <td className={`p-2 font-semibold ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.time}</td>
+                                                <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.name}</td>
+                                                <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.fileNo || "-"}</td>
+                                                <td className={`p-2 text-xs text-slate-600 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.extra || "-"}</td>
                                                 {isAdmin && onApplyEntry && onRemoveEntry && (
                                                     <td className="p-2 text-right">
                                                         <div className="flex items-center justify-end gap-1">

@@ -223,6 +223,7 @@ export default function DailyReportView({
   const todayYmd = getTodayYmd();
 
   const rows = teachers.filter(t =>
+    t.active &&
     !t.isPhysiotherapist &&
     !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name)
   ).map((t) => {

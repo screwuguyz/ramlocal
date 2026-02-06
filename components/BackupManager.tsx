@@ -51,8 +51,8 @@ export default function BackupManager({ currentState, onRestore }: Props) {
       // Türkiye saati kontrolü (basitçe yerel saat varsayıyoruz, kullanıcı TR'de)
       const hour = now.getHours();
 
-      // Saat 18:00'den önceyse işlem yapma
-      if (hour < 18) return;
+      // Saat 16:00'dan önceyse işlem yapma
+      if (hour < 16) return;
 
       const todayStr = now.toLocaleDateString("tr-TR"); // format: "DD.MM.YYYY" veya benzeri locale göre
 

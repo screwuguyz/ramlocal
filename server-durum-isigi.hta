@@ -1,0 +1,136 @@
+<html>
+<head>
+<title>RAM Server</title>
+<HTA:APPLICATION
+  ID="ServerStatus"
+  APPLICATIONNAME="RAM Server Status"
+  BORDER="none"
+  BORDERSTYLE="none"
+  CAPTION="no"
+  SHOWINTASKBAR="no"
+  SINGLEINSTANCE="yes"
+  SYSMENU="no"
+  WINDOWSTATE="normal"
+  SCROLL="no"
+  NAVIGABLE="yes"
+  CONTEXTMENU="no"
+  INNERBORDER="no"
+  SELECTION="no"
+/>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  cursor: move;
+}
+.container {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  transition: background-color 0.3s;
+}
+.online {
+  background: linear-gradient(145deg, #00ff00, #00cc00);
+  border: 3px solid #009900;
+}
+.offline {
+  background: linear-gradient(145deg, #ff0000, #cc0000);
+  border: 3px solid #990000;
+}
+.icon {
+  font-size: 24px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.tooltip {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+  display: none;
+  top: 65px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+</style>
+<script language="VBScript">
+Dim isDragging, startX, startY
+
+Sub Window_OnLoad()
+  window.resizeTo 70, 70
+  window.moveTo screen.width - 100, 50
+  CheckServer()
+  window.setInterval "CheckServer()", 5000
+End Sub
+
+Sub CheckServer()
+  On Error Resume Next
+  Dim xmlhttp
+  Set xmlhttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+  xmlhttp.setTimeouts 2000, 2000, 2000, 2000
+  xmlhttp.Open "GET", "http://localhost:3000", False
+  xmlhttp.Send
+  
+  If Err.Number = 0 And xmlhttp.status = 200 Then
+    document.getElementById("light").className = "container online"
+    document.getElementById("icon").innerHTML = "&#10004;"
+    document.getElementById("tooltip").innerHTML = "RAM Server AKTIF"
+  Else
+    document.getElementById("light").className = "container offline"
+    document.getElementById("icon").innerHTML = "&#10006;"
+    document.getElementById("tooltip").innerHTML = "RAM Server KAPALI"
+  End If
+  On Error Goto 0
+End Sub
+
+Sub StartDrag()
+  isDragging = True
+  startX = window.event.screenX - window.screenLeft
+  startY = window.event.screenY - window.screenTop
+End Sub
+
+Sub Drag()
+  If isDragging Then
+    window.moveTo window.event.screenX - startX, window.event.screenY - startY
+  End If
+End Sub
+
+Sub StopDrag()
+  isDragging = False
+End Sub
+
+Sub ShowTooltip()
+  document.getElementById("tooltip").style.display = "block"
+End Sub
+
+Sub HideTooltip()
+  document.getElementById("tooltip").style.display = "none"
+End Sub
+
+Sub OpenSite()
+  Dim shell
+  Set shell = CreateObject("WScript.Shell")
+  shell.Run "http://localhost:3000"
+End Sub
+
+Sub CloseApp()
+  window.close
+End Sub
+</script>
+</head>
+<body onmousedown="StartDrag()" onmousemove="Drag()" onmouseup="StopDrag()">
+<div id="light" class="container offline" onmouseover="ShowTooltip()" onmouseout="HideTooltip()" ondblclick="OpenSite()">
+  <span id="icon" class="icon">&#10006;</span>
+</div>
+<div id="tooltip" class="tooltip">RAM Server KAPALI</div>
+</body>
+</html>

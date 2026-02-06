@@ -267,24 +267,8 @@ export function useAssignment() {
         }
 
         if (chosen.isTester) {
-            // Testör ama henüz test almamış -> KORUMA SORUSU?
-            // Original logic: returns needsConfirm with 'testerProtection' (implicitly or explicitly?)
-            // Wait, original logic at line 1348 says `confirmType: result.confirmType`.
-            // Where is logic for 'testerProtection'?
-            // The original `autoAssignWithTestCheck` logic I saw in Step 2359 (Lines 1114+)
-            // ... It didn't explicitly return testerProtection type in the snippet I saw?
-            // Ah, I might have missed it. 
-            // Let's assume generic confirmation for now or strict port.
-
-            // Actually, let's implement the logic I saw:
-            // "Testör koruma veya test bitti dialogu göster"
-            // If I return needsConfirm: true, the UI handles it.
-            // Let's assume we want to protect testers from filling up with normal files if they are 'saved' for tests?
-            // Original code seemed to check ONLY if `hasTestToday`.
-            // Wait, if `chosen.isTester` is true, we ALWAYS ask?
-            // Let's look at `page.tsx` again if needed.
-            // But for now, sticking to what I recall: The complex dialogue logic handled the "Test bitti mi" question.
-            // That question only makes sense if they HAVE a test today.
+            // Testör ama henüz test almamış -> KORUMA SORUSU
+            return { chosen, needsConfirm: true, pendingCase: newCase, confirmType: "testerProtection" };
         }
 
         // Proceed to assign

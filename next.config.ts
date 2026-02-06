@@ -2,6 +2,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output for better deployment
+  output: 'standalone',
+
   // Next.js 16'da eslint config artık burada desteklenmiyor
   // ESLint ayarları için eslint.config.mjs kullanılmalı
 

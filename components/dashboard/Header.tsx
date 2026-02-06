@@ -2,7 +2,19 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Volume2, VolumeX } from "lucide-react";
+import {
+    Volume2,
+    VolumeX,
+    Home,
+    BookOpen,
+    MessageSquareText,
+    Settings,
+    LogOut,
+    Lock,
+    Crown,
+    Moon,
+    Calendar
+} from "lucide-react";
 import QuickSearch from "@/components/search/QuickSearch";
 import type { Teacher, CaseFile } from "@/types";
 
@@ -72,8 +84,9 @@ export default function Header({
                 <div className="flex items-center justify-between gap-2">
                     {/* Sol: Ana sayfa + Ay + Arama */}
                     <div className="flex items-center gap-1 sm:gap-2">
-                        <Button size="sm" variant="outline" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setViewMode("landing")}>
-                            🏠 <span className="hidden sm:inline">Ana Sayfa</span>
+                        <Button size="sm" variant="outline" className="px-2 sm:px-3 text-xs sm:text-sm gap-1" onClick={() => setViewMode("landing")}>
+                            <Home className="h-4 w-4" />
+                            <span className="hidden sm:inline">Ana Sayfa</span>
                         </Button>
                         {isAdmin && (
                             <Select value={filterYM} onValueChange={setFilterYM}>
@@ -122,20 +135,25 @@ export default function Header({
 
                         {isAdmin ? (
                             <>
-                                <span className="hidden sm:inline text-xs sm:text-sm text-emerald-700 font-medium">👑 Admin</span>
+                                <span className="hidden sm:inline-flex items-center gap-1 text-xs sm:text-sm text-emerald-700 font-medium">
+                                    <Crown className="h-4 w-4 text-amber-500" />
+                                    Admin
+                                </span>
                                 {/* Çıkış Butonu - HER ZAMAN GÖRÜNÜR */}
                                 <Button
                                     size="sm"
                                     variant="destructive"
-                                    className="px-2 sm:px-3 text-xs sm:text-sm"
+                                    className="px-2 sm:px-3 text-xs sm:text-sm gap-1"
                                     onClick={doLogout}
                                 >
-                                    🚪 <span className="hidden sm:inline">Çıkış</span>
+                                    <LogOut className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Çıkış</span>
                                 </Button>
                             </>
                         ) : (
-                            <Button size="sm" className="px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setLoginOpen(true)}>
-                                🔐 <span className="hidden sm:inline">Giriş</span>
+                            <Button size="sm" className="px-2 sm:px-3 text-xs sm:text-sm gap-1" onClick={() => setLoginOpen(true)}>
+                                <Lock className="h-4 w-4" />
+                                <span className="hidden sm:inline">Giriş</span>
                             </Button>
                         )}
                     </div>
@@ -143,11 +161,13 @@ export default function Header({
 
                 {/* Satır 2: Ek butonlar (mobilde kaydırılabilir) */}
                 <div className="flex items-center gap-1 sm:gap-2 mt-2 overflow-x-auto pb-1 no-scrollbar">
-                    <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setShowRules(true)}>
-                        📖 <span className="hidden sm:inline">Kurallar</span>
+                    <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm gap-1" onClick={() => setShowRules(true)}>
+                        <BookOpen className="h-4 w-4 text-indigo-600" />
+                        <span className="hidden sm:inline">Kurallar</span>
                     </Button>
-                    <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setFeedbackOpen(true)}>
-                        💬 <span className="hidden xs:inline">Öneri</span><span className="hidden sm:inline">/Şikayet</span>
+                    <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm gap-1" onClick={() => setFeedbackOpen(true)}>
+                        <MessageSquareText className="h-4 w-4 text-purple-600" />
+                        <span className="hidden xs:inline">Öneri</span><span className="hidden sm:inline">/Şikayet</span>
                     </Button>
 
                     {isAdmin && (
@@ -161,24 +181,26 @@ export default function Header({
                                 title={soundOn ? "Sesi Kapat" : "Sesi Aç"}
                                 onClick={() => setSoundOn(!soundOn)}
                             >
-                                {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                                {soundOn ? <Volume2 className="h-4 w-4 text-emerald-600" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
                             </Button>
 
                             {/* Ayarlar */}
-                            <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm" onClick={() => setSettingsOpen(true)}>
-                                ⚙️ <span className="hidden sm:inline">Ayarlar</span>
+                            <Button size="sm" variant="outline" className="shrink-0 px-2 sm:px-3 text-xs sm:text-sm gap-1" onClick={() => setSettingsOpen(true)}>
+                                <Settings className="h-4 w-4 text-slate-600" />
+                                <span className="hidden sm:inline">Ayarlar</span>
                             </Button>
 
                             {/* Simülasyon Modu */}
                             {simDate && (
                                 <>
-                                    <span className="shrink-0 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
-                                        📅 {simDate}
+                                    <span className="shrink-0 inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        {simDate}
                                     </span>
                                     <Button
                                         size="sm"
                                         variant="destructive"
-                                        className="shrink-0 px-2 sm:px-3 text-xs"
+                                        className="shrink-0 px-2 sm:px-3 text-xs gap-1"
                                         onClick={() => {
                                             if (confirm("Günü bitir ve arşivle? (Devamsızlık cezası + Yedek bonusu uygulanacak)")) {
                                                 doRollover();
@@ -186,7 +208,8 @@ export default function Header({
                                             }
                                         }}
                                     >
-                                        🌙 <span className="hidden sm:inline">Günü Bitir</span>
+                                        <Moon className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Günü Bitir</span>
                                     </Button>
                                 </>
                             )}

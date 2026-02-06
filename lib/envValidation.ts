@@ -25,7 +25,15 @@ export function validateEnv() {
   const warnings: string[] = [];
 
   // Check required variables
+  // Check required variables
+  const isLocal = process.env.NEXT_PUBLIC_LOCAL_MODE === 'true';
+
   for (const [key, description] of Object.entries(requiredEnvVars)) {
+    // In Local Mode, skip Supabase keys
+    if (isLocal && (key.includes('SUPABASE') || key.includes('supabase'))) {
+      continue;
+    }
+
     if (!process.env[key]) {
       missing.push(`${key}: ${description}`);
     }

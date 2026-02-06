@@ -6,13 +6,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: Request) {
-    // Verify the request is from Vercel Cron (optional security)
+    // Local kullanım için CRON_SECRET kontrolü opsiyonel
     const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        // If CRON_SECRET is not set, allow the request (for testing)
-        if (process.env.CRON_SECRET) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const cronSecret = process.env.CRON_SECRET;
+
+    // Sadece CRON_SECRET ayarlıysa ve eşleşmiyorsa reddet
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
         const backupPayload = {
             created_at: now.toISOString(),
             backup_type: "auto",
-            description: `Otomatik Günlük Yedek - ${dateStr} 18:00`,
+            description: `Otomatik Günlük Yedek - ${dateStr} 16:00`,
             state_snapshot: stateData,  // Fixed: was 'state', should be 'state_snapshot'
         };
 

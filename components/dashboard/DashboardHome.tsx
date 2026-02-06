@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import StatCard from "./StatCard";
-import { CaseFile, Teacher, Announcement } from "@/types";
+import { CaseFile, Teacher, Announcement, Settings } from "@/types";
 import { format, isSameDay, parseISO } from "date-fns";
 import { tr } from "date-fns/locale/tr";
 import {
@@ -12,11 +12,13 @@ import {
     CalendarDays,
     FileText,
     Search,
-    ArrowRight
+    ArrowRight,
+    Power
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayYmd } from "@/lib/date";
+import MonthlySummaryPopup from "@/components/modals/MonthlySummaryPopup";
 
 interface DashboardHomeProps {
     cases: CaseFile[];
@@ -26,6 +28,8 @@ interface DashboardHomeProps {
     onNavigate: (tabId: string) => void;
     onNewFile: () => void;
     onAnnounce: () => void;
+    onRestartServer?: () => void;
+    settings?: Settings;
 }
 
 export default function DashboardHome({
@@ -35,8 +39,21 @@ export default function DashboardHome({
     announcements,
     onNavigate,
     onNewFile,
-    onAnnounce
+    onAnnounce,
+    onRestartServer,
+    settings
 }: DashboardHomeProps) {
+    const [summaryOpen, setSummaryOpen] = useState(false);
+
+    // Ay özeti yayınlandıysa göster
+    useEffect(() => {
+        if (settings?.monthlySummaryMonth) {
+            setSummaryOpen(true);
+        } else {
+            setSummaryOpen(false);
+        }
+    }, [settings?.monthlySummaryMonth]);
+
     const [greeting, setGreeting] = useState("");
 
     useEffect(() => {
@@ -244,6 +261,18 @@ export default function DashboardHome({
                 </div>
 
             </div>
-        </div>
+
+
+            {
+                settings?.monthlySummaryMonth && (
+                    <MonthlySummaryPopup
+                        isOpen={summaryOpen}
+                        onClose={() => setSummaryOpen(false)}
+                        history={history}
+                        currentMonth={settings.monthlySummaryMonth}
+                    />
+                )
+            }
+        </div >
     );
 }

@@ -22,20 +22,24 @@ import YearlyReport from "@/components/reports/YearlyReport";
 import TeacherPerformanceReport from "@/components/reports/TeacherPerformanceReport";
 import FileTypeAnalysis from "@/components/reports/FileTypeAnalysis";
 import BackupManager from "@/components/BackupManager";
+import ValidationWarning from "@/components/modals/ValidationWarning";
 // Theme imports removed (handled by hook)
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
 import AssignedArchiveSingleDayView from "@/components/archive/AssignedArchiveSingleDay";
+import EArchiveView from "@/components/archive/EArchiveView";
 import { Trash2, Search, UserMinus, Plus, FileSpreadsheet, Inbox, X, ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
 
 
 
 // === YENİ MODÜLER BİLEŞENLER ===
 import AnnouncementPopupModal from "@/components/modals/AnnouncementPopupModal";
+import StudentDetailModal from "@/components/modals/StudentDetailModal";
 import CalendarView from "@/components/reports/CalendarView";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
 import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCard";
 import Header from "@/components/dashboard/Header";
-import DashboardHome from "@/components/dashboard/DashboardHome";
+// DashboardHome removed by user request
+import HealthStatus from "@/components/HealthStatus";
 import TeacherDashboard from "@/components/dashboard/TeacherDashboard";
 import TestDialog from "@/components/modals/TestDialog";
 import RulesModal from "@/components/modals/RulesModal";
@@ -44,6 +48,7 @@ import LoginModal from "@/components/modals/LoginModal";
 import SettingsModal from "@/components/modals/SettingsModal";
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionPopup from "@/components/modals/VersionPopup";
+import MonthlySummaryPopup from "@/components/modals/MonthlySummaryPopup";
 // FloatingAnimations components removed by user request
 // Monthly Recap removed by user request
 import { useAppStore } from "@/stores/useAppStore";
@@ -94,13 +99,21 @@ const LS_LAST_SEEN_VERSION = LS_KEYS.LAST_SEEN_VERSION;
 const MAX_DAILY_CASES = 2;
 
 const ADMIN_TABS = [
-  { id: "home", icon: "🏠", label: "Genel Bakış" },
   { id: "files", icon: "📁", label: "Dosya Atama" },
   { id: "teachers", icon: "👨‍🏫", label: "Öğretmenler" },
   { id: "physiotherapists", icon: "🩺", label: "Fizyoterapist" },
   { id: "reports", icon: "📊", label: "Raporlar" },
   { id: "announcements", icon: "📢", label: "Duyuru" },
   { id: "backup", icon: "💾", label: "Yedekleme" },
+] as const;
+
+const GRADES = [
+  "Okul Öncesi",
+  "1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf",
+  "5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf",
+  "9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf",
+  "Mezun",
+  "Halk Eğitim"
 ] as const;
 
 export default function DosyaAtamaApp() {
@@ -220,6 +233,61 @@ export default function DosyaAtamaApp() {
   const [customDate, setCustomDate] = useState("");
   const [newTeacherName, setNewTeacherName] = useState("");
   const [newTeacherBirthDate, setNewTeacherBirthDate] = useState("");
+  const [grade, setGrade] = useState<string>(""); // Sınıf seçimi
+
+  // Validation Warning Modal State
+  const [validationWarning, setValidationWarning] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
+
+  // Legacy Archive Detail State
+  const [archiveDetailOpen, setArchiveDetailOpen] = useState(false);
+  const [archiveDetailStudent, setArchiveDetailStudent] = useState<{ name: string; fileNo?: string; history: CaseFile[] } | null>(null);
+
+  const handleShowArchiveDetail = (studentName: string) => {
+    const studentHistory: CaseFile[] = [];
+
+    // 1. History'den bul
+    Object.values(history).flat().forEach(c => {
+      if (c.student === studentName) {
+        studentHistory.push(c);
+      }
+    });
+
+    // 2. eArchive (Manual) listesinden bul
+    eArchive.forEach(e => {
+      if ((e.studentName === studentName || (e as any).student === studentName) && !studentHistory.some(h => h.id === e.id)) {
+        studentHistory.push({
+          id: e.id,
+          student: e.studentName,
+          fileNo: e.fileNo,
+          score: 0,
+          createdAt: e.date ? `${e.date}T12:00:00.000Z` : nowISO(),
+          type: (e.type as any) || "YONLENDIRME",
+          isNew: false,
+          diagCount: 0,
+          isTest: false,
+          assignedTo: e.teacherName
+        } as CaseFile);
+      }
+    });
+
+    // 3. Bugünün cases'lerinden bul
+    cases.forEach(c => {
+      if (c.student === studentName && !studentHistory.some(h => h.id === c.id)) {
+        studentHistory.push(c);
+      }
+    });
+
+    studentHistory.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const fileNo = studentHistory.find(c => c.fileNo)?.fileNo;
+
+    setArchiveDetailStudent({
+      name: studentName,
+      fileNo,
+      history: studentHistory
+    });
+    setArchiveDetailOpen(true);
+  };
+
 
   // Geçici Pushover User Key girişleri
   const [editPushover, setEditPushover] = useState<Record<string, string>>({});
@@ -291,8 +359,17 @@ export default function DosyaAtamaApp() {
   // Missing State Definitions
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   /* Feedback State relocated to FeedbackModal */
-
   const [showVersionPopup, setShowVersionPopup] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  // Ay özeti yayınlandıysa göster
+  useEffect(() => {
+    if (settings.monthlySummaryMonth) {
+      setSummaryOpen(true);
+    } else {
+      setSummaryOpen(false);
+    }
+  }, [settings.monthlySummaryMonth]);
 
   // Keep a ref in sync with settings to avoid stale closures in callbacks
   const settingsRef = React.useRef(settings);
@@ -423,9 +500,70 @@ export default function DosyaAtamaApp() {
   }
 
   function applyPdfEntry(entry: PdfAppointment) {
-    setStudent(entry.name || "");
+    const sName = entry.name || "";
+    setStudent(sName);
     if (entry.fileNo) setFileNo(entry.fileNo);
     setSelectedPdfEntryId(entry.id);
+
+    // Otomatik Sınıf Artırma Mantığı
+    if (sName) {
+      const allHistory = Object.values(history).flat().concat(cases);
+      // En son kaydedilen sınıfı bul
+      const studentHistory = allHistory.filter(c => c.student === sName && c.grade);
+
+      // Tarihe göre sırala (Yeni -> Eski)
+      studentHistory.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+      const lastGradeRec = studentHistory[0];
+      if (lastGradeRec && lastGradeRec.grade) {
+        let nextGrade = "";
+        const g = lastGradeRec.grade;
+
+        // Akademik Yıl Hesabı (Eylül 1 itibariyle yeni yıl sayılır)
+        // Ay 0-indexed: 8 = Eylül
+        const getAcademicYear = (d: Date) => d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+
+        const lastDate = new Date(lastGradeRec.createdAt);
+        // İşlem tarihi: customDate seçili ise o, değilse bugün
+        const targetDate = customDate ? new Date(customDate) : new Date();
+
+        const lastYear = getAcademicYear(lastDate);
+        const currentYear = getAcademicYear(targetDate);
+
+        const isNextAcademicYear = currentYear > lastYear;
+
+        // Mantık:
+        // Eğer akademik yıl aynıysa -> Sınıfı Değişmez
+        // Eğer akademik yıl ilerlemişse -> Sınıfı Artır
+
+        if (!isNextAcademicYear) {
+          nextGrade = g; // Aynı yıl içindeyse değiştirme
+        } else {
+          // Yıl atlamış, sınıfı artır
+          if (g === "Okul Öncesi") {
+            nextGrade = "1. Sınıf"; // Okul öncesi -> 1. Sınıf (Yıl atlayınca)
+          } else if (g === "12. Sınıf") {
+            nextGrade = "Mezun";
+          } else if (g === "Mezun") {
+            nextGrade = "Mezun";
+          } else if (g === "Halk Eğitim") {
+            nextGrade = "Halk Eğitim";
+          } else if (g.includes(". Sınıf")) {
+            const num = parseInt(g.replace(/[^\d]/g, ""));
+            if (!isNaN(num) && num < 12) {
+              nextGrade = `${num + 1}. Sınıf`;
+            }
+          }
+        }
+
+        if (nextGrade) {
+          setGrade(nextGrade);
+          const reason = isNextAcademicYear ? "Yeni Akademik Yıl" : "Aynı Akademik Yıl";
+          toast(`Otomatik seçim: ${nextGrade} (${reason})`);
+        }
+      }
+    }
+
     toast("PDF kaydı forma aktarıldı");
   }
 
@@ -462,7 +600,7 @@ export default function DosyaAtamaApp() {
   // Versiyon bildirimi (Yukarıda tanımlı)
 
   // Admin panel tab sistemi
-  const [adminTab, setAdminTab] = useState<"home" | "files" | "teachers" | "physiotherapists" | "reports" | "announcements" | "backup" | "timemachine">("home");
+  const [adminTab, setAdminTab] = useState<"files" | "teachers" | "physiotherapists" | "reports" | "announcements" | "backup" | "timemachine">("files");
 
   // ---- LS'den yükleme (migration alanları)
   useEffect(() => {
@@ -711,6 +849,64 @@ export default function DosyaAtamaApp() {
     return score;
   }
 
+  /* --- GUIDANCE LOGIC (Refined) --- */
+  const guidanceStatus = useMemo(() => {
+    if (!student.trim() || !grade) return null;
+
+    // 1. Check if student has ANY history (excluding current day's new entries logic slightly complex, 
+    // but checks against persisted history and confirmed cases).
+    // Note: We use name matching.
+    const allHistory = Object.values(history).flat().concat(cases);
+    const hasAnyRecord = allHistory.some(c => c.student === student);
+
+    // USER REQ: "kaydettiğimiz öğrenciler genelde ilk defa kaydoluyor... aynı öğrenci 2. defa geldiğinde uyarı çıksın"
+    // If no history at all -> No warning needed (assume new student is fine or handled manually).
+    if (!hasAnyRecord) return null;
+
+    // Rules
+    if (grade === "Okul Öncesi" || grade === "Halk Eğitim") {
+      const thisYear = getTodayYmd().slice(0, 4);
+      const hasThisYear = allHistory.some(c =>
+        c.student === student &&
+        c.createdAt.startsWith(thisYear) &&
+        (c.type === "YONLENDIRME" || c.type === "IKISI")
+      );
+      if (hasThisYear) return { needed: false, message: "Bu sene zaten yönlendirme yapılmış." };
+      return { needed: true, message: "Bu sene için yönlendirme yenilenmelidir (Önceki kaydı var)." };
+    }
+
+    if (grade === "Mezun") {
+      return { needed: false, message: "Mezun öğrenciler için yönlendirme gerekmez." };
+    }
+
+    // Stages
+    const getStage = (g: string) => {
+      if (["1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf"].includes(g)) return "PRIMARY";
+      if (["5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf"].includes(g)) return "MIDDLE";
+      if (["9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf"].includes(g)) return "HIGH";
+      return "UNKNOWN";
+    }
+
+    const currentStage = getStage(grade);
+    if (currentStage === "UNKNOWN") return null;
+
+    // Check if they have a guidance record in this stage
+    const hasStageRecord = allHistory.some(c => {
+      if (c.student !== student) return false;
+      if (!c.grade) return false;
+      if (c.type !== "YONLENDIRME" && c.type !== "IKISI") return false;
+      return getStage(c.grade) === currentStage;
+    });
+
+    if (hasStageRecord) {
+      return { needed: false, message: "Bu kademe için yönlendirme yapılmış." };
+    } else {
+      // Returning student, entering new stage, no guidance yet.
+      return { needed: true, message: "Kademe değişikliği: Yönlendirme gereklidir." };
+    }
+
+  }, [student, grade, history, cases]);
+
   // AutoAssign logic moved to hooks/useAssignment.ts
 
   // Dialog'da "Bitti" seçildiğinde çağrılır
@@ -745,6 +941,8 @@ export default function DosyaAtamaApp() {
     setFilterYM(ymOf(pendingCase.createdAt));
     setManualTeacherId("");
     setManualReason("");
+    setGrade(""); // Sınıf seçimini sıfırla
+    if (activePdfEntry) clearActivePdfEntry(); // PDF entry kullanıldıysa temizle
 
     setTestNotFinishedDialog({ open: false, pendingCase: null, chosenTeacher: null, skipTeacherIds: [] });
   }
@@ -800,7 +998,19 @@ export default function DosyaAtamaApp() {
   function handleAddCase() {
     setTriedAdd(true);
     if (!student.trim()) {
-      toast("Öğrenci adı gerekli");
+      setValidationWarning({ open: true, message: "Öğrenci adı gerekli!" });
+      return;
+    }
+    // Dosya No ve Sınıf kontrolü (Güçlendirilmiş)
+    const trimmedFileNo = fileNo?.trim() || "";
+    const trimmedGrade = grade?.trim() || "";
+
+    if (!trimmedFileNo || trimmedFileNo === "") {
+      setValidationWarning({ open: true, message: "Dosya numarası girilmeden atama yapılamaz!" });
+      return;
+    }
+    if (!trimmedGrade || trimmedGrade === "" || trimmedGrade === "Sınıf Seçiniz") {
+      setValidationWarning({ open: true, message: "Sınıf seçilmeden atama yapılamaz!" });
       return;
     }
     // Eğer customDate varsa o tarihi kullan, yoksa bugünün tarihini
@@ -814,6 +1024,7 @@ export default function DosyaAtamaApp() {
       score: calcScore(),
       createdAt,
       type,
+      grade: grade || undefined, // Sınıf bilgisini kaydet
       isNew,
       diagCount,
       isTest: isTestCase,
@@ -857,6 +1068,7 @@ export default function DosyaAtamaApp() {
       // reset inputs
       setStudent("");
       setFileNo("");
+      setGrade(""); // Sınıf seçimini sıfırla
       setIsNew(false);
       setDiagCount(0);
       setType("YONLENDIRME");
@@ -902,6 +1114,7 @@ export default function DosyaAtamaApp() {
       // reset inputs
       setStudent("");
       setFileNo("");
+      setGrade(""); // Sınıf seçimini sıfırla
       setIsNew(false);
       setDiagCount(0);
       setType("YONLENDIRME");
@@ -1210,259 +1423,7 @@ export default function DosyaAtamaApp() {
     URL.revokeObjectURL(url);
   }
 
-  // E-Arşiv Görüntüleme Bileşeni
-  function EArchiveView({ showAdminButtons = false }: { showAdminButtons?: boolean }) {
-    const [searchStudent, setSearchStudent] = useState("");
-    const [searchFileNo, setSearchFileNo] = useState("");
-    const [filterTeacher, setFilterTeacher] = useState<string>("");
-    const [dateFrom, setDateFrom] = useState<string>("");
-    const [dateTo, setDateTo] = useState<string>("");
-
-    // Tüm arşiv kayıtlarını oluştur (eArchive + History)
-    const allArchiveEntries = useMemo(() => {
-      const entries: EArchiveEntry[] = [];
-
-      // 1. Manuel E-Arşiv kayıtları
-      eArchive.forEach(entry => {
-        entries.push({
-          ...entry,
-          studentName: entry.studentName || (entry as any).student || "",
-          teacherName: entry.teacherName || (entry as any).assignedToName || "",
-          date: entry.date || (entry as any).createdAt || "",
-          fileNo: entry.fileNo || ""
-        });
-      });
-
-      // 2. History'den kayıtlar
-      const historyCases = Object.values(history).flat();
-      historyCases.forEach(c => {
-        if (c.fileNo) {
-          const t = teachers.find(x => x.id === c.assignedTo);
-          entries.push({
-            id: c.id,
-            studentName: c.student,
-            fileNo: c.fileNo,
-            teacherName: t ? t.name : "Bilinmiyor",
-            date: c.createdAt.slice(0, 10)
-          });
-        }
-      });
-
-      // Aynı dosya numarası için EN YENİ atamanı tut
-      // Önce tarihe göre sırala (en yeni en sonda)
-      entries.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateA - dateB;
-      });
-
-      // Dosya numarasına göre grupla ve en sonuncuyu (en yeni) tut
-      const fileNoMap = new Map<string, EArchiveEntry>();
-      entries.forEach(entry => {
-        if (entry.fileNo) {
-          fileNoMap.set(entry.fileNo, entry);
-        }
-      });
-
-      // Map'teki benzersiz kayıtları al
-      return Array.from(fileNoMap.values());
-    }, [eArchive, history, teachers]);
-
-    // Filtrelenmiş liste
-    const filteredArchive = useMemo(() => {
-      let filtered = [...allArchiveEntries];
-
-      // Öğrenci adına göre filtrele
-      if (searchStudent.trim()) {
-        const searchLower = searchStudent.toLowerCase().trim();
-        filtered = filtered.filter(e =>
-          e.studentName.toLowerCase().includes(searchLower)
-        );
-      }
-
-      // Dosya numarasına göre filtrele
-      if (searchFileNo.trim()) {
-        const searchLower = searchFileNo.toLowerCase().trim();
-        filtered = filtered.filter(e =>
-          e.fileNo?.toLowerCase().includes(searchLower)
-        );
-      }
-
-      // Öğretmen bazlı filtrele
-      if (filterTeacher) {
-        filtered = filtered.filter(e => e.teacherName === filterTeacher);
-      }
-
-      // Tarih aralığı filtreleme
-      if (dateFrom) {
-        const fromDate = new Date(dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        filtered = filtered.filter(e => {
-          if (!e.date) return false;
-          const entryDate = new Date(e.date);
-          entryDate.setHours(0, 0, 0, 0);
-          return entryDate >= fromDate;
-        });
-      }
-
-      if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(e => {
-          if (!e.date) return false;
-          const entryDate = new Date(e.date);
-          return entryDate <= toDate;
-        });
-      }
-
-      // Tarihe göre sırala (en yeni üstte)
-      return filtered.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-      });
-    }, [allArchiveEntries, searchStudent, searchFileNo, filterTeacher, dateFrom, dateTo]);
-
-    // Tüm öğretmen isimlerini al (filtreleme için)
-    const teacherNames = useMemo(() => {
-      const names = new Set(allArchiveEntries.map(e => e.teacherName).filter(Boolean));
-      return Array.from(names).sort();
-    }, [allArchiveEntries]);
-
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>🗄️ E-Arşiv (Tüm Atanmış Dosyalar)</CardTitle>
-          <div className="flex items-center gap-2">
-            {/* Silme butonu sadece admin'e gösterilir */}
-            {showAdminButtons && (
-              <Button variant="destructive" onClick={clearEArchive}><Trash2 className="h-4 w-4 mr-2" /> Arşivi Temizle</Button>
-            )}
-            <Button onClick={exportEArchiveCSV}><FileSpreadsheet className="h-4 w-4 mr-2" /> CSV Olarak İndir</Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Arama ve Filtreleme */}
-          <div className="mb-4 space-y-3 p-4 bg-slate-50 rounded-lg border">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">🔍 Öğrenci Adı</Label>
-                <Input
-                  placeholder="Öğrenci adına göre ara..."
-                  value={searchStudent}
-                  onChange={(e) => setSearchStudent(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">📁 Dosya No</Label>
-                <Input
-                  placeholder="Dosya numarasına göre ara..."
-                  value={searchFileNo}
-                  onChange={(e) => setSearchFileNo(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">👨‍🏫 Öğretmen</Label>
-                <Select value={filterTeacher} onValueChange={setFilterTeacher}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Tüm öğretmenler" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tüm öğretmenler</SelectItem>
-                    {teacherNames.map(name => (
-                      <SelectItem key={name} value={name}>{name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">📅 Başlangıç Tarihi</Label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">📅 Bitiş Tarihi</Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            </div>
-            {(searchStudent || searchFileNo || filterTeacher || dateFrom || dateTo) && (
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-xs text-slate-600">
-                  {filteredArchive.length} sonuç bulundu (toplam {eArchive.length})
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSearchStudent("");
-                    setSearchFileNo("");
-                    setFilterTeacher("");
-                    setDateFrom("");
-                    setDateTo("");
-                  }}
-                  className="h-7 text-xs"
-                >
-                  ✕ Filtreleri Temizle
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {eArchive.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="text-4xl mb-3">📭</div>
-              <div className="font-medium">E-Arşiv boş</div>
-              <div className="text-sm">Henüz atanmış dosya bulunmuyor.</div>
-            </div>
-          ) : filteredArchive.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="text-4xl mb-3">🔍</div>
-              <div className="font-medium">Sonuç bulunamadı</div>
-              <div className="text-sm">Arama kriterlerinize uygun dosya yok.</div>
-            </div>
-          ) : (
-            <div className="overflow-auto border rounded-md max-h-[70vh]">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted">
-                  <tr>
-                    <th className="p-2 text-left w-12">No</th>
-                    <th className="p-2 text-left">Öğrenci Adı</th>
-                    <th className="p-2 text-left">Dosya No</th>
-                    <th className="p-2 text-left">Atanan Öğretmen</th>
-                    <th className="p-2 text-left">Atama Tarihi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredArchive.map((entry, index) => (
-                    <tr key={entry.id} className="border-t hover:bg-slate-50">
-                      <td className="p-2 font-semibold text-slate-500">{filteredArchive.length - index}</td>
-                      <td className="p-2 font-medium">{entry.studentName}</td>
-                      <td className="p-2">{entry.fileNo || '—'}</td>
-                      <td className="p-2">{entry.teacherName}</td>
-                      <td className="p-2">{new Date(entry.date).toLocaleDateString("tr-TR")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+  // E-Arşiv Görüntüleme Bileşeni dışarı taşındı (EArchiveView.tsx)
   // ---- JSON yedek / içe aktar (arşiv dahil)
   function exportJSON() {
     const data = { teachers, cases, history, lastRollover, lastAbsencePenalty };
@@ -2413,10 +2374,15 @@ export default function DosyaAtamaApp() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-semibold w-24 inline-block">Dosya No: {file.fileNo}</span>
+                      <Button variant="ghost" className="p-0 h-auto font-semibold text-indigo-600 hover:text-indigo-800 hover:underline" onClick={() => handleShowArchiveDetail(file.student)}>
+                        Dosya No: {file.fileNo}
+                      </Button>
+
                       {existingFiles.has(file.fileNo) && (
                         <>
-                          <span className="ml-4 text-slate-800 font-medium">Öğrenci: {file.student}</span>
+                          <Button variant="ghost" className="p-0 h-auto ml-4 text-slate-800 font-medium hover:text-indigo-800 hover:underline" onClick={() => handleShowArchiveDetail(file.student)}>
+                            Öğrenci: {file.student}
+                          </Button>
                           {/* Atanan öğretmen gizlendi */}
                           {file.createdAt && (
                             <span className="ml-4 text-slate-500 text-sm">
@@ -2437,6 +2403,14 @@ export default function DosyaAtamaApp() {
             </div>
           </CardContent>
         </Card>
+
+        <StudentDetailModal
+          open={archiveDetailOpen}
+          onOpenChange={setArchiveDetailOpen}
+          studentName={archiveDetailStudent?.name || ""}
+          fileNo={archiveDetailStudent?.fileNo}
+          history={archiveDetailStudent?.history || []}
+        />
       </div>
     );
   }
@@ -2544,7 +2518,7 @@ export default function DosyaAtamaApp() {
                         📈 İstatistikler
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2">
+                    <PopoverContent className="w-56 p-2" align="start">
                       <div className="flex flex-col gap-1">
                         <Button
                           variant={reportMode === "statistics" ? "default" : "ghost"}
@@ -2647,20 +2621,6 @@ export default function DosyaAtamaApp() {
               </div>
             </div>
 
-            {/* Dashboard Home View */}
-            {adminTab === "home" && (
-              <div className="p-6 bg-slate-50 min-h-[500px]">
-                <DashboardHome
-                  cases={cases}
-                  teachers={teachers}
-                  history={history}
-                  announcements={announcements}
-                  onNavigate={(id) => setAdminTab(id as any)}
-                  onNewFile={() => setAdminTab("files")}
-                  onAnnounce={() => setAdminTab("announcements")}
-                />
-              </div>
-            )}
 
 
             {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
@@ -2811,6 +2771,28 @@ export default function DosyaAtamaApp() {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label>🏫 Sınıf / Kademe</Label>
+                      <Select value={grade} onValueChange={setGrade}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sınıf Seçiniz" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADES.map(g => (
+                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Guidance Warning */}
+                      {guidanceStatus && type !== "DESTEK" && (
+                        <div className={`text-xs p-2 rounded border ${guidanceStatus.needed ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                          {guidanceStatus.needed ? "⚠️ " : "✅ "}
+                          {guidanceStatus.message}
+                        </div>
+                      )}
+                    </div>
+
                     {/* İzleyici/Normal kullanıcı için Duyuru Paneli */}
                     {!isAdmin && announcements.length > 0 && (
                       <div className="border rounded-md p-3 bg-amber-50 border-amber-300 animate-pulse">
@@ -2856,7 +2838,6 @@ export default function DosyaAtamaApp() {
                         <Button
                           data-silent="true"
                           onClick={handleAddCase}
-                          disabled={!student.trim()}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
                         >
                           📁 DOSYA ATA
@@ -2947,7 +2928,7 @@ export default function DosyaAtamaApp() {
                           📈 İstatistikler
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-56 p-2">
+                      <PopoverContent className="w-56 p-2" align="start">
                         <div className="flex flex-col gap-1">
                           <Button
                             variant={reportMode === "statistics" ? "default" : "ghost"}
@@ -3098,26 +3079,29 @@ export default function DosyaAtamaApp() {
               )}
 
               {adminTab === "backup" && (
-                <BackupManager
-                  currentState={{
-                    teachers,
-                    cases,
-                    history,
-                    lastRollover,
-                    lastAbsencePenalty,
-                    announcements,
-                    settings,
-                    eArchive,
-                  }}
-                  onRestore={(state) => {
-                    if (state.teachers) setTeachers(state.teachers);
-                    if (state.cases) setCases(state.cases);
-                    if (state.history) setHistory(state.history);
-                    if (state.announcements) setAnnouncements(state.announcements);
-                    if (state.settings) setSettings(state.settings);
-                    if (state.eArchive) setEArchive(state.eArchive);
-                  }}
-                />
+                <div className="space-y-6">
+                  <HealthStatus />
+                  <BackupManager
+                    currentState={{
+                      teachers,
+                      cases,
+                      history,
+                      lastRollover,
+                      lastAbsencePenalty,
+                      announcements,
+                      settings,
+                      eArchive,
+                    }}
+                    onRestore={(state) => {
+                      if (state.teachers) setTeachers(state.teachers);
+                      if (state.cases) setCases(state.cases);
+                      if (state.history) setHistory(state.history);
+                      if (state.announcements) setAnnouncements(state.announcements);
+                      if (state.settings) setSettings(state.settings);
+                      if (state.eArchive) setEArchive(state.eArchive);
+                    }}
+                  />
+                </div>
               )}
 
 
@@ -3185,7 +3169,17 @@ export default function DosyaAtamaApp() {
             />
           )
         )}
-        {reportMode === "e-archive" && <EArchiveView showAdminButtons={isAdmin} />}
+        {reportMode === "e-archive" && (
+          <EArchiveView
+            history={history}
+            eArchive={eArchive}
+            cases={cases}
+            teachers={teachers}
+            showAdminButtons={isAdmin}
+            onClearEArchive={clearEArchive}
+            onExportCSV={exportEArchiveCSV}
+          />
+        )}
         {reportMode === "calendar" && (
           <Card>
             <CardHeader>
@@ -3253,6 +3247,16 @@ export default function DosyaAtamaApp() {
           open={showVersionPopup && !isAdmin}
           onClose={() => setShowVersionPopup(false)}
         />
+
+        {/* Ay Özeti - Global Yayın */}
+        {settings.monthlySummaryMonth && (
+          <MonthlySummaryPopup
+            isOpen={summaryOpen}
+            onClose={() => setSummaryOpen(false)}
+            history={history}
+            currentMonth={settings.monthlySummaryMonth}
+          />
+        )}
         {/* Toast Container - Renkli */}
         {toasts.length > 0 && (
           <div className="fixed top-3 right-3 z-[100] space-y-2">
@@ -3340,6 +3344,13 @@ export default function DosyaAtamaApp() {
       <AnnouncementPopupModal
         announcement={announcementPopupData}
         onClose={hideAnnouncementPopup}
+      />
+
+      {/* Validation Warning Modal */}
+      <ValidationWarning
+        open={validationWarning.open}
+        onOpenChange={(open) => setValidationWarning({ ...validationWarning, open })}
+        message={validationWarning.message}
       />
     </div>
   );

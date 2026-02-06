@@ -497,7 +497,7 @@ export default function TeacherList() {
                                                     <MoreHorizontal className="w-4 h-4" />
                                                 </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-56 p-2" align="end">
+                                            <PopoverContent className="w-56 p-2" align="start" side="left">
                                                 <div className="space-y-1">
 
                                                     {/* NEW: Score Adjustment Button */}

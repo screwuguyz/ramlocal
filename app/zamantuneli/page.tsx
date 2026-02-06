@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 // Local toast - just use alert for simplicity
 // Local uid function
 import AssignedArchiveView from "@/components/archive/AssignedArchive";
+import MonthlySummaryPopup from "@/components/modals/MonthlySummaryPopup";
 // Types are defined locally below
 
 // Types (Redefined to ensure standalone works if exports are missing)
@@ -55,6 +56,7 @@ type Settings = {
     scoreTypeI: number;
     backupBonusAmount: number;
     absencePenaltyAmount: number;
+    monthlySummaryMonth?: string;
 };
 
 // Helper Functions
@@ -97,6 +99,7 @@ export default function TimeMachinePage() {
     const [manualScore, setManualScore] = useState("");
     const [manualDesc, setManualDesc] = useState("");
     const [isFileEntry, setIsFileEntry] = useState(true); // true = dosya, false = puan düzeltme
+    const [showMonthlySummary, setShowMonthlySummary] = useState(false);
 
     // Sync State
     const fetchCentralState = async () => {
@@ -373,6 +376,45 @@ export default function TimeMachinePage() {
         }
     };
 
+    const handlePublishSummary = async () => {
+        const targetMonth = currentSimDate.slice(0, 7);
+        if (!confirm(`${targetMonth} dönemi için özet raporu tüm kullanıcılara YAYINLANACAK.\\n\\nSiteye giren herkes bu pop-up'ı görecek.\\nOnaylıyor musunuz?`)) return;
+
+        const newSettings = { ...settings, monthlySummaryMonth: targetMonth };
+        setSettings(newSettings);
+
+        try {
+            await fetch("/api/state", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ settings: newSettings })
+            });
+            alert("✅ Ay özeti yayına alındı! Ana sayfada herkese görünüyor.");
+        } catch (err) {
+            console.error(err);
+            alert("Hata oluştu.");
+        }
+    };
+
+    const handleStopPublishing = async () => {
+        if (!confirm("Ay özeti yayından kaldırılacak. Artık kimse görmeyecek.\\nOnaylıyor musunuz?")) return;
+
+        const newSettings = { ...settings, monthlySummaryMonth: "" };
+        setSettings(newSettings);
+
+        try {
+            await fetch("/api/state", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ settings: newSettings })
+            });
+            alert("✅ Yayın durduruldu.");
+        } catch (err) {
+            console.error(err);
+            alert("Hata oluştu.");
+        }
+    };
+
     if (!isAuthenticated) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
@@ -447,6 +489,42 @@ export default function TimeMachinePage() {
                         <Button variant="outline" className="flex-1 border-orange-300 text-orange-700 bg-orange-50" onClick={handleFixDuplicates}>
                             🛠️ Yinelenenleri Temizle
                         </Button>
+                    </div>
+
+                    {/* Ay Özeti Butonları */}
+                    <div className="mt-6 border-t pt-4">
+                        <h4 className="text-md font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                            <span>🎉 Ay Sonu Raporu</span>
+                            <span className="text-xs font-normal px-2 py-1 rounded bg-slate-100 text-slate-600">
+                                Durum: {settings.monthlySummaryMonth ? `✅ ${settings.monthlySummaryMonth} YAYINDA` : "❌ Yayında Değil"}
+                            </span>
+                        </h4>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100"
+                                onClick={() => setShowMonthlySummary(true)}
+                            >
+                                👁️ Önizle
+                            </Button>
+                            <Button
+                                variant="default"
+                                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-200"
+                                onClick={handlePublishSummary}
+                            >
+                                � YAYINLA
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                className="flex-1 bg-pink-600 hover:bg-pink-700 text-white"
+                                onClick={handleStopPublishing}
+                            >
+                                ⛔ Yayından Kaldır
+                            </Button>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                            "Yayınla" derseniz, ana sayfaya giren herkes bu pop-up'ı görür. "Yayından Kaldır" diyene kadar kalır.
+                        </p>
                     </div>
 
                     {/* Manuel Kayıt Ekleme */}
@@ -641,6 +719,14 @@ export default function TimeMachinePage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Monthly Summary Popup */}
+            <MonthlySummaryPopup
+                isOpen={showMonthlySummary}
+                onClose={() => setShowMonthlySummary(false)}
+                history={history}
+                currentMonth={currentSimDate.slice(0, 7)}
+            />
         </div>
     );
 }

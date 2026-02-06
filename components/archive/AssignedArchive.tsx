@@ -15,7 +15,8 @@ function ymdLocal(d: Date) {
 
 // ... (imports remain same)
 import { Input } from "@/components/ui/input";
-import { Check, X, Pencil } from "lucide-react";
+import { Check, X, Pencil, Eye } from "lucide-react";
+import StudentDetailModal from "@/components/modals/StudentDetailModal";
 
 type Settings = {
   dailyLimit: number;
@@ -62,6 +63,41 @@ export default function AssignedArchive({
   // Editing state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editScore, setEditScore] = useState<string>("");
+
+  // Detail Modal State
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailStudent, setDetailStudent] = useState<{ name: string; fileNo?: string; history: CaseFile[] } | null>(null);
+
+  const handleShowDetail = (studentName: string) => {
+    // Collect all history for this student
+    const studentHistory: CaseFile[] = [];
+
+    // 1. Check passed cases (today/current selection)
+    cases.forEach(c => {
+      if (c.student === studentName) studentHistory.push(c);
+    });
+
+    // 2. Check global history
+    Object.values(history).forEach(dayCases => {
+      dayCases.forEach(c => {
+        if (c.student === studentName) {
+          // Avoid duplicates if 'cases' is already part of history (unlikely but safe)
+          if (!studentHistory.some(existing => existing.id === c.id)) {
+            studentHistory.push(c);
+          }
+        }
+      });
+    });
+
+    const fileNo = studentHistory.find(c => c.fileNo)?.fileNo;
+
+    setDetailStudent({
+      name: studentName,
+      fileNo,
+      history: studentHistory
+    });
+    setDetailOpen(true);
+  };
 
   useEffect(() => {
     if (selectedDay) {
@@ -169,10 +205,11 @@ export default function AssignedArchive({
                 <th className="p-2 text-left">Öğrenci</th>
                 <th className="p-2 text-right">Puan</th>
                 <th className="p-2 text-left">Saat</th>
+                <th className="p-2 text-left">Sınıf</th>
                 <th className="p-2 text-left">Atanan</th>
                 <th className="p-2 text-left">Test</th>
                 <th className="p-2 text-left">Açıklama</th>
-                {(onRemove || onUpdate) && <th className="p-2 text-center w-24">İşlem</th>}
+                <th className="p-2 text-center w-24">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -199,6 +236,7 @@ export default function AssignedArchive({
                   <td className="p-2">
                     {new Date(c.createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                   </td>
+                  <td className="p-2">{c.grade || "-"}</td>
                   <td className="p-2">{teacherName(c.assignedTo)}</td>
                   <td className="p-2">
                     {c.absencePenalty ? "Hayır (Denge)" : c.isTest ? `Evet (+${settings.scoreTest})` : "Hayır"}
@@ -206,54 +244,67 @@ export default function AssignedArchive({
                   <td className="p-2 text-sm text-muted-foreground">{caseDesc(c)}</td>
 
                   {/* Action Buttons */}
-                  {(onRemove || onUpdate) && (
-                    <td className="p-2 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {editingId === c.id ? (
-                          <>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={handleSaveEdit}>
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-50" onClick={handleCancelEdit}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            {onUpdate && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                onClick={() => handleStartEdit(c)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
+                  <td className="p-2 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      {/* Detail Button (Always visible) */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        onClick={() => handleShowDetail(c.student)}
+                        title="Detay & Geçmiş"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+
+                      {(onRemove || onUpdate) && (
+                        <>
+                          {editingId === c.id ? (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={handleSaveEdit}>
+                                <Check className="h-4 w-4" />
                               </Button>
-                            )}
-                            {onRemove && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => {
-                                  if (confirm("Bu arşiv kaydını silmek istediğinize emin misiniz?")) {
-                                    onRemove(c.id, day);
-                                  }
-                                }}
-                              >
-                                🗑️
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-700 hover:bg-slate-50" onClick={handleCancelEdit}>
+                                <X className="h-4 w-4" />
                               </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  )}
+                            </>
+                          ) : (
+                            <>
+                              {onUpdate && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                  onClick={() => handleStartEdit(c)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {onRemove && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => {
+                                    if (confirm("Bu arşiv kaydını silmek istediğinize emin misiniz?")) {
+                                      onRemove(c.id, day);
+                                    }
+                                  }}
+                                >
+                                  🗑️
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {list.length === 0 && (
                 <tr>
-                  <td className="p-8 text-center" colSpan={(onRemove || onUpdate) ? 7 : 6}>
+                  <td className="p-8 text-center" colSpan={8}>
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                       <Inbox className="h-10 w-10 mb-2 text-slate-400" />
                       <p className="text-sm font-medium">Bu günde kayıt yok</p>
@@ -266,6 +317,14 @@ export default function AssignedArchive({
           </table>
         </div>
       </CardContent>
+
+      <StudentDetailModal
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        studentName={detailStudent?.name || ""}
+        fileNo={detailStudent?.fileNo}
+        history={detailStudent?.history || []}
+      />
     </Card>
   );
 }

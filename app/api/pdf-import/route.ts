@@ -97,9 +97,11 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
 
   const blocks: Array<string[]> = [];
   let current: string[] = [];
+  // in parsePdfText function
   for (const line of normalizedLines) {
     if (/^(SAAT|TC NO|AD SOYAD|ENGEL|KAYIT|DOSYA|AÇIKLAMA)/i.test(line)) continue;
-    if (/^\d{11}/.test(line)) {
+    // Allow whitespace before TC
+    if (/^\s*\d{11}/.test(line)) {
       if (current.length) blocks.push(current);
       current = [line];
     } else {
@@ -118,7 +120,8 @@ function parsePdfText(text: string): { entries: PdfEntry[]; dateLabel: string | 
   const entries = blocks
     .map((lines) => {
       const head = lines[0] || "";
-      const headMatch = head.match(/^(\d{11})(.*)$/);
+      // Allow whitespace before TC capture
+      const headMatch = head.match(/^\s*(\d{11})(.*)$/);
       if (!headMatch) return null;
       let rest = headMatch[2] ?? "";
       const nameParts: string[] = [];
