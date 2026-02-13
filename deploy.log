@@ -1,0 +1,967 @@
+[2026-02-06T09:20:21.354Z] 🎯 Webhook listener başlatıldı: http://localhost:9000
+[2026-02-06T09:20:21.358Z]    Health check: http://localhost:9000/health
+[2026-02-06T09:20:21.358Z]    Webhook endpoint: http://localhost:9000/webhook
+[2026-02-06T09:21:30.301Z] 🎯 Webhook listener başlatıldı: http://localhost:9000
+[2026-02-06T09:21:30.305Z]    Health check: http://localhost:9000/health
+[2026-02-06T09:21:30.306Z]    Webhook endpoint: http://localhost:9000/webhook
+[2026-02-06T09:22:58.939Z] 🎯 Webhook listener başlatıldı: http://localhost:9000
+[2026-02-06T09:22:58.941Z]    Health check: http://localhost:9000/health
+[2026-02-06T09:22:58.941Z]    Webhook endpoint: http://localhost:9000/webhook
+[2026-02-06T09:33:04.620Z] 🎯 Git Polling başlatıldı
+[2026-02-06T09:33:04.623Z]    Kontrol aralığı: 60 saniye
+[2026-02-06T09:33:04.623Z]    Proje dizini: C:\Users\lenovo ram4\Desktop\ram-proje
+[2026-02-06T09:33:04.624Z]    Değişiklikleri bekliyor...
+[2026-02-06T10:02:06.476Z] 🔄 Yeni güncelleme bulundu!
+[2026-02-06T10:02:06.477Z]    Local:  c13fc7d
+[2026-02-06T10:02:06.477Z]    Remote: c3d045f
+[2026-02-06T10:02:06.478Z] 🚀 Deployment başlatılıyor...
+[2026-02-06T10:02:24.356Z] ✅ Deployment tamamlandı!
+[2026-02-06T12:31:06.908Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:32:06.927Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:33:06.958Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:34:06.957Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:35:06.977Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:36:06.976Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:37:07.007Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:38:07.007Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:39:07.007Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:40:07.042Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:41:07.046Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:42:07.057Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:43:07.048Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:44:07.057Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:45:07.077Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:46:07.096Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:47:07.096Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:48:07.107Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:49:07.104Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:50:07.114Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:51:07.144Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:52:07.157Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:53:07.154Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:54:07.173Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:55:07.176Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:56:07.194Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:57:07.184Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:58:07.196Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T12:59:07.207Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:00:07.208Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:01:07.207Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:02:07.226Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:03:07.222Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:04:07.246Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:05:07.253Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:06:07.276Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:07:07.277Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:08:07.307Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:09:07.305Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:10:07.344Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:11:07.346Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:12:07.354Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:13:07.357Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:14:07.396Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:15:07.384Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:16:07.407Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:17:07.398Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:18:07.426Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:19:07.422Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:20:07.426Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:21:07.442Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:22:07.457Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:23:07.443Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:24:07.473Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:25:07.461Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:26:07.458Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:27:07.477Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:28:07.496Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:29:07.496Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:30:07.527Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:31:07.522Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:32:07.557Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:33:07.558Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:34:07.576Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:35:07.574Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:36:07.576Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:37:07.572Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:38:07.576Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:39:07.607Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:40:07.610Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:41:07.623Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:42:07.626Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:43:07.654Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:44:07.657Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:45:07.676Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:46:07.664Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:47:07.708Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:48:07.670Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:49:07.703Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:50:07.695Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:51:07.707Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:52:07.707Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:53:07.726Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:54:07.723Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:55:07.753Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:56:07.757Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:57:07.776Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:58:07.807Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T13:59:07.807Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:00:07.826Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:01:07.814Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:02:07.823Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:03:07.816Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:04:07.846Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:05:07.846Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:06:07.857Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:07:07.858Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:08:07.896Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:09:07.888Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:10:07.904Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:11:07.896Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:12:07.908Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:13:07.902Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:14:07.927Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:15:07.958Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:16:07.958Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:17:07.956Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:18:07.960Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:19:07.958Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:20:07.976Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:21:07.996Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-06T14:22:08.003Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:50:22.140Z] 🎯 Git Polling başlatıldı
+[2026-02-09T05:50:22.334Z]    Kontrol aralığı: 60 saniye
+[2026-02-09T05:50:22.334Z]    Proje dizini: C:\Users\lenovo ram4\Desktop\ram-proje
+[2026-02-09T05:50:22.335Z]    Değişiklikleri bekliyor...
+[2026-02-09T05:50:23.337Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:51:23.495Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:52:23.493Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:53:23.482Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:54:23.512Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:55:23.527Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:56:23.549Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:57:23.555Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T05:58:23.560Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T07:24:26.276Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T07:25:37.353Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T07:26:26.294Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-09T16:35:49.168Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T16:37:11.570Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 503
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 503
+
+[2026-02-09T16:37:49.106Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T16:39:29.620Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T16:40:33.149Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T16:42:23.980Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:02:22.696Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:03:49.211Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:04:22.225Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:05:40.431Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:06:25.767Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:07:45.069Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:09:22.852Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:09:53.078Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:10:24.141Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:11:43.783Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-09T19:12:28.092Z] ❌ Hata: Command failed: git fetch ramlocal main
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+remote: Internal Server Error
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': The requested URL returned error: 500
+
+[2026-02-10T10:08:39.519Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:09:39.533Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:10:39.537Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:11:39.551Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:12:39.549Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:13:39.544Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:14:39.553Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:15:39.571Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:16:39.573Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:17:39.567Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:18:39.578Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:19:39.593Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:20:39.604Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:21:39.618Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:22:39.627Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:23:39.643Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:24:39.655Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:25:39.663Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:26:39.677Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:27:39.693Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:28:39.701Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:29:39.714Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:30:39.731Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:31:39.726Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:32:39.729Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:33:39.727Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:34:39.736Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:35:39.731Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-10T10:36:39.746Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:23:44.789Z] 🎯 Git Polling başlatıldı
+[2026-02-12T06:23:44.843Z]    Kontrol aralığı: 60 saniye
+[2026-02-12T06:23:44.845Z]    Proje dizini: C:\Users\lenovo ram4\Desktop\ram-proje
+[2026-02-12T06:23:44.874Z]    Değişiklikleri bekliyor...
+[2026-02-12T06:23:45.847Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:24:45.994Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:25:46.072Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:26:45.987Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:27:45.999Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:28:46.019Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:29:46.021Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:30:46.050Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:31:46.040Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-12T06:32:46.049Z] ❌ Hata: Command failed: git fetch ramlocal main
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not resolve host: github.com
+
+[2026-02-13T06:04:20.678Z] 🎯 Git Polling başlatıldı
+[2026-02-13T06:04:20.774Z]    Kontrol aralığı: 60 saniye
+[2026-02-13T06:04:20.779Z]    Proje dizini: C:\Users\lenovo ram4\Desktop\ram-proje
+[2026-02-13T06:04:20.792Z]    Değişiklikleri bekliyor...
+[2026-02-13T07:03:24.898Z] 🔄 Yeni güncelleme bulundu!
+[2026-02-13T07:03:24.900Z]    Local:  8f64968
+[2026-02-13T07:03:24.900Z]    Remote: c3d045f
+[2026-02-13T07:03:24.900Z] 🚀 Deployment başlatılıyor...
+[2026-02-13T07:03:56.577Z] ✅ Deployment tamamlandı!
