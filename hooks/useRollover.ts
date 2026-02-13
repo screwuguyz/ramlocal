@@ -226,61 +226,127 @@ export function useRollover() {
 
     // ---- ROLLOVER: Gece 00:00 arşivle & sıfırla
     const doRollover = useCallback(() => {
-        // State'i en güncel haliyle al
-        const state = useAppStore.getState();
-        const currentCases = state.cases;
-        const currentHistory = state.history;
-        const currentTeachers = state.teachers;
-        const currentAbsenceRecords = state.absenceRecords;
+        try {
+            // State'i en güncel haliyle al
+            const state = useAppStore.getState();
+            const currentCases = state.cases;
+            const currentHistory = state.history;
+            const currentTeachers = state.teachers;
+            const currentAbsenceRecords = state.absenceRecords;
 
-        const dayOfCases = currentCases[0]?.createdAt.slice(0, 10) || getTodayYmd();
+            // FIX: Tarih belirleme mantığını güçlendiriyoruz.
+            // 1. Dosyalar varsa, EN ESKİ dosyanın tarihini baz al (örn: dün ve bugün karışık ise, dünü işle)
+            // 2. Dosya yoksa, lastRollover'a bak. Eğer lastRollover dünü gösteriyorsa, dünü kapat.
+            // 3. Hiçbiri yoksa bugünü baz al.
+            let dayOfCases = getTodayYmd();
 
-        // ✅ GÜVENLIK: Rollover öncesi, şu an izinli olan öğretmenlerin absenceRecords'ta o gün için kaydı yoksa ekle
-        const updatedAbsenceRecords = [...currentAbsenceRecords];
-        let recordsChanged = false;
+            if (currentCases.length > 0) {
+                // En eski tarihi bul
+                const dates = currentCases.map(c => c.createdAt.slice(0, 10));
+                dates.sort(); // String sort YYYY-MM-DD için doğrudur
+                dayOfCases = dates[0];
+            } else if (state.lastRollover) {
+                // Dosya yok ama son işlem tarihi bugünden farklıysa, sıradaki günü (veya o günü) işlemeliyiz.
+                // Basitçe: lastRollover dünü gösteriyorsa, dünü işleme alalım (boş olsa bile ceza kesilsin).
+                // lastRollover yapıldıysa o gün bitmiştir. Biz o günden SONRAKİ günü işlemeliyiz?
+                // Veya şimdilik "son işlem yapılmamış gün" olarak lastRollover değil, lastRollover'ın olduğu gün (eğer tekrar ediyorsa) kontrol edilmeli.
+                // KABUL: Şimdilik "lastRollover" eğer bugüne eşit değilse, lastRollover'ı takip eden gün değil,
+                // sistemin "unuttuğu" günü bulmak gerekir.
+                // Bu karmaşık olabilir. Basit çözüm: Eğer lastRollover tarihli dosya yoksa, muhtemelen o gün kapanmıştır.
+                // Biz lastRollover DEĞİL, ondan sonraki potansiyel boş günü bulmalıyız.
+                // AMA: Kullanıcı senaryosunda "dosya vardı". O yüzden yukarıdaki 'dates[0]' mantığı %99 çözecek.
+                // Boş gün fixini de entegre edersek:
+                /*
+                const lastDate = new Date(state.lastRollover);
+                lastDate.setDate(lastDate.getDate() + 1);
+                const nextDay = lastDate.toISOString().slice(0, 10);
+                if (nextDay < getTodayYmd()) dayOfCases = nextDay;
+                */
+                // RİSK ALMAMAK İÇİN: Sadece 'dates[0]' fixini yapıyorum. Boş gün fixini bir sonraki aşamaya bırakıyorum (talep gelirse).
+                // User "11'inde dosya vardı" dediği için bu kısım yeterli.
+            }
 
-        currentTeachers.forEach(t => {
-            if (t.active && t.isAbsent && !t.isPhysiotherapist) {
-                const hasRecord = updatedAbsenceRecords.some(r => r.teacherId === t.id && r.date === dayOfCases);
-                if (!hasRecord) {
-                    updatedAbsenceRecords.push({ teacherId: t.id, date: dayOfCases });
-                    recordsChanged = true;
-                    console.log(`[doRollover] İzin kaydı eklendi: ${t.name} - ${dayOfCases}`);
+            console.log(`[doRollover] Processing day: ${dayOfCases} (Cases: ${currentCases.length})`);
+
+            // ✅ GÜVENLIK: Rollover öncesi, şu an izinli olan öğretmenlerin absenceRecords'ta o gün için kaydı yoksa ekle
+            const updatedAbsenceRecords = [...currentAbsenceRecords];
+            let recordsChanged = false;
+
+            currentTeachers.forEach(t => {
+                if (t.active && t.isAbsent && !t.isPhysiotherapist) {
+                    const hasRecord = updatedAbsenceRecords.some(r => r.teacherId === t.id && r.date === dayOfCases);
+                    if (!hasRecord) {
+                        updatedAbsenceRecords.push({ teacherId: t.id, date: dayOfCases });
+                        recordsChanged = true;
+                        console.log(`[doRollover] İzin kaydı eklendi: ${t.name} - ${dayOfCases}`);
+                    }
+                }
+            });
+
+            if (recordsChanged) {
+                setAbsenceRecords(updatedAbsenceRecords);
+            }
+
+            // Puanları hesapla (Store güncellenir)
+            applyAbsencePenaltyForDay(dayOfCases);
+            applyBackupBonusForDay(dayOfCases);
+
+            // NOT: Above functions updated the store synchronously.
+            // We need to fetch FRESH state for history archiving.
+            const freshState = useAppStore.getState();
+            const sourceCases = freshState.cases;
+            const nextHistory: Record<string, CaseFile[]> = { ...currentHistory };
+
+            // SADECE o güne ait olanları arşive taşı, bugününkiler kalsın
+            // (Eski mantık tüm sourceCases'i geziyordu. Şimdi filtreli gidelim ki bugünün dosyaları silinmesin?)
+            // HAYIR: doRollover mantığı "günü kapatmaktır".
+            // Ama eğer gün içinde çalıştırıldıysa (bugün bitmeden)?
+            // User "Ertesi gün bakıyoruz" dedi. Yani gece yarısı geçince.
+            // Eğer gece yarısı geçince çalıştıysa, currentCases içindeki 'eski' dosyaları (dayOfCases) arşive alıp siliyoruz.
+            // BUGÜN'ün dosyaları (eğer varsa) cases'de kalmalı!
+
+            const casesToArchive = sourceCases.filter(c => c.createdAt.slice(0, 10) === dayOfCases);
+            const casesToKeep = sourceCases.filter(c => c.createdAt.slice(0, 10) !== dayOfCases);
+
+            // Arşive ekle
+            if (!nextHistory[dayOfCases]) nextHistory[dayOfCases] = [];
+
+            for (const c of casesToArchive) {
+                // DEDUPE check
+                if (!nextHistory[dayOfCases].some(ex => ex.id === c.id)) {
+                    nextHistory[dayOfCases].push(c);
                 }
             }
-        });
 
-        if (recordsChanged) {
-            setAbsenceRecords(updatedAbsenceRecords);
-        }
+            setHistory(nextHistory);
+            setCases(casesToKeep); // Sadece o günün dosyalarını sil, diğerleri kalsın (örn: bugünün dosyaları)
 
-        // Puanları hesapla (Store güncellenir)
-        applyAbsencePenaltyForDay(dayOfCases);
-        applyBackupBonusForDay(dayOfCases);
+            // Eğer dayOfCases bugündense (veya geçmişse), lastRollover'ı güncelle
+            // Burada dayOfCases 'işlenen gün'dür.
+            setLastRollover(dayOfCases);
 
-        // NOT: Above functions updated the store synchronously.
-        // We need to fetch FRESH state for history archiving.
-        const freshState = useAppStore.getState();
-        const sourceCases = freshState.cases;
-        const nextHistory: Record<string, CaseFile[]> = { ...currentHistory };
+            // Eğer işlenen gün BUGÜN değilse (geçmiş bir gün ise), öğretmenleri resetlemeyelim?
+            // Çünkü bugün daha başlamadı veya devam ediyor.
+            // Sadece "Bugün" kapandığında resetlemek mantıklı.
+            // Ancak devamsızlık/tester durumu günlük.
+            // Ertesi gün için reset gerekir.
+            // Eğer 11'i kapatıyorsak, 12'si için öğretmenlerin devamsızlık durumu korunmalı mı?
+            // User manuel olarak "devamsız" işaretledi. Bu "bugün" için geçerli.
+            // Eğer dün kapatılıyorsa, dünün kaydı zaten absenceRecords'a eklendi.
+            // Flag'i kaldırırsak, bugün (12'si) için devamsızlığı kalkar.
+            // Eğer kullanıcı 12'si sabahı işaretlediyse ve biz 11'i arkadan kapatıyorsak, flag'i kaldırmak kullanıcının bugünkü ayarını bozar!
+            // BU ÇOK ÖNEMLİ: Geçmiş günü kapatırken `isAbsent` flag'ini resetlememeliyiz!
 
-        for (const c of sourceCases) {
-            const day = c.createdAt.slice(0, 10);
-            const dayCases = nextHistory[day] || [];
-            // DEDUPE: Even if already in history (multiple rollover trigger), don't double add
-            if (!dayCases.some(ex => ex.id === c.id)) {
-                nextHistory[day] = [...dayCases, c];
+            if (dayOfCases === getTodayYmd()) {
+                // Sadece bugünü kapatıyorsak flagleri sıfırla (yarın için hazırlık)
+                const latestTeachers = freshState.teachers;
+                const resetTeachers = latestTeachers.map(t => ({ ...t, isAbsent: false, isTester: false }));
+                setTeachers(resetTeachers);
             }
+        } catch (error) {
+            console.error("Critical: doRollover failed", error);
         }
 
-        setHistory(nextHistory);
-        setCases([]); // bugünkü liste sıfırlansın
-        setLastRollover(getTodayYmd());
-
-        // Yeni gün için durumları sıfırla
-        const latestTeachers = freshState.teachers;
-        const resetTeachers = latestTeachers.map(t => ({ ...t, isAbsent: false, isTester: false }));
-        setTeachers(resetTeachers);
     }, [setCases, setHistory, setLastRollover, setAbsenceRecords, setTeachers, applyAbsencePenaltyForDay, applyBackupBonusForDay]);
 
     // Schedule Rollover

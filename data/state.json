@@ -17,11 +17,11 @@
       "id": "axlady7",
       "name": "ARMAN GÖKDAĞ",
       "isAbsent": false,
-      "yearlyLoad": 175,
+      "yearlyLoad": 182,
       "monthly": {
         "2025-12": 135,
         "2026-01": 122,
-        "2026-02": 20
+        "2026-02": 27
       },
       "active": true,
       "isTester": false,
@@ -32,11 +32,11 @@
       "id": "45zvjwn",
       "name": "AYGÜN ÇELİK",
       "isAbsent": false,
-      "yearlyLoad": 180,
+      "yearlyLoad": 183,
       "monthly": {
         "2025-12": 133,
         "2026-01": 116,
-        "2026-02": 17
+        "2026-02": 20
       },
       "active": true,
       "isTester": false,
@@ -47,11 +47,11 @@
       "id": "rnycdxd",
       "name": "ERAY AHMET TAŞKIN",
       "isAbsent": false,
-      "yearlyLoad": 177,
+      "yearlyLoad": 181,
       "monthly": {
         "2025-12": 123,
         "2026-01": 73,
-        "2026-02": 28
+        "2026-02": 32
       },
       "active": true,
       "isTester": false,
@@ -76,11 +76,11 @@
       "id": "ji4xjb9",
       "name": "NESLİHAN ŞAHİNER",
       "isAbsent": false,
-      "yearlyLoad": 177,
+      "yearlyLoad": 180,
       "monthly": {
         "2025-12": 133,
         "2026-01": 85,
-        "2026-02": 18
+        "2026-02": 21
       },
       "active": true,
       "isTester": false,
@@ -91,11 +91,11 @@
       "id": "wttamdj",
       "name": "NURAY KIZILGÜNEŞ",
       "isAbsent": false,
-      "yearlyLoad": 171,
+      "yearlyLoad": 179,
       "monthly": {
         "2025-12": 128,
         "2026-01": 25,
-        "2026-02": 8
+        "2026-02": 16
       },
       "active": true,
       "isTester": true,
@@ -183,6 +183,126 @@
         "extra": "Özel Öğrenme Güçlüğü 12.02.2026 Tarihli Randevu Listesi 12.02.2026 09:39:531https://ramdevu.meb.gov.tr"
       },
       "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "ple3vr8",
+      "student": "ERVA KARAPINAR",
+      "fileNo": "7571",
+      "score": 5,
+      "createdAt": "2026-02-13T07:16:44.163Z",
+      "type": "IKISI",
+      "grade": "4. Sınıf",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "40b935cb-2c92-47a3-b30f-1c1fbbb4ddee",
+        "time": "09:30",
+        "name": "ERVA KARAPINAR",
+        "fileNo": "",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "m8dyxpz",
+      "student": "MESUT TEKİN",
+      "fileNo": "6655",
+      "score": 8,
+      "createdAt": "2026-02-13T07:17:29.040Z",
+      "type": "YONLENDIRME",
+      "grade": "5. Sınıf",
+      "isNew": false,
+      "diagCount": 0,
+      "isTest": true,
+      "sourcePdfEntry": {
+        "id": "f87cadaf-9a7c-401e-afa8-3e71b5dd64da",
+        "time": "09:30",
+        "name": "MESUT TEKİN",
+        "fileNo": "6655",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "wttamdj"
+    },
+    {
+      "id": "9gaqlvd",
+      "student": "SU TAŞKIN",
+      "fileNo": "4942",
+      "score": 4,
+      "createdAt": "2026-02-13T07:17:46.998Z",
+      "type": "DESTEK",
+      "grade": "1. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "8ee67da3-fe9a-427e-9787-edd118ef4b7c",
+        "time": "10:00",
+        "name": "SU TAŞKIN",
+        "fileNo": "4942",
+        "extra": "Hafif Düzeyde Zihinsel Yetersizlik"
+      },
+      "assignedTo": "rnycdxd"
+    },
+    {
+      "id": "50mbk52",
+      "student": "TOYGAR ÜŞENMEZ",
+      "fileNo": "5093",
+      "score": 2,
+      "createdAt": "2026-02-13T07:18:20.134Z",
+      "type": "YONLENDIRME",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "5cbcf821-1d76-4542-9f85-24d39e9f14fa",
+        "time": "10:00",
+        "name": "TOYGAR ÜŞENMEZ",
+        "fileNo": "5093",
+        "extra": "Normal"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "9lw7p94",
+      "student": "DENİZ MESUT ŞEVKLİ",
+      "fileNo": "6568",
+      "score": 3,
+      "createdAt": "2026-02-13T07:23:01.274Z",
+      "type": "DESTEK",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "237d5516-998a-4764-ae4d-66bd17bd14a5",
+        "time": "09:30",
+        "name": "DENİZ MESUT ŞEVKLİ",
+        "fileNo": "6568",
+        "extra": "Hafif Düzeyde Otizm Spektrum Bozukluğu"
+      },
+      "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "xvs2v4r",
+      "student": "DEFNE KAHRAMAN",
+      "fileNo": "7572",
+      "score": 3,
+      "createdAt": "2026-02-13T07:25:07.377Z",
+      "type": "YONLENDIRME",
+      "grade": "10. Sınıf",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "692f0e99-217f-4eb6-acde-761dd4a9fda5",
+        "time": "10:30",
+        "name": "DEFNE KAHRAMAN",
+        "fileNo": "",
+        "extra": "Duygusal ve Davranış Bozukluğu"
+      },
+      "assignedTo": "ji4xjb9"
     }
   ],
   "history": {
@@ -9440,6 +9560,48 @@
       "fileNo": "7570",
       "teacherName": "AYGÜN ÇELİK",
       "date": "2026-02-12"
+    },
+    {
+      "id": "ple3vr8",
+      "studentName": "ERVA KARAPINAR",
+      "fileNo": "7571",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "m8dyxpz",
+      "studentName": "MESUT TEKİN",
+      "fileNo": "6655",
+      "teacherName": "NURAY KIZILGÜNEŞ",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "9gaqlvd",
+      "studentName": "SU TAŞKIN",
+      "fileNo": "4942",
+      "teacherName": "ERAY AHMET TAŞKIN",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "50mbk52",
+      "studentName": "TOYGAR ÜŞENMEZ",
+      "fileNo": "5093",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "9lw7p94",
+      "studentName": "DENİZ MESUT ŞEVKLİ",
+      "fileNo": "6568",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "xvs2v4r",
+      "studentName": "DEFNE KAHRAMAN",
+      "fileNo": "7572",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-13"
     }
   ],
   "absenceRecords": [
@@ -9485,5 +9647,5 @@
     }
   ],
   "queue": [],
-  "updatedAt": "2026-02-13T07:13:20.991Z"
+  "updatedAt": "2026-02-13T07:27:57.985Z"
 }

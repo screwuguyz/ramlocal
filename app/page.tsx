@@ -1101,6 +1101,13 @@ export default function DosyaAtamaApp() {
           studentName: newCase.student,
           score: newCase.score
         });
+      } else {
+        // Eğer burada chosen yoksa ve manual mod değilse ve öğretmen listesi boş değilse -> HATA OLABİLİR
+        // Ancak yukarıdaki available.length check zaten null döndürür.
+        // Yine de hook try/catch'e düştüyse buraya chosen:null gelir.
+        // Kullanıcıya bilgi verelim.
+        toast("⚠️ Atama yapılamadı! (Uygun öğretmen yok veya sistem hatası)");
+        return; // Dosyayı ekleme!
       }
 
       addCaseAction(newCase);
