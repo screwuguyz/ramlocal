@@ -16,9 +16,11 @@ export async function GET(request: Request) {
     }
 
     try {
+        console.log("Cron backup started...");
         const client = createClient(supabaseUrl, supabaseServiceKey);
 
         // 1. Get current state from app_state table
+        console.log("Fetching app_state...");
         const { data: stateData, error: stateError } = await client
             .from("app_state")
             .select("*")
@@ -27,8 +29,9 @@ export async function GET(request: Request) {
 
         if (stateError) {
             console.error("Failed to fetch state:", stateError);
-            return NextResponse.json({ error: "Failed to fetch state" }, { status: 500 });
+            return NextResponse.json({ error: "Failed to fetch state", details: stateError }, { status: 500 });
         }
+        console.log("State fetched successfully.");
 
         // 2. Create backup
         const now = new Date();
@@ -39,17 +42,19 @@ export async function GET(request: Request) {
             created_at: now.toISOString(),
             backup_type: "auto",
             description: `Otomatik Günlük Yedek - ${dateStr} 16:00`,
-            state_snapshot: stateData,  // Fixed: was 'state', should be 'state_snapshot'
+            state_snapshot: stateData.state,  // Fixed: Use stateData.state property, not the whole row
         };
 
+        console.log("Inserting backup...");
         const { error: backupError } = await client
             .from("app_backups")
             .insert(backupPayload);
 
         if (backupError) {
             console.error("Failed to create backup:", backupError);
-            return NextResponse.json({ error: "Failed to create backup" }, { status: 500 });
+            return NextResponse.json({ error: "Failed to create backup", details: backupError }, { status: 500 });
         }
+        console.log("Backup inserted.");
 
         // 3. Delete backups older than 30 days (updated from 3)
         const thirtyDaysAgo = new Date();
@@ -77,8 +82,8 @@ export async function GET(request: Request) {
             timestamp: now.toISOString(),
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Cron backup error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Internal server error", message: error.message }, { status: 500 });
     }
 }

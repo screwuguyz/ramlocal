@@ -56,7 +56,7 @@ export default function StudentDetailModal({
     const Content = (
         <div className="flex flex-col h-full">
             <div className="flex flex-col gap-1 mb-4">
-                <span className="text-xl font-bold">{studentName}</span>
+                <DialogTitle className="text-xl font-bold">{studentName}</DialogTitle>
                 {fileNo && <span className="text-sm font-normal text-muted-foreground">Dosya No: {fileNo}</span>}
             </div>
 

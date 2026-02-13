@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface ValidationWarningProps {
     open: boolean;
@@ -36,9 +36,9 @@ export default function ValidationWarning({
 
                     {/* HUGE Warning Message */}
                     <div className="text-center space-y-4 max-w-xl">
-                        <h2 className="text-5xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                        <DialogTitle className="text-5xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
                             DİKKAT!
-                        </h2>
+                        </DialogTitle>
                         <p className="text-3xl font-bold text-slate-800 dark:text-slate-200 leading-tight px-6">
                             {message}
                         </p>
