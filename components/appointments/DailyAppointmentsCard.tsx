@@ -99,7 +99,7 @@ export default function DailyAppointmentsCard({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pdfEntries.map((entry) => {
+                                    {pdfEntries.map((entry, index) => {
                                         let isAssigned = false;
                                         if (cases || history) {
                                             const matchesEntry = (sourceEntry: PdfAppointment | undefined) => {
@@ -119,27 +119,28 @@ export default function DailyAppointmentsCard({
                                         }
 
                                         return (
-                                            <tr
-                                                key={entry.id}
-                                                className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "opacity-75" : ""}`}
-                                            >
-                                                <td className={`p-2 font-semibold ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.time}</td>
-                                                <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.name}</td>
-                                                <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.fileNo || "-"}</td>
-                                                <td className={`p-2 text-xs text-slate-600 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.extra || "-"}</td>
-                                                {isAdmin && onApplyEntry && onRemoveEntry && (
-                                                    <td className="p-2 text-right">
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button size="sm" variant="outline" onClick={() => onApplyEntry(entry)}>
-                                                                Forma Aktar
-                                                            </Button>
-                                                            <Button size="icon" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => onRemoveEntry(entry.id)}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </td>
-                                                )}
-                                            </tr>
+                                            <React.Fragment key={`${entry.id}-${index}`}>
+                                                <tr
+                                                    className={`border-b last:border-b-0 ${selectedPdfEntryId === entry.id ? "bg-emerald-50" : "bg-white"} ${isAssigned ? "opacity-75" : ""}`}
+                                                >
+                                                    <td className={`p-2 font-semibold ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.time}</td>
+                                                    <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.name}</td>
+                                                    <td className={`p-2 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.fileNo || "-"}</td>
+                                                    <td className={`p-2 text-xs text-slate-600 ${isAssigned ? "text-red-600 line-through" : ""}`}>{entry.extra || "-"}</td>
+                                                    {isAdmin && onApplyEntry && onRemoveEntry && (
+                                                        <td className="p-2 text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <Button size="sm" variant="outline" onClick={() => onApplyEntry(entry)}>
+                                                                    Forma Aktar
+                                                                </Button>
+                                                                <Button size="icon" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => onRemoveEntry(entry.id)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            </React.Fragment>
                                         );
                                     })}
                                 </tbody>

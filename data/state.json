@@ -47,11 +47,11 @@
       "id": "rnycdxd",
       "name": "ERAY AHMET TAŞKIN",
       "isAbsent": false,
-      "yearlyLoad": 181,
+      "yearlyLoad": 185,
       "monthly": {
         "2025-12": 123,
         "2026-01": 73,
-        "2026-02": 32
+        "2026-02": 36
       },
       "active": true,
       "isTester": false,
@@ -76,11 +76,11 @@
       "id": "ji4xjb9",
       "name": "NESLİHAN ŞAHİNER",
       "isAbsent": false,
-      "yearlyLoad": 180,
+      "yearlyLoad": 182,
       "monthly": {
         "2025-12": 133,
         "2026-01": 85,
-        "2026-02": 21
+        "2026-02": 23
       },
       "active": true,
       "isTester": false,
@@ -95,7 +95,7 @@
       "monthly": {
         "2025-12": 128,
         "2026-01": 25,
-        "2026-02": 16
+        "2026-02": 13
       },
       "active": true,
       "isTester": true,
@@ -302,6 +302,39 @@
         "fileNo": "",
         "extra": "Duygusal ve Davranış Bozukluğu"
       },
+      "assignedTo": "ji4xjb9"
+    },
+    {
+      "id": "nq1jhmw",
+      "student": "ELİF GÜNDOĞDU",
+      "fileNo": "5959",
+      "score": 4,
+      "createdAt": "2026-02-13T07:38:21.647Z",
+      "type": "DESTEK",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "5efaef4d-09c5-4278-a12a-bd7ad48b4528",
+        "time": "10:30",
+        "name": "ELİF GÜNDOĞDU",
+        "fileNo": "5959",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "rnycdxd"
+    },
+    {
+      "id": "zt4glod",
+      "student": "AYŞE ATAŞ",
+      "fileNo": "5173",
+      "score": 2,
+      "createdAt": "2026-02-13T07:40:31.039Z",
+      "type": "YONLENDIRME",
+      "grade": "1. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
       "assignedTo": "ji4xjb9"
     }
   ],
@@ -9602,6 +9635,20 @@
       "fileNo": "7572",
       "teacherName": "NESLİHAN ŞAHİNER",
       "date": "2026-02-13"
+    },
+    {
+      "id": "nq1jhmw",
+      "studentName": "ELİF GÜNDOĞDU",
+      "fileNo": "5959",
+      "teacherName": "ERAY AHMET TAŞKIN",
+      "date": "2026-02-13"
+    },
+    {
+      "id": "zt4glod",
+      "studentName": "AYŞE ATAŞ",
+      "fileNo": "5173",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-13"
     }
   ],
   "absenceRecords": [
@@ -9647,5 +9694,5 @@
     }
   ],
   "queue": [],
-  "updatedAt": "2026-02-13T07:32:45.984Z"
+  "updatedAt": "2026-02-13T08:15:45.991Z"
 }

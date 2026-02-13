@@ -64,8 +64,9 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
     const lastAbsencePenaltyRef = useRef<string>("");
     const supabaseTeacherCountRef = useRef<number>(0);
 
-    // Track local edits to prevent immediate overwrite by server
+    // Track local edits/deletes to prevent immediate overwrite by server
     const lastLocalEditRef = useRef<Record<string, number>>({});
+    const lastLocalDeleteRef = useRef<Record<string, number>>({});
 
     // Detect local teacher changes to set "protection lock"
     useEffect(() => {
@@ -85,9 +86,21 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
         teachersRef.current = teachers;
     }, [teachers]);
 
+    // Detect local case deletions (Zombie Protection)
     useEffect(() => {
+        if (casesRef.current.length > 0) {
+            const currentIds = new Set(cases.map(c => c.id));
+            casesRef.current.forEach(oldCase => {
+                if (!currentIds.has(oldCase.id)) {
+                    // This case was deleted locally
+                    lastLocalDeleteRef.current[oldCase.id] = Date.now();
+                    console.log(`[Sync] Local delete detected: ${oldCase.student}, blocking resurrection for 15s`);
+                }
+            });
+        }
         casesRef.current = cases;
     }, [cases]);
+
     useEffect(() => {
         lastAbsencePenaltyRef.current = lastAbsencePenalty;
     }, [lastAbsencePenalty]);
@@ -180,16 +193,27 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 }
             }
 
-            // CASE ORPHAN PROTECTION: Local'de olup sunucuda olmayan case'leri koru
-            // Sadece son 60 saniyede oluşturulan dosyaları koru (yeni eklenmiş ama henüz sync olmamış)
-            const incomingCases = s.cases || [];
+            // ZOMBIE PROTECTION (Deleted Case Filtering) & ORPHAN PROTECTION
+            const rawIncomingCases = s.cases || [];
+
+            // 1. Filter out zombie cases (recently deleted locally)
+            const incomingCases = rawIncomingCases.filter((c: CaseFile) => {
+                const deletedAt = lastLocalDeleteRef.current[c.id];
+                if (deletedAt && (Date.now() - deletedAt < 15000)) {
+                    console.log(`[Sync] 🧟 Zombie blocked: ${c.student} (${c.id})`);
+                    return false;
+                }
+                return true;
+            });
+
+            // 2. Protect orphan cases (created locally, not yet on server)
             const currentCases = casesRef.current || [];
             const incomingCaseIds = new Set(incomingCases.map((c: CaseFile) => c.id));
             const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
 
             const orphanCases = currentCases.filter(c =>
                 !incomingCaseIds.has(c.id) &&
-                c.createdAt > sixtySecondsAgo // Sadece çok yeni case'leri koru
+                c.createdAt > sixtySecondsAgo
             );
 
             if (orphanCases.length > 0) {

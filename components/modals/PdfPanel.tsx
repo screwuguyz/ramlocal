@@ -105,7 +105,7 @@ export default function PdfPanel({
     }
 
     return (
-        <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-emerald-100 p-6 space-y-5">
+        <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl border border-emerald-100 p-6 space-y-5">
             <button
                 className="absolute top-4 right-4 text-slate-600 hover:text-slate-900 z-10"
                 onClick={onClose}
