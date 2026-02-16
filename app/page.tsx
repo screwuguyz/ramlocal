@@ -36,6 +36,7 @@ import AnnouncementPopupModal from "@/components/modals/AnnouncementPopupModal";
 import StudentDetailModal from "@/components/modals/StudentDetailModal";
 import CalendarView from "@/components/reports/CalendarView";
 import MiniWidgets from "@/components/dashboard/MiniWidgets";
+import AdminAgenda from "@/components/dashboard/AdminAgenda";
 import DailyAppointmentsCard from "@/components/appointments/DailyAppointmentsCard";
 import Header from "@/components/dashboard/Header";
 // DashboardHome removed by user request
@@ -43,6 +44,7 @@ import HealthStatus from "@/components/HealthStatus";
 import TeacherDashboard from "@/components/dashboard/TeacherDashboard";
 import TestDialog from "@/components/modals/TestDialog";
 import RulesModal from "@/components/modals/RulesModal";
+import DailyWelcomeModal from "@/components/modals/DailyWelcomeModal";
 import PdfPanel from "@/components/modals/PdfPanel";
 import LoginModal from "@/components/modals/LoginModal";
 import SettingsModal from "@/components/modals/SettingsModal";
@@ -54,6 +56,7 @@ import MonthlySummaryPopup from "@/components/modals/MonthlySummaryPopup";
 import { useAppStore } from "@/stores/useAppStore";
 // Merkezi tipler ve utility'ler
 import type { Teacher, CaseFile, EArchiveEntry, Announcement, PdfAppointment } from "@/types";
+import HolidayAnimation from "@/components/HolidayAnimation";
 import { uid, humanType, csvEscape } from "@/lib/utils";
 import { nowISO, getTodayYmd, ymdLocal, ymOf } from "@/lib/date";
 import { LS_KEYS, APP_VERSION } from "@/lib/constants";
@@ -61,7 +64,7 @@ import TeacherList from "@/components/teachers/TeacherList";
 import PhysiotherapistList from "@/components/teachers/PhysiotherapistList";
 import CaseList from "@/components/cases/CaseList";
 import { logger } from "@/lib/logger";
-import { notifyTeacher } from "@/lib/notifications";
+import { notifyTeacher, notifyAllTeachers } from "@/lib/notifications";
 import { caseDescription } from "@/lib/scoring";
 import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 import { useRollover } from "@/hooks/useRollover";
@@ -387,16 +390,11 @@ export default function DosyaAtamaApp() {
     addAnnouncement(a);
     setAnnouncementText("");
     toast("Duyuru eklendi");
-    // Tüm pushoverKey'i olan öğretmenlere gönder
-    const keys = teachers.map(t => t.pushoverKey).filter(Boolean) as string[];
-    for (const key of keys) {
-      try {
-        await fetch("/api/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userKey: key, title: "Duyuru", message: text, priority: 0 })
-        });
-      } catch { }
+    // Tüm öğretmenlere bildir
+    try {
+      await notifyAllTeachers(teachers, "Yeni Duyuru", text, 0);
+    } catch (e) {
+      console.error("Duyuru bildirimi hatası:", e);
     }
   }
 
@@ -502,7 +500,19 @@ export default function DosyaAtamaApp() {
   function applyPdfEntry(entry: PdfAppointment) {
     const sName = entry.name || "";
     setStudent(sName);
-    if (entry.fileNo) setFileNo(entry.fileNo);
+    if (entry.fileNo) {
+      setFileNo(entry.fileNo);
+    } else if (sName) {
+      // PDF'de dosya no yoksa, öğrencinin önceki kayıtlarından çek
+      const allRecords = Object.values(history).flat().concat(cases);
+      const prevRecord = allRecords
+        .filter(c => c.student === sName && c.fileNo)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      if (prevRecord?.fileNo) {
+        setFileNo(prevRecord.fileNo);
+        toast(`Önceki dosya no otomatik çekildi: ${prevRecord.fileNo}`);
+      }
+    }
     setSelectedPdfEntryId(entry.id);
 
     // Otomatik Sınıf Artırma Mantığı
@@ -780,6 +790,11 @@ export default function DosyaAtamaApp() {
       }
     } catch { }
   }, [isAdmin, hydrated]);
+
+  // Non-admin başlangıç görünümü: Atanan Dosyalar
+  useEffect(() => {
+    if (!isAdmin && reportMode === "none") setReportMode("archive");
+  }, [isAdmin, reportMode]);
 
   // Connection status (already handled by useSupabaseSync logic via liveStatus in store, but keeping basic check or using hook's isConnected)
   // setLiveStatus is updated by hook, so we don't need manual setLive logic here except for fallback.
@@ -1433,7 +1448,16 @@ export default function DosyaAtamaApp() {
   // E-Arşiv Görüntüleme Bileşeni dışarı taşındı (EArchiveView.tsx)
   // ---- JSON yedek / içe aktar (arşiv dahil)
   function exportJSON() {
-    const data = { teachers, cases, history, lastRollover, lastAbsencePenalty };
+    // Ajanda notlarını da dahil et
+    let agendaNotes = {};
+    try {
+      const rawNotes = localStorage.getItem("ram-agenda-notes-v2");
+      if (rawNotes) agendaNotes = JSON.parse(rawNotes);
+    } catch (e) {
+      console.error("Ajanda notları okunamadı", e);
+    }
+
+    const data = { teachers, cases, history, lastRollover, lastAbsencePenalty, agendaNotes };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1528,6 +1552,7 @@ export default function DosyaAtamaApp() {
           history: z.record(z.array(CaseFileSchema)).default({}),
           lastRollover: z.string().optional(),
           lastAbsencePenalty: z.string().optional(),
+          agendaNotes: z.record(z.any()).optional(), // Ajanda notları
         });
 
         const safe = BackupSchema.safeParse(parsed);
@@ -1542,6 +1567,19 @@ export default function DosyaAtamaApp() {
         setHistory(data.history || {});
         setLastRollover(data.lastRollover || getTodayYmd());
         setLastAbsencePenalty(data.lastAbsencePenalty || "");
+
+        // Ajanda notlarını geri yükle (localStorage)
+        if (data.agendaNotes) {
+          try {
+            localStorage.setItem("ram-agenda-notes-v2", JSON.stringify(data.agendaNotes));
+            // Gösterim için: localStorage güncellendi uyarısı verebiliriz ama reload zaten şart.
+          } catch (e) {
+            console.error("Ajanda notları geri yüklenemedi", e);
+          }
+        }
+
+        alert("Yedek başarıyla yüklendi! Sayfa yenileniyor...");
+        window.location.reload();
       } catch {
         alert("JSON okunamadı.");
       } finally {
@@ -1777,6 +1815,7 @@ export default function DosyaAtamaApp() {
     );
   }
 
+
   if (viewMode === "landing") {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-50 via-white to-orange-50 relative text-slate-800 overflow-hidden">
@@ -1857,8 +1896,7 @@ export default function DosyaAtamaApp() {
     );
   }
 
-  // Non-admin başlangıç görünümü: Atanan Dosyalar
-  if (!isAdmin && reportMode === "none") setReportMode("archive");
+
 
   // Öğretmen Takibi sayfası
   if (viewMode === "teacher-tracking") {
@@ -2417,6 +2455,7 @@ export default function DosyaAtamaApp() {
           studentName={archiveDetailStudent?.name || ""}
           fileNo={archiveDetailStudent?.fileNo}
           history={archiveDetailStudent?.history || []}
+          teachers={teachers}
         />
       </div>
     );
@@ -2487,6 +2526,8 @@ export default function DosyaAtamaApp() {
         {/* 📊 DASHBOARD WIDGET'LAR (Herkes için) */}
         <MiniWidgets />
 
+        {/* 📅 AJANDA (Haftalık Not Defteri) */}
+        <AdminAgenda />
 
         {/* Admin olmayan kullanıcılar için randevu listesi ve duyurular */}
         {!isAdmin && (
@@ -2601,520 +2642,529 @@ export default function DosyaAtamaApp() {
 
         {/* Admin alanı - Tab Sistemi */}
         {isAdmin && (
-          <Card className="border-2 overflow-hidden">
-            {/* Tab Navigation - Modern Tasarım */}
-            <div className="border-b bg-gradient-to-r from-slate-50 via-white to-slate-50">
-              <div className="flex items-center gap-1 p-2 overflow-x-auto no-scrollbar">
-                {ADMIN_TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setAdminTab(tab.id)}
-                    className={`
+          <>
+            <DailyWelcomeModal />
+            <Card className="border-2 overflow-hidden">
+              {/* Tab Navigation - Modern Tasarım */}
+              <div className="border-b bg-gradient-to-r from-slate-50 via-white to-slate-50">
+                <div className="flex items-center gap-1 p-2 overflow-x-auto no-scrollbar">
+                  {ADMIN_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setAdminTab(tab.id)}
+                      className={`
                       relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
                       transition-all duration-200 ease-out whitespace-nowrap
                       ${adminTab === tab.id
-                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        }
                     `}
-                  >
-                    <span className="text-base">{tab.icon}</span>
-                    <span>{tab.label}</span>
-                    {adminTab === tab.id && (
-                      <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/50 rounded-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-
-
-            {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
-            <div className="flex flex-wrap items-center gap-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
-              {/* Müzik Kontrolü */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-purple-700">🎵 Müzik:</span>
-                <input
-                  type="text"
-                  placeholder="YouTube URL"
-                  value={settings.musicUrl || ""}
-                  onChange={(e) => updateSettings({ musicUrl: e.target.value })}
-                  className="h-8 w-48 px-2 text-xs border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
-                />
-                <Button
-                  size="sm"
-                  variant={settings.musicPlaying ? "destructive" : "default"}
-                  onClick={async () => {
-                    const newPlaying = !settings.musicPlaying;
-                    updateSettings({ musicPlaying: newPlaying });
-                    try {
-                      const channel = supabase.channel('music_state');
-                      await channel.send({
-                        type: 'broadcast',
-                        event: 'music_update',
-                        payload: { url: settings.musicUrl, playing: newPlaying }
-                      });
-                    } catch (err) {
-                      logger.error("[Admin] Music update error:", err);
-                    }
-                  }}
-                  className="h-8"
-                >
-                  {settings.musicPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
-                </Button>
+                    >
+                      <span className="text-base">{tab.icon}</span>
+                      <span>{tab.label}</span>
+                      {adminTab === tab.id && (
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/50 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Video Kontrolü */}
-              <div className="flex items-center gap-2 pl-4 border-l border-slate-300">
-                <span className="text-sm font-medium text-blue-700">🎬 Video:</span>
-                <input
-                  type="text"
-                  placeholder="YouTube URL"
-                  value={settings.videoUrl || ""}
-                  onChange={(e) => updateSettings({ videoUrl: e.target.value })}
-                  className="h-8 w-48 px-2 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                />
-                <Button
-                  size="sm"
-                  variant={settings.videoPlaying ? "destructive" : "default"}
-                  onClick={async () => {
-                    const newPlaying = !settings.videoPlaying;
-                    updateSettings({ videoPlaying: newPlaying });
-                    try {
-                      const channel = supabase.channel('video_state');
-                      await channel.send({
-                        type: 'broadcast',
-                        event: 'video_update',
-                        payload: { url: settings.videoUrl, playing: newPlaying }
-                      });
-                    } catch (err) {
-                      logger.error("[Admin] Video update error:", err);
-                    }
-                  }}
-                  className="h-8"
-                >
-                  {settings.videoPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
-                </Button>
-                {/* Videoyu Kapat Butonu */}
-                {settings.videoPlaying && (
+
+
+              {/* Müzik ve Video Kontrolleri - Ayrı Satır */}
+              <div className="flex flex-wrap items-center gap-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+                {/* Müzik Kontrolü */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-purple-700">🎵 Müzik:</span>
+                  <input
+                    type="text"
+                    placeholder="YouTube URL"
+                    value={settings.musicUrl || ""}
+                    onChange={(e) => updateSettings({ musicUrl: e.target.value })}
+                    className="h-8 w-48 px-2 text-xs border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
+                  />
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={settings.musicPlaying ? "destructive" : "default"}
                     onClick={async () => {
-                      updateSettings({ videoPlaying: false, videoUrl: "" });
+                      const newPlaying = !settings.musicPlaying;
+                      updateSettings({ musicPlaying: newPlaying });
+                      try {
+                        const channel = supabase.channel('music_state');
+                        await channel.send({
+                          type: 'broadcast',
+                          event: 'music_update',
+                          payload: { url: settings.musicUrl, playing: newPlaying }
+                        });
+                      } catch (err) {
+                        logger.error("[Admin] Music update error:", err);
+                      }
+                    }}
+                    className="h-8"
+                  >
+                    {settings.musicPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
+                  </Button>
+                </div>
+
+                {/* Video Kontrolü */}
+                <div className="flex items-center gap-2 pl-4 border-l border-slate-300">
+                  <span className="text-sm font-medium text-blue-700">🎬 Video:</span>
+                  <input
+                    type="text"
+                    placeholder="YouTube URL"
+                    value={settings.videoUrl || ""}
+                    onChange={(e) => updateSettings({ videoUrl: e.target.value })}
+                    className="h-8 w-48 px-2 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  />
+                  <Button
+                    size="sm"
+                    variant={settings.videoPlaying ? "destructive" : "default"}
+                    onClick={async () => {
+                      const newPlaying = !settings.videoPlaying;
+                      updateSettings({ videoPlaying: newPlaying });
                       try {
                         const channel = supabase.channel('video_state');
                         await channel.send({
                           type: 'broadcast',
                           event: 'video_update',
-                          payload: { url: "", playing: false }
+                          payload: { url: settings.videoUrl, playing: newPlaying }
                         });
                       } catch (err) {
-                        logger.error("[Admin] Video close error:", err);
+                        logger.error("[Admin] Video update error:", err);
                       }
                     }}
-                    className="h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    title="Videoyu Kapat"
+                    className="h-8"
                   >
-                    ✕ Kapat
+                    {settings.videoPlaying ? "⏸️ Durdur" : "▶️ Başlat"}
                   </Button>
-                )}
+                  {/* Videoyu Kapat Butonu */}
+                  {settings.videoPlaying && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        updateSettings({ videoPlaying: false, videoUrl: "" });
+                        try {
+                          const channel = supabase.channel('video_state');
+                          await channel.send({
+                            type: 'broadcast',
+                            event: 'video_update',
+                            payload: { url: "", playing: false }
+                          });
+                        } catch (err) {
+                          logger.error("[Admin] Video close error:", err);
+                        }
+                      }}
+                      className="h-8 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      title="Videoyu Kapat"
+                    >
+                      ✕ Kapat
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Tab Content */}
-            <div className="p-4">
-              {adminTab === "files" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-                  onKeyDown={(e) => {
-                    // Enter: kaydet, Shift+Enter: boş (açıklamada newline)
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddCase();
-                    }
-                  }}
-                >
-                  {/* Sol: Dosya Atama Formu */}
-                  <div className="space-y-4">
-                    <DailyAppointmentsCard
-                      pdfLoading={pdfLoading}
-                      onApplyEntry={applyPdfEntry}
-                      onRemoveEntry={(id) => removePdfEntry(id)}
-                      onPrint={handlePrintPdfList}
-                      onClearAll={() => clearPdfEntries()}
-                      onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
-                    />
-                    {activePdfEntry && (
-                      <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <div className="font-semibold">{activePdfEntry.name} — {activePdfEntry.time}</div>
-                          <div className="text-xs text-emerald-800">
-                            Dosya: {activePdfEntry.fileNo || "—"}
+              {/* Tab Content */}
+              <div className="p-4">
+                {adminTab === "files" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    onKeyDown={(e) => {
+                      // Enter: kaydet, Shift+Enter: boş (açıklamada newline)
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddCase();
+                      }
+                    }}
+                  >
+                    {/* Sol: Dosya Atama Formu */}
+                    <div className="space-y-4">
+                      <DailyAppointmentsCard
+                        pdfLoading={pdfLoading}
+                        onApplyEntry={applyPdfEntry}
+                        onRemoveEntry={(id) => removePdfEntry(id)}
+                        onPrint={handlePrintPdfList}
+                        onClearAll={() => clearPdfEntries()}
+                        onShowDetails={(date) => { if (date instanceof Date) { fetchPdfEntriesFromServer(date); } else { setShowPdfPanel(true); } }}
+                      />
+                      {activePdfEntry && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="font-semibold">{activePdfEntry.name} — {activePdfEntry.time}</div>
+                            <div className="text-xs text-emerald-800">
+                              Dosya: {activePdfEntry.fileNo || "—"}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => applyPdfEntry(activePdfEntry!)}>Tekrar Aktar</Button>
+                            <Button size="sm" variant="ghost" onClick={clearActivePdfEntry}>Seçimi Kaldır</Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => applyPdfEntry(activePdfEntry!)}>Tekrar Aktar</Button>
-                          <Button size="sm" variant="ghost" onClick={clearActivePdfEntry}>Seçimi Kaldır</Button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>👤 Öğrenci Adı</Label>
-                        <Input
-                          value={student}
-                          onChange={(e) => setStudent(e.target.value)}
-                          placeholder="Örn. Ali Veli"
-                          className={(!student.trim() && triedAdd) ? "border-red-500 focus-visible:ring-red-500" : ""}
-                        />
-                        {(!student.trim() && triedAdd) && (
-                          <div className="text-xs text-red-600">Bu alan gerekli.</div>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>🔢 Dosya No</Label>
-                        <Input value={fileNo} onChange={(e) => setFileNo(e.target.value)} placeholder="Örn. 2025-001" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>🏫 Sınıf / Kademe</Label>
-                      <Select value={grade} onValueChange={setGrade}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sınıf Seçiniz" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {GRADES.map(g => (
-                            <SelectItem key={g} value={g}>{g}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {/* Guidance Warning */}
-                      {guidanceStatus && type !== "DESTEK" && (
-                        <div className={`text-xs p-2 rounded border ${guidanceStatus.needed ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
-                          {guidanceStatus.needed ? "⚠️ " : "✅ "}
-                          {guidanceStatus.message}
-                        </div>
                       )}
-                    </div>
-
-                    {/* İzleyici/Normal kullanıcı için Duyuru Paneli */}
-                    {!isAdmin && announcements.length > 0 && (
-                      <div className="border rounded-md p-3 bg-amber-50 border-amber-300 animate-pulse">
-                        <div className="font-medium text-amber-900">Duyuru</div>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          {announcements.map((a) => (
-                            <li key={a.id} className="text-sm text-amber-900">{a.text}</li>
-                          ))}
-                        </ul>
-                        <div className="text-xs text-amber-800 mt-1">Bu duyurular gün sonunda temizlenir.</div>
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label>📑 Dosya Türü</Label>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <Button variant={type === "YONLENDIRME" ? "default" : "outline"} onClick={() => setType("YONLENDIRME")}>Yönlendirme (+{settings.scoreTypeY})</Button>
-                        <Button variant={type === "DESTEK" ? "default" : "outline"} onClick={() => setType("DESTEK")}>Destek (+{settings.scoreTypeD})</Button>
-                        <Button variant={type === "IKISI" ? "default" : "outline"} onClick={() => setType("IKISI")}>Yönlendirme+Destek (+{settings.scoreTypeI})</Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2">
-                      <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-5 w-5" />
-                      <Label htmlFor="isNew" className="text-base">Yeni başvuru (+{settings.scoreNewBonus})</Label>
-                    </div>
-
-                    <div className="space-y-2 pt-2">
-                      <Label className="text-base">Tanı sayısı (0-6) (+n)</Label>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.max(0, n - 1))}><UserMinus className="h-5 w-5" /></Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>👤 Öğrenci Adı</Label>
                           <Input
-                            className="w-24 h-12 text-center text-xl font-bold"
-                            inputMode="numeric"
-                            value={diagCount}
-                            onChange={(e) => {
-                              const n = Number((e.target.value || "").replace(/[^\d]/g, ""));
-                              setDiagCount(Math.max(0, Math.min(6, Number.isFinite(n) ? n : 0)));
-                            }}
+                            value={student}
+                            onChange={(e) => setStudent(e.target.value)}
+                            placeholder="Örn. Ali Veli"
+                            className={(!student.trim() && triedAdd) ? "border-red-500 focus-visible:ring-red-500" : ""}
                           />
-                          <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.min(6, n + 1))}><Plus className="h-5 w-5" /></Button>
+                          {(!student.trim() && triedAdd) && (
+                            <div className="text-xs text-red-600">Bu alan gerekli.</div>
+                          )}
                         </div>
-                        <Button
-                          data-silent="true"
-                          onClick={handleAddCase}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
-                        >
-                          📁 DOSYA ATA
-                        </Button>
+                        <div className="space-y-2">
+                          <Label>🔢 Dosya No</Label>
+                          <Input value={fileNo} onChange={(e) => setFileNo(e.target.value)} placeholder="Örn. 2025-001" />
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="isTest" checked={isTestCase} onCheckedChange={(v) => setIsTestCase(Boolean(v))} />
-                      <Label htmlFor="isTest">Test dosyası (+{settings.scoreTest})</Label>
-                    </div>
-                    {/* Manuel atama (opsiyonel) + Ekle butonu tek kapsayıcıda (click-away ref) */}
-                    <div ref={manualAssignRef}>
                       <div className="space-y-2">
-                        <Label>👨‍🏫 Öğretmeni Manuel Ata (opsiyonel)</Label>
-                        <Select value={manualTeacherId} onValueChange={(v) => setManualTeacherId(v)}>
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Öğretmen seçin" /></SelectTrigger>
+                        <Label>🏫 Sınıf / Kademe</Label>
+                        <Select value={grade} onValueChange={setGrade}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sınıf Seçiniz" />
+                          </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">— Manuel atama yok —</SelectItem>
-                            {teachers.filter(t => t.active).map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            {GRADES.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <div className="flex justify-end mt-2">
-                          <Button size="sm" variant="ghost" onClick={() => { setManualTeacherId(""); setManualReason(""); }}>
-                            Seçimi temizle
-                          </Button>
-                        </div>
+
+                        {/* Guidance Warning */}
+                        {guidanceStatus && type !== "DESTEK" && (
+                          <div className={`text-xs p-2 rounded border ${guidanceStatus.needed ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                            {guidanceStatus.needed ? "⚠️ " : "✅ "}
+                            {guidanceStatus.message}
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-2 mt-3">
-                        <Label>📝 Açıklama (neden)</Label>
-                        <textarea
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          rows={2}
-                          value={manualReason}
-                          onChange={(e) => setManualReason(e.target.value)}
-                          placeholder="Örn. Öğrenci talebi / yoğunluk dengesi"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && e.shiftKey) {
-                              // Allow newline (default)
-                              return;
-                            }
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddCase();
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="text-sm text-muted-foreground">
-                          Puan: <span className="font-semibold">{calcScore()}</span>
-                          <span className="hidden md:inline ml-3 text-xs opacity-60">⌨️ Ctrl+Enter ile hızlı ekle</span>
+
+                      {/* İzleyici/Normal kullanıcı için Duyuru Paneli */}
+                      {!isAdmin && announcements.length > 0 && (
+                        <div className="border rounded-md p-3 bg-amber-50 border-amber-300 animate-pulse">
+                          <div className="font-medium text-amber-900">Duyuru</div>
+                          <ul className="list-disc pl-5 mt-1 space-y-1">
+                            {announcements.map((a) => (
+                              <li key={a.id} className="text-sm text-amber-900">{a.text}</li>
+                            ))}
+                          </ul>
+                          <div className="text-xs text-amber-800 mt-1">Bu duyurular gün sonunda temizlenir.</div>
                         </div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Sağ: Dosyalar (Bugün) ve Atanan Dosyalar */}
-                  <div className="space-y-4">
-                    {/* Dosyalar (Bugün) - CaseList Component */}
-                    <CaseList />
-
-                    {/* Atanan Dosyalar (Tek Gün) */}
-                    <AssignedArchiveSingleDayView
-                      history={history}
-                      cases={cases}
-                      teacherName={teacherName}
-                      caseDesc={caseDesc}
-                      teachers={teachers}
-                      settings={settings}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {adminTab === "teachers" && <TeacherList />}
-              {adminTab === "physiotherapists" && <PhysiotherapistList />}
-
-              {adminTab === "reports" && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant={["statistics", "weekly", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}>
-                          📈 İstatistikler
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-56 p-2" align="start">
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            variant={reportMode === "statistics" ? "default" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => setReportMode("statistics")}
-                          >
-                            📈 İstatistikler
-                          </Button>
-                          <Button
-                            variant={reportMode === "weekly" ? "default" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => setReportMode("weekly")}
-                          >
-                            📆 Haftalık Rapor
-                          </Button>
-                          <Button
-                            variant={reportMode === "yearly" ? "default" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => setReportMode("yearly")}
-                          >
-                            📆 Yıllık Rapor
-                          </Button>
-                          <Button
-                            variant={reportMode === "teacher-performance" ? "default" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => setReportMode("teacher-performance")}
-                          >
-                            👨‍🏫 Öğretmen Performansı
-                          </Button>
-                          <Button
-                            variant={reportMode === "file-type-analysis" ? "default" : "ghost"}
-                            className="w-full justify-start"
-                            onClick={() => setReportMode("file-type-analysis")}
-                          >
-                            📊 Dosya Türü Analizi
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
-                      📅 Günlük Rapor
-                    </Button>
-                    <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
-                      📊 Aylık Rapor
-                    </Button>
-                    <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
-                      🗓️ Takvim
-                    </Button>
-                    <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
-                      🗄️ E-Arşiv
-                    </Button>
-                  </div>
-                  <div className="border-t pt-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={exportCSV2}>
-                        📥 CSV Dışa Aktar
-                      </Button>
-                      <Button variant="outline" onClick={exportJSON}>
-                        💾 JSON Yedek
-                      </Button>
-                      <label className="cursor-pointer">
-                        <Input type="file" accept=".json" onChange={handleImportJSON} className="hidden" id="json-import-input" />
-                        <Button variant="outline" type="button" onClick={() => (document.getElementById('json-import-input') as HTMLInputElement)?.click()}>
-                          📤 JSON İçe Aktar
-                        </Button>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {adminTab === "announcements" && (
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📢 Duyuru Yönetimi</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                      )}
                       <div className="space-y-2">
-                        <Label>📢 Yeni Duyuru (gün içinde gösterilir)</Label>
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
+                        <Label>📑 Dosya Türü</Label>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <Button variant={type === "YONLENDIRME" ? "default" : "outline"} onClick={() => setType("YONLENDIRME")}>Yönlendirme (+{settings.scoreTypeY})</Button>
+                          <Button variant={type === "DESTEK" ? "default" : "outline"} onClick={() => setType("DESTEK")}>Destek (+{settings.scoreTypeD})</Button>
+                          <Button variant={type === "IKISI" ? "default" : "outline"} onClick={() => setType("IKISI")}>Yönlendirme+Destek (+{settings.scoreTypeI})</Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-5 w-5" />
+                        <Label htmlFor="isNew" className="text-base">Yeni başvuru (+{settings.scoreNewBonus})</Label>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <Label className="text-base">Tanı sayısı (0-6) (+n)</Label>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.max(0, n - 1))}><UserMinus className="h-5 w-5" /></Button>
                             <Input
-                              value={announcementText}
-                              onChange={(e) => setAnnouncementText(e.target.value)}
-                              placeholder="Kısa duyuru metni"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  sendAnnouncement().then(() => playAnnouncementSound());
-                                }
+                              className="w-24 h-12 text-center text-xl font-bold"
+                              inputMode="numeric"
+                              value={diagCount}
+                              onChange={(e) => {
+                                const n = Number((e.target.value || "").replace(/[^\d]/g, ""));
+                                setDiagCount(Math.max(0, Math.min(6, Number.isFinite(n) ? n : 0)));
                               }}
                             />
+                            <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.min(6, n + 1))}><Plus className="h-5 w-5" /></Button>
                           </div>
                           <Button
                             data-silent="true"
-                            onClick={async () => {
-                              await sendAnnouncement();
-                              playAnnouncementSound();
-                            }}
-                            disabled={!announcementText.trim()}
+                            onClick={handleAddCase}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5"
                           >
-                            <Volume2 className="h-4 w-4 mr-1" /> Duyuru Gönder
+                            📁 DOSYA ATA
                           </Button>
                         </div>
-                        <div className="text-xs text-muted-foreground">Gönderince tüm öğretmenlere bildirim gider. Gece sıfırlanır.</div>
                       </div>
 
-                      {announcements.length > 0 && (
-                        <div className="space-y-3">
-                          <Label className="text-base font-semibold">Bugünkü Duyurular ({announcements.length})</Label>
-                          <div className="space-y-2">
-                            {announcements.map((a) => (
-                              <div key={a.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-amber-50 border-amber-200">
-                                <div className="flex-1">
-                                  <div className="text-sm font-medium text-amber-900">{a.text}</div>
-                                  <div className="text-xs text-amber-700 mt-1">
-                                    {new Date(a.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    if (confirm("Duyuruyu silmek istiyor musunuz?")) removeAnnouncement(a.id);
-                                  }}
-                                  title="Duyuruyu sil"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
+                      <div className="flex items-center gap-2">
+                        <Checkbox id="isTest" checked={isTestCase} onCheckedChange={(v) => setIsTestCase(Boolean(v))} />
+                        <Label htmlFor="isTest">Test dosyası (+{settings.scoreTest})</Label>
+                      </div>
+                      {/* Manuel atama (opsiyonel) + Ekle butonu tek kapsayıcıda (click-away ref) */}
+                      <div ref={manualAssignRef}>
+                        <div className="space-y-2">
+                          <Label>👨‍🏫 Öğretmeni Manuel Ata (opsiyonel)</Label>
+                          <Select value={manualTeacherId} onValueChange={(v) => setManualTeacherId(v)}>
+                            <SelectTrigger className="w-full"><SelectValue placeholder="Öğretmen seçin" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">— Manuel atama yok —</SelectItem>
+                              {teachers.filter(t => t.active).map(t => (
+                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex justify-end mt-2">
+                            <Button size="sm" variant="ghost" onClick={() => { setManualTeacherId(""); setManualReason(""); }}>
+                              Seçimi temizle
+                            </Button>
                           </div>
                         </div>
-                      )}
-
-                      {announcements.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border rounded-lg bg-slate-50">
-                          <Volume2 className="h-10 w-10 mb-2 text-slate-400" />
-                          <p className="text-sm font-medium">Henüz bugün için duyuru yok</p>
-                          <p className="text-xs text-slate-400 mt-1">Duyuru gönderildiğinde burada görünecek</p>
+                        <div className="space-y-2 mt-3">
+                          <Label>📝 Açıklama (neden)</Label>
+                          <textarea
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            rows={2}
+                            value={manualReason}
+                            onChange={(e) => setManualReason(e.target.value)}
+                            placeholder="Örn. Öğrenci talebi / yoğunluk dengesi"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && e.shiftKey) {
+                                // Allow newline (default)
+                                return;
+                              }
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddCase();
+                              }
+                            }}
+                          />
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="text-sm text-muted-foreground">
+                            Puan: <span className="font-semibold">{calcScore()}</span>
+                            <span className="hidden md:inline ml-3 text-xs opacity-60">⌨️ Ctrl+Enter ile hızlı ekle</span>
+                          </div>
+                        </div>
+                      </div>
 
-              {adminTab === "backup" && (
-                <div className="space-y-6">
-                  <HealthStatus />
-                  <BackupManager
-                    currentState={{
-                      teachers,
-                      cases,
-                      history,
-                      lastRollover,
-                      lastAbsencePenalty,
-                      announcements,
-                      settings,
-                      eArchive,
-                    }}
-                    onRestore={(state) => {
-                      if (state.teachers) setTeachers(state.teachers);
-                      if (state.cases) setCases(state.cases);
-                      if (state.history) setHistory(state.history);
-                      if (state.announcements) setAnnouncements(state.announcements);
-                      if (state.settings) setSettings(state.settings);
-                      if (state.eArchive) setEArchive(state.eArchive);
-                    }}
-                  />
-                </div>
-              )}
+                    </div>
+
+                    {/* Sağ: Dosyalar (Bugün) ve Atanan Dosyalar */}
+                    <div className="space-y-4">
+                      {/* Dosyalar (Bugün) - CaseList Component */}
+                      <CaseList />
+
+                      {/* Atanan Dosyalar (Tek Gün) */}
+                      <AssignedArchiveSingleDayView
+                        history={history}
+                        cases={cases}
+                        teacherName={teacherName}
+                        caseDesc={caseDesc}
+                        teachers={teachers}
+                        settings={settings}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {adminTab === "teachers" && <TeacherList />}
+                {adminTab === "physiotherapists" && <PhysiotherapistList />}
+
+                {adminTab === "reports" && (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant={["statistics", "weekly", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}>
+                            📈 İstatistikler
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              variant={reportMode === "statistics" ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => setReportMode("statistics")}
+                            >
+                              📈 İstatistikler
+                            </Button>
+                            <Button
+                              variant={reportMode === "weekly" ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => setReportMode("weekly")}
+                            >
+                              📆 Haftalık Rapor
+                            </Button>
+                            <Button
+                              variant={reportMode === "yearly" ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => setReportMode("yearly")}
+                            >
+                              📆 Yıllık Rapor
+                            </Button>
+                            <Button
+                              variant={reportMode === "teacher-performance" ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => setReportMode("teacher-performance")}
+                            >
+                              👨‍🏫 Öğretmen Performansı
+                            </Button>
+                            <Button
+                              variant={reportMode === "file-type-analysis" ? "default" : "ghost"}
+                              className="w-full justify-start"
+                              onClick={() => setReportMode("file-type-analysis")}
+                            >
+                              📊 Dosya Türü Analizi
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
+                        📅 Günlük Rapor
+                      </Button>
+                      <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
+                        📊 Aylık Rapor
+                      </Button>
+                      <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
+                        🗓️ Takvim
+                      </Button>
+                      <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
+                        🗄️ E-Arşiv
+                      </Button>
+                    </div>
+                    <div className="border-t pt-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={exportCSV2}>
+                          📥 CSV Dışa Aktar
+                        </Button>
+                        <Button variant="outline" onClick={exportJSON}>
+                          💾 JSON Yedek
+                        </Button>
+                        <label className="cursor-pointer">
+                          <Input type="file" accept=".json" onChange={handleImportJSON} className="hidden" id="json-import-input" />
+                          <Button variant="outline" type="button" onClick={() => (document.getElementById('json-import-input') as HTMLInputElement)?.click()}>
+                            📤 JSON İçe Aktar
+                          </Button>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {adminTab === "announcements" && (
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>📢 Duyuru Yönetimi</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>📢 Yeni Duyuru (gün içinde gösterilir)</Label>
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                              <Input
+                                value={announcementText}
+                                onChange={(e) => setAnnouncementText(e.target.value)}
+                                placeholder="Kısa duyuru metni"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    sendAnnouncement().then(() => playAnnouncementSound());
+                                  }
+                                }}
+                              />
+                            </div>
+                            <Button
+                              data-silent="true"
+                              onClick={async () => {
+                                await sendAnnouncement();
+                                playAnnouncementSound();
+                              }}
+                              disabled={!announcementText.trim()}
+                            >
+                              <Volume2 className="h-4 w-4 mr-1" /> Duyuru Gönder
+                            </Button>
+                          </div>
+                          <div className="text-xs text-muted-foreground">Gönderince tüm öğretmenlere bildirim gider. Gece sıfırlanır.</div>
+                        </div>
+
+                        {announcements.length > 0 && (
+                          <div className="space-y-3">
+                            <Label className="text-base font-semibold">Bugünkü Duyurular ({announcements.length})</Label>
+                            <div className="space-y-2">
+                              {announcements.map((a) => (
+                                <div key={a.id} className="flex items-start justify-between gap-2 border rounded-md p-3 bg-amber-50 border-amber-200">
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium text-amber-900">{a.text}</div>
+                                    <div className="text-xs text-amber-700 mt-1">
+                                      {new Date(a.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      if (confirm("Duyuruyu silmek istiyor musunuz?")) removeAnnouncement(a.id);
+                                    }}
+                                    title="Duyuruyu sil"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {announcements.length === 0 && (
+                          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border rounded-lg bg-slate-50">
+                            <Volume2 className="h-10 w-10 mb-2 text-slate-400" />
+                            <p className="text-sm font-medium">Henüz bugün için duyuru yok</p>
+                            <p className="text-xs text-slate-400 mt-1">Duyuru gönderildiğinde burada görünecek</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {adminTab === "backup" && (
+                  <div className="space-y-6">
+                    <HealthStatus />
+                    <BackupManager
+                      currentState={{
+                        teachers,
+                        cases,
+                        history,
+                        lastRollover,
+                        lastAbsencePenalty,
+                        announcements,
+                        settings,
+                        eArchive,
+                        agendaNotes: typeof window !== "undefined" ? JSON.parse(localStorage.getItem("ram-agenda-notes-v2") || "{}") : {},
+                      }}
+                      onRestore={(state) => {
+                        // Ajanda notlarını geri yükle
+                        if (state.agendaNotes) {
+                          localStorage.setItem("ram-agenda-notes-v2", JSON.stringify(state.agendaNotes));
+                        }
+
+                        if (state.teachers) setTeachers(state.teachers);
+                        if (state.cases) setCases(state.cases);
+                        if (state.history) setHistory(state.history);
+                        if (state.announcements) setAnnouncements(state.announcements);
+                        if (state.settings) setSettings(state.settings);
+                        if (state.eArchive) setEArchive(state.eArchive);
+                      }}
+                    />
+                  </div>
+                )}
 
 
-              {/* Arşiv Görüntüleyici (Silme İşlemleri İçin) */}
-            </div>
-          </Card>
+                {/* Arşiv Görüntüleyici (Silme İşlemleri İçin) */}
+              </div>
+            </Card>
+          </>
         )}
 
         {reportMode === "statistics" && <Statistics teachers={teachers} cases={cases} history={history} />}
@@ -3210,6 +3260,7 @@ export default function DosyaAtamaApp() {
           open={feedbackOpen}
           onClose={() => setFeedbackOpen(false)}
         />
+        <HolidayAnimation />
 
         {/* Settings Modal */}
         <SettingsModal

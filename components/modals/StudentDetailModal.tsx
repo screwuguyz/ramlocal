@@ -3,7 +3,7 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { CaseFile } from "@/types";
+import type { CaseFile, Teacher } from "@/types";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -13,6 +13,7 @@ interface StudentDetailModalProps {
     studentName: string;
     fileNo?: string;
     history: CaseFile[];
+    teachers?: Teacher[];
 }
 
 export default function StudentDetailModal({
@@ -21,8 +22,15 @@ export default function StudentDetailModal({
     studentName,
     fileNo,
     history,
+    teachers = [],
     variant = "dialog"
 }: StudentDetailModalProps & { variant?: "dialog" | "absolute" }) {
+    // Helper: Resolve teacher ID to name
+    const getTeacherName = (teacherId?: string): string => {
+        if (!teacherId) return "—";
+        const teacher = teachers.find(t => t.id === teacherId);
+        return teacher ? teacher.name : teacherId;
+    };
     // Sort by date descending (newest first)
     const sortedHistory = [...history].sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -56,7 +64,11 @@ export default function StudentDetailModal({
     const Content = (
         <div className="flex flex-col h-full">
             <div className="flex flex-col gap-1 mb-4">
-                <DialogTitle className="text-xl font-bold">{studentName}</DialogTitle>
+                {variant === "dialog" ? (
+                    <DialogTitle className="text-xl font-bold">{studentName}</DialogTitle>
+                ) : (
+                    <h2 className="text-xl font-bold">{studentName}</h2>
+                )}
                 {fileNo && <span className="text-sm font-normal text-muted-foreground">Dosya No: {fileNo}</span>}
             </div>
 
@@ -75,6 +87,7 @@ export default function StudentDetailModal({
                                     <TableHead>Tarih</TableHead>
                                     <TableHead>Sınıf</TableHead>
                                     <TableHead>İşlem</TableHead>
+                                    <TableHead>Öğretmen</TableHead>
                                     <TableHead>Puan</TableHead>
                                     <TableHead className="text-right">Durum</TableHead>
                                 </TableRow>
@@ -95,6 +108,9 @@ export default function StudentDetailModal({
                                                     <span className="text-xs text-muted-foreground">{item.assignReason}</span>
                                                 )}
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-xs font-medium">{getTeacherName(item.assignedTo)}</span>
                                         </TableCell>
                                         <TableCell>{item.score}</TableCell>
                                         <TableCell className="text-right">

@@ -13,13 +13,15 @@ import type {
   ThemeSettings,
   EArchiveEntry,
   AbsenceRecord,
-  QueueTicket
+  QueueTicket,
+  NoteItem
 } from "@/types";
 
 type StateShape = {
   teachers: Teacher[];
   cases: CaseFile[];
   history: Record<string, CaseFile[]>;
+  agendaNotes: Record<string, NoteItem[]>; // NEW: Agenda Notes
   lastRollover: string;
   lastAbsencePenalty?: string;
   announcements?: Announcement[];
@@ -29,13 +31,14 @@ type StateShape = {
   absenceRecords?: AbsenceRecord[];
   queue?: QueueTicket[];
   updatedAt?: string;
-  adminSessionId?: string; // NEW: Single Admin Session ID
+  adminSessionId?: string;
 };
 
 const DEFAULT_STATE: StateShape = {
   teachers: [],
   cases: [],
   history: {},
+  agendaNotes: {}, // NEW
   lastRollover: "",
   lastAbsencePenalty: "",
   announcements: [],
@@ -133,6 +136,7 @@ export async function POST(req: NextRequest) {
     teachers: Array.isArray(body.teachers) ? body.teachers : currentState.teachers,
     cases: Array.isArray(body.cases) ? body.cases : currentState.cases,
     history: (body.history && typeof body.history === "object") ? body.history : currentState.history,
+    agendaNotes: (body.agendaNotes && typeof body.agendaNotes === "object") ? body.agendaNotes : currentState.agendaNotes, // NEW
     lastRollover: body.lastRollover !== undefined ? String(body.lastRollover) : currentState.lastRollover,
     lastAbsencePenalty: body.lastAbsencePenalty !== undefined ? String(body.lastAbsencePenalty) : currentState.lastAbsencePenalty,
     announcements: Array.isArray(body.announcements) ? body.announcements : currentState.announcements,

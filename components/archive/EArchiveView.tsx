@@ -336,6 +336,7 @@ export default function EArchiveView({
                     studentName={detailStudent?.name || ""}
                     fileNo={detailStudent?.fileNo}
                     history={detailStudent?.history || []}
+                    teachers={teachers}
                     variant="absolute"
                 />
             </CardContent>

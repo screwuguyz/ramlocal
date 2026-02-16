@@ -16,6 +16,7 @@ import type {
     AssignmentPopup,
     LiveStatus,
     QueueTicket,
+    NoteItem,
 } from "@/types";
 import { DEFAULT_SETTINGS, LS_KEYS } from "@/lib/constants";
 
@@ -39,6 +40,13 @@ interface AppState {
     history: Record<string, CaseFile[]>;
     setHistory: (history: Record<string, CaseFile[]>) => void;
     addToHistory: (date: string, cases: CaseFile[]) => void;
+
+    // === Agenda Notes ===
+    agendaNotes: Record<string, NoteItem[]>;
+    setAgendaNotes: (notes: Record<string, NoteItem[]>) => void;
+    addAgendaNote: (dateKey: string, note: NoteItem) => void;
+    updateAgendaNote: (dateKey: string, id: string, note: Partial<NoteItem>) => void;
+    removeAgendaNote: (dateKey: string, id: string) => void;
 
     // === E-Archive ===
     eArchive: EArchiveEntry[];
@@ -134,6 +142,7 @@ const initialState = {
     teachers: [],
     cases: [],
     history: {},
+    agendaNotes: {},
     eArchive: [],
     announcements: [],
     announcementPopupData: null,
@@ -198,6 +207,38 @@ export const useAppStore = create<AppState>()(
                 set((state) => ({
                     history: { ...state.history, [date]: cases },
                 })),
+
+            // === Agenda Notes (Global State) ===
+            setAgendaNotes: (notes) => set({ agendaNotes: notes }),
+            addAgendaNote: (dateKey, note) => set((state) => {
+                const dayNotes = state.agendaNotes[dateKey] || [];
+                return {
+                    agendaNotes: {
+                        ...state.agendaNotes,
+                        [dateKey]: [...dayNotes, note]
+                    }
+                };
+            }),
+            updateAgendaNote: (dateKey, id, updates) => set((state) => {
+                const dayNotes = state.agendaNotes[dateKey] || [];
+                const updatedNotes = dayNotes.map(n => n.id === id ? { ...n, ...updates } : n);
+                return {
+                    agendaNotes: {
+                        ...state.agendaNotes,
+                        [dateKey]: updatedNotes
+                    }
+                };
+            }),
+            removeAgendaNote: (dateKey, id) => set((state) => {
+                const dayNotes = state.agendaNotes[dateKey] || [];
+                const filteredNotes = dayNotes.filter(n => n.id !== id);
+                // Clean up empty days if desired, or keep empty array
+                const newAgenda = { ...state.agendaNotes, [dateKey]: filteredNotes };
+                if (filteredNotes.length === 0) {
+                    delete newAgenda[dateKey];
+                }
+                return { agendaNotes: newAgenda };
+            }),
 
             // === E-Archive ===
             setEArchive: (eArchive) => set({ eArchive }),
@@ -308,6 +349,7 @@ export const useAppStore = create<AppState>()(
                 teachers: state.teachers,
                 cases: state.cases,
                 history: state.history,
+                agendaNotes: state.agendaNotes,
                 eArchive: state.eArchive,
                 settings: state.settings,
                 lastRollover: state.lastRollover,

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAppStore } from "@/stores/useAppStore";
+import confetti from "canvas-confetti";
+import { X } from "lucide-react";
 
 // Türkiye'deki önemli günler ve bayramlar
 interface Holiday {
@@ -12,59 +14,24 @@ interface Holiday {
     message?: string;
 }
 
-// Ramazan ve Kurban Bayramı tarihleri (2024-2026)
-const ISLAMIC_HOLIDAYS: Record<string, Holiday> = {
-    // 2024
-    "2024-04-10": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2024-04-11": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2024-04-12": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2024-06-16": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2024-06-17": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2024-06-18": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2024-06-19": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    // 2025
-    "2025-03-30": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2025-03-31": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2025-04-01": { name: "Ramazan Bayramı", emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
-    "2025-06-06": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2025-06-07": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2025-06-08": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
-    "2025-06-09": { name: "Kurban Bayramı", emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
+import Holidays from "date-holidays";
+
+// Dinamik Tatil Hesaplayıcı (Türkiye için)
+const hd = new Holidays("TR");
+
+// Türkiye'deki önemli günler ve bayramlar için emoji ve renk eşleştirmeleri
+const HOLIDAY_STYLES: Record<string, any> = {
+    "Ramazan Bayramı": { emoji: "🌙", colors: ["#FFD700", "#32CD32"], particles: ["🌙", "⭐", "✨"], message: "Ramazan Bayramınız Kutlu Olsun!" },
+    "Kurban Bayramı": { emoji: "🕌", colors: ["#228B22", "#FFD700"], particles: ["🕌", "🌙", "⭐"], message: "Kurban Bayramınız Kutlu Olsun!" },
+    "Yılbaşı": { emoji: "🎆", colors: ["#FFD700", "#FF6B6B", "#4ECDC4"], particles: ["❄️", "⭐", "🎉", "✨"], message: "Yeni Yılınız Kutlu Olsun! 🎊" },
+    "Ulusal Egemenlik ve Çocuk Bayramı": { emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "🎈", "🎉", "👧", "👦"], message: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı Kutlu Olsun!" },
+    "Atatürk'ü Anma, Gençlik ve Spor Bayramı": { emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "⚽", "🏃", "🎾"], message: "19 Mayıs Atatürk'ü Anma, Gençlik ve Spor Bayramı Kutlu Olsun!" },
+    "Zafer Bayramı": { emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "⭐", "🎖️"], message: "30 Ağustos Zafer Bayramı Kutlu Olsun!" },
+    "Cumhuriyet Bayramı": { emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "🎆", "🎉", "⭐"], message: "Cumhuriyet Bayramımız Kutlu Olsun! 🇹🇷" },
+    "Demokrasi ve Milli Birlik Günü": { emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "⭐", "🎗️"], message: "15 Temmuz Demokrasi ve Milli Birlik Günü Kutlu Olsun!" },
 };
 
-// Sabit tarihli bayramlar (ay-gün formatında)
-const FIXED_HOLIDAYS: Record<string, Holiday> = {
-    // Yılbaşı
-    "12-31": { name: "Yılbaşı Gecesi", emoji: "🎆", colors: ["#FFD700", "#FF6B6B", "#4ECDC4"], particles: ["❄️", "⭐", "🎉", "✨"], message: "Yeni Yılınız Kutlu Olsun! 🎊" },
-    "01-01": { name: "Yeni Yıl", emoji: "🎊", colors: ["#FFD700", "#FF6B6B", "#4ECDC4"], particles: ["🎉", "🎊", "✨", "🥳"], message: "Yeni Yılınız Kutlu Olsun! 🎉" },
-    // Milli Bayramlar
-    "04-23": { name: "23 Nisan", emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "🎈", "🎉", "👧", "👦"], message: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı Kutlu Olsun!" },
-    "05-19": { name: "19 Mayıs", emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "⚽", "🏃", "🎾"], message: "19 Mayıs Atatürk'ü Anma, Gençlik ve Spor Bayramı Kutlu Olsun!" },
-    "08-30": { name: "30 Ağustos", emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "⭐", "🎖️"], message: "30 Ağustos Zafer Bayramı Kutlu Olsun!" },
-    "10-29": { name: "29 Ekim", emoji: "🇹🇷", colors: ["#E30A17", "#FFFFFF"], particles: ["🇹🇷", "🎆", "🎉", "⭐"], message: "Cumhuriyet Bayramımız Kutlu Olsun! 🇹🇷" },
-};
-
-// Sabit personel doğum günleri (mevcut kadro)
-const STATIC_BIRTHDAYS: Record<string, string[]> = {
-    "02-15": ["Sabahattin KURU"],
-    "06-14": ["Özlem DEDE"],
-    "03-27": ["Ahmet ÖZERGİNER"],
-    "11-02": ["Arman GÖKDAĞ"],
-    "12-01": ["Aslıhan ÖZDEMİR"],
-    "02-21": ["Uygar KULKUL"],
-    "11-11": ["Aygün ÇELİK"],
-    "03-30": ["Çiğdem KAYMAZ"],
-    "06-13": ["Elif BOZHAN"],
-    "02-28": ["Eray Ahmet TAŞKIN"],
-    "03-17": ["Bektaş ÇETİN"],
-    "07-01": ["Furkan Ata ADIYAMAN"],
-    "10-06": ["Lütfiye AKINCI"],
-    "12-12": ["Pınar KIRLANGIÇ"],
-    "10-03": ["Anıl Deniz ÖZGÜL"],
-    "11-23": ["Volkan CİVELEK"],
-    "10-01": ["Neslihan ŞAHİNER"],
-    "05-25": ["Nuray KIZILGÜNEŞ"],
-};
+import { STATIC_BIRTHDAYS } from "@/lib/birthdays";
 
 interface Particle {
     id: number;
@@ -84,20 +51,23 @@ export default function HolidayAnimation() {
     // Teachers store'dan doğum günlerini dinamik olarak oku
     const teachers = useAppStore((state) => state.teachers);
 
-    // Bugünkü doğum günlerini hesapla (store + sabit liste)
+    // Bugünkü tatili veya doğum gününü hesapla
     const holiday = useMemo(() => {
         const now = new Date();
-        const fullDate = now.toISOString().slice(0, 10);
         const monthDay = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        // Önce İslami bayramları kontrol et
-        if (ISLAMIC_HOLIDAYS[fullDate]) {
-            return ISLAMIC_HOLIDAYS[fullDate];
-        }
-
-        // Sonra sabit tarihli bayramları kontrol et
-        if (FIXED_HOLIDAYS[monthDay]) {
-            return FIXED_HOLIDAYS[monthDay];
+        // date-holidays ile kontrol et
+        const hFound = hd.isHoliday(now);
+        if (hFound && Array.isArray(hFound) && hFound.length > 0) {
+            const h = hFound[0];
+            const style = HOLIDAY_STYLES[h.name] || {
+                name: h.name,
+                emoji: "🎉",
+                colors: ["#FFD700", "#FF6B6B"],
+                particles: ["✨", "⭐", "🎉"],
+                message: `${h.name} Kutlu Olsun!`
+            };
+            return { ...style, name: h.name };
         }
 
         // Doğum günlerini kontrol et (dinamik + sabit)
@@ -135,48 +105,74 @@ export default function HolidayAnimation() {
     useEffect(() => {
         if (!holiday) return;
 
-        // Başlangıç partikülleri oluştur (CPU optimizasyonu: 50 -> 30)
+        // Bayram veya Doğum günü ise Konfeti patlat (canvas-confetti)
+        // İlk yüklemede ve aralıklarla
+        const triggerConfetti = () => {
+            const end = Date.now() + 3 * 1000;
+            const colors = holiday.colors || ["#ff69b4", "#ff1493", "#ffd700"];
+
+            (function frame() {
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors
+                });
+                confetti({
+                    particleCount: 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        };
+
+        triggerConfetti();
+        const confettiInterval = setInterval(triggerConfetti, 15000); // 15 saniyede bir tekrarla
+
+        // Başlangıç partikülleri oluştur (Yavaş yavaş düşen emojiler)
         const initialParticles: Particle[] = [];
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 40; i++) {
             initialParticles.push({
                 id: i,
                 x: Math.random() * 100,
-                y: Math.random() * 100 - 100, // Ekranın üstünden başla
-                size: Math.random() * 20 + 10,
-                speed: Math.random() * 2 + 1,
-                opacity: Math.random() * 0.5 + 0.5,
+                y: Math.random() * 100 - 100,
+                size: Math.random() * 25 + 15,
+                speed: Math.random() * 1.5 + 0.5,
+                opacity: Math.random() * 0.6 + 0.4,
                 char: holiday.particles[Math.floor(Math.random() * holiday.particles.length)],
                 drift: (Math.random() - 0.5) * 2,
             });
         }
         setParticles(initialParticles);
 
-        // Animasyon döngüsü
+        // Animasyon döngüsü (Emojiler için)
         const interval = setInterval(() => {
             setParticles(prev => prev.map(p => {
                 let newY = p.y + p.speed;
                 let newX = p.x + p.drift * 0.1;
 
-                // Ekrandan çıktıysa yukarıdan tekrar başlat
                 if (newY > 110) {
                     newY = -10;
                     newX = Math.random() * 100;
                 }
 
-                // X sınırlarını kontrol et
                 if (newX < -5) newX = 105;
                 if (newX > 105) newX = -5;
 
                 return { ...p, y: newY, x: newX };
             }));
-        }, 100); // CPU optimizasyonu: 50ms -> 100ms
-
-        // Mesajı 10 saniye sonra gizle
-        const messageTimer = setTimeout(() => setShowMessage(false), 10000);
+        }, 80);
 
         return () => {
             clearInterval(interval);
-            clearTimeout(messageTimer);
+            clearInterval(confettiInterval);
         };
     }, [holiday]);
 
@@ -203,16 +199,33 @@ export default function HolidayAnimation() {
                 ))}
             </div>
 
-            {/* Kutlama Mesajı */}
+            {/* Kutlama Bannerı (Kalıcı ve Görünür) */}
             {showMessage && holiday.message && (
                 <div
-                    className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] px-6 py-3 rounded-full font-bold text-lg shadow-2xl animate-bounce"
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] px-8 py-4 rounded-2xl font-bold text-xl shadow-2xl flex items-center gap-4 transition-all hover:scale-105 group"
                     style={{
                         background: `linear-gradient(135deg, ${holiday.colors[0]}, ${holiday.colors[1] || holiday.colors[0]})`,
                         color: holiday.colors[0] === "#FFFFFF" || holiday.colors[0] === "#FFD700" ? "#000" : "#FFF",
+                        border: "4px solid rgba(255,255,255,0.3)",
                     }}
                 >
-                    {holiday.emoji} {holiday.message}
+                    <div className="text-3xl animate-bounce">
+                        {holiday.emoji}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xs uppercase tracking-widest opacity-80 mb-0.5">BUGÜN ÖZEL BİR GÜN!</span>
+                        <span>{holiday.message}</span>
+                    </div>
+                    <button
+                        onClick={() => setShowMessage(false)}
+                        className="ml-4 p-1 hover:bg-black/10 rounded-full transition-colors"
+                        title="Kapat"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Arka plan animasyonu */}
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </div>
             )}
         </>

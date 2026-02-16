@@ -79,5 +79,22 @@ export async function notifyTeacher(
   }
 }
 
+// Send notification to multiple teachers (e.g. Announcements)
+export async function notifyAllTeachers(
+  teachers: { id: string; pushoverKey?: string | null }[],
+  title: string,
+  message: string,
+  priority: number = 0
+): Promise<void> {
+  const keys = teachers
+    .map((t) => t.pushoverKey)
+    .filter((k): k is string => !!k && k.length > 5); // Basic validation
+
+  // Send in parallel but catch errors individually
+  await Promise.all(
+    keys.map((key) => sendPushover(key, title, message, priority))
+  );
+}
+
 // Export individual functions for direct use
 export { sendPushover, sendWebPush };

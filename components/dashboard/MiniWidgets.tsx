@@ -6,6 +6,12 @@ import { findBestTeacher } from "@/lib/scoring";
 import { useAppStore } from "@/stores/useAppStore";
 import { getWidgets } from "@/lib/widgets";
 import QueueWidget from "./QueueWidget";
+import { STATIC_BIRTHDAYS } from "@/lib/birthdays";
+import Holidays from "date-holidays";
+import { format } from "date-fns";
+import { PartyPopper } from "lucide-react";
+
+const hd = new Holidays("TR");
 
 export default function MiniWidgets() {
     const { settings, teachers, cases, pdfEntries, history, isAdmin } = useAppStore();
@@ -22,7 +28,9 @@ export default function MiniWidgets() {
         return () => window.removeEventListener("widgets-updated", checkVisibility);
     }, []);
 
-    if (!isVisible) return null;
+    // NOT: Early return burada yapılamaz çünkü alttaki useMemo hook'ları
+    // çağrılmadan önce return yapmak React'in hook kurallarını ihlal eder.
+    // isVisible kontrolü tüm hook'lardan sonra yapılacak.
 
     // 1. Öğretmen Özeti
     const teacherStats = useMemo(() => {
@@ -112,6 +120,30 @@ export default function MiniWidgets() {
 
         return { currentMonthCount, lastMonthCount, isUp, percentChange };
     }, [history, cases]);
+
+    // 5. Günün Önemi (Doğum Günü + Bayram)
+    const todaySpecial = useMemo(() => {
+        const now = new Date();
+        const monthDay = format(now, "MM-dd");
+        const birthdayNames: string[] = [];
+        if (STATIC_BIRTHDAYS[monthDay]) birthdayNames.push(...STATIC_BIRTHDAYS[monthDay]);
+        teachers.forEach(t => {
+            if (t.birthDate === monthDay && t.active && !birthdayNames.includes(t.name)) {
+                birthdayNames.push(t.name);
+            }
+        });
+
+        const holidays = hd.isHoliday(now);
+        let holidayName = null;
+        if (holidays && Array.isArray(holidays) && holidays.length > 0) {
+            holidayName = holidays[0].name;
+        }
+
+        return { birthdayNames, holidayName };
+    }, [teachers]);
+
+    // Tüm hook'lar çağrıldıktan sonra visibility kontrolü
+    if (!isVisible) return null;
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

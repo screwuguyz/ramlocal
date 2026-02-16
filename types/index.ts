@@ -115,3 +115,12 @@ export type ThemeSettings = {
         foreground: string;
     };
 };
+
+export type NoteType = "WISCR" | "OGT" | "SERBEST";
+
+export interface NoteItem {
+    id: string;
+    text: string;
+    color: string;
+    type?: NoteType;
+}

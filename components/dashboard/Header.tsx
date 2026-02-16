@@ -16,6 +16,7 @@ import {
     Calendar
 } from "lucide-react";
 import QuickSearch from "@/components/search/QuickSearch";
+import AnalogClock from "@/components/dashboard/AnalogClock";
 import type { Teacher, CaseFile } from "@/types";
 
 // Toast helper - using the app store's toast action would be ideal, 
@@ -117,6 +118,9 @@ export default function Header({
 
                     {/* Sağ: Canlı rozet + Admin/Giriş */}
                     <div className="flex items-center gap-1 sm:gap-2">
+                        {/* Analog Saat (İstanbul) */}
+                        <AnalogClock size={144} />
+
                         {/* CANLI ROZET - Kısa versiyon mobilde */}
                         <span
                             className={

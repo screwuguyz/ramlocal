@@ -1,8 +1,8 @@
 {
-  "id": "dc90af8c-0df9-4d75-88f1-70f86303bd9d",
-  "created_at": "2026-02-13T08:31:39.625Z",
-  "backup_type": "manual",
-  "description": "Manuel yedek",
+  "id": "635eb7b4-f011-4f47-a034-dab135947112",
+  "created_at": "2026-02-15T13:00:02.606Z",
+  "backup_type": "auto",
+  "description": "Otomatik Günlük Yedek - 2026-02-15 16:00",
   "state_snapshot": {
     "teachers": [
       {
@@ -96,11 +96,11 @@
         "id": "wttamdj",
         "name": "NURAY KIZILGÜNEŞ",
         "isAbsent": false,
-        "yearlyLoad": 179,
+        "yearlyLoad": 183,
         "monthly": {
           "2025-12": 128,
           "2026-01": 25,
-          "2026-02": 13
+          "2026-02": 17
         },
         "active": true,
         "isTester": true,
@@ -341,6 +341,26 @@
         "diagCount": 1,
         "isTest": false,
         "assignedTo": "ji4xjb9"
+      },
+      {
+        "id": "ftliikp",
+        "student": "EREN CEM TÜRKSAL",
+        "fileNo": "7111",
+        "score": 4,
+        "createdAt": "2026-02-13T10:34:43.743Z",
+        "type": "IKISI",
+        "grade": "4. Sınıf",
+        "isNew": false,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "ce3531d4-44b3-4991-91b3-38f9bbe3c91b",
+          "time": "14:00",
+          "name": "EREN CEM TÜRKSAL",
+          "fileNo": "",
+          "extra": "Özel Öğrenme Güçlüğü"
+        },
+        "assignedTo": "wttamdj"
       }
     ],
     "history": {
@@ -7097,6 +7117,10 @@
       "debugMode": false,
       "monthlySummaryMonth": ""
     },
+    "themeSettings": {
+      "themeMode": "auto",
+      "colorScheme": "default"
+    },
     "eArchive": [
       {
         "id": "om2toge",
@@ -9650,7 +9674,59 @@
         "fileNo": "5173",
         "teacherName": "NESLİHAN ŞAHİNER",
         "date": "2026-02-13"
+      },
+      {
+        "id": "ftliikp",
+        "studentName": "EREN CEM TÜRKSAL",
+        "fileNo": "7111",
+        "teacherName": "NURAY KIZILGÜNEŞ",
+        "date": "2026-02-13"
       }
-    ]
+    ],
+    "absenceRecords": [
+      {
+        "date": "2026-01-21",
+        "teacherId": "2ue5do4"
+      },
+      {
+        "date": "2026-01-21",
+        "teacherId": "ji4xjb9"
+      },
+      {
+        "date": "2026-01-22",
+        "teacherId": "ji4xjb9"
+      },
+      {
+        "date": "2026-01-23",
+        "teacherId": "ji4xjb9"
+      },
+      {
+        "date": "2026-01-26",
+        "teacherId": "45zvjwn"
+      },
+      {
+        "date": "2026-01-26",
+        "teacherId": "rnycdxd"
+      },
+      {
+        "teacherId": "rnycdxd",
+        "date": "2026-01-27"
+      },
+      {
+        "teacherId": "wttamdj",
+        "date": "2026-02-02"
+      },
+      {
+        "teacherId": "wttamdj",
+        "date": "2026-02-03"
+      },
+      {
+        "teacherId": "45zvjwn",
+        "date": "2026-02-05"
+      }
+    ],
+    "queue": [],
+    "updatedAt": "2026-02-13T13:13:09.128Z",
+    "adminSessionId": "0w52fgx"
   }
 }

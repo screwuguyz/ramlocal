@@ -56,6 +56,8 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
         addToast,
         queue,
         setQueue,
+        agendaNotes, // NEW
+        setAgendaNotes, // NEW
     } = useAppStore();
 
     // Keep refs in sync with state
@@ -285,6 +287,11 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 console.log("[fetchCentralState] Queue is empty");
             }
 
+            // Agenda Notes Load
+            if (s.agendaNotes) {
+                setAgendaNotes(s.agendaNotes);
+            }
+
             console.log(
                 "[fetchCentralState] Loaded teachers:",
                 s.teachers?.length || 0,
@@ -311,7 +318,9 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
         setLastRollover,
         setLastAbsencePenalty,
         setHydrated,
+        setHydrated,
         addToast,
+        setAgendaNotes, // NEW
     ]);
 
     // Sync current state to server (only for admin users)
@@ -352,6 +361,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
             const currentEArchive = useAppStore.getState().eArchive;
             const currentAnnouncements = useAppStore.getState().announcements;
             const currentAbsenceRecords = useAppStore.getState().absenceRecords;
+            const currentAgendaNotes = useAppStore.getState().agendaNotes; // NEW
 
             console.log("[syncToServer] Syncing...", {
                 teachers: currentTeachers.length,
@@ -370,6 +380,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 lastRollover,
                 lastAbsencePenalty,
                 queue: currentQueue, // Use latest queue from store
+                agendaNotes: currentAgendaNotes, // NEW
                 updatedAt: new Date().toISOString(),
                 clientId: clientId.current,
                 themeSettings: { themeMode: getThemeMode(), colorScheme: "default" }, // Feature Parity with page.tsx
@@ -425,7 +436,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
         return () => clearTimeout(timer);
     }, [
         teachers, cases, history, settings, eArchive, announcements, absenceRecords,
-        lastRollover, lastAbsencePenalty, queue, hydrated, syncToServer
+        lastRollover, lastAbsencePenalty, queue, agendaNotes, hydrated, syncToServer // Added agendaNotes
     ]);
 
     // Store fetchCentralState in ref to avoid reconnection issues

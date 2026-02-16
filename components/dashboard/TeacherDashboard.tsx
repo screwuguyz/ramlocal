@@ -1,4 +1,7 @@
-import React, { useMemo, useState, useEffect } from "react";
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
+import RestoreAgendaDialog from "./RestoreAgendaDialog";
 import StatCard from "./StatCard";
 import { CaseFile, Teacher, Announcement, PdfAppointment, Settings } from "@/types";
 import { format, parseISO } from "date-fns";
@@ -16,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayYmd } from "@/lib/date";
 import { findBestTeacher } from "@/lib/scoring";
+import AdminAgenda from "./AdminAgenda";
 
 interface TeacherDashboardProps {
     cases: CaseFile[];
@@ -156,6 +160,8 @@ export default function TeacherDashboard({
 
     return (
         <div className="space-y-8 animate-fade-in-up p-6">
+            <RestoreAgendaDialog />
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -307,6 +313,11 @@ export default function TeacherDashboard({
                         )}
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Ortak Ajanda */}
+            <div className="mt-8">
+                <AdminAgenda />
             </div>
 
             {/* Info Footer */}
