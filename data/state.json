@@ -7655,7 +7655,7 @@
       }
     ]
   },
-  "lastRollover": "2026-02-17",
+  "lastRollover": "2026-02-18",
   "lastAbsencePenalty": "",
   "announcements": [],
   "settings": {
@@ -10431,6 +10431,5 @@
   ],
   "absenceRecords": [],
   "queue": [],
-  "updatedAt": "2026-02-18T10:47:38.470Z",
-  "adminSessionId": "fvbbz14"
+  "updatedAt": "2026-02-18T13:08:03.958Z"
 }

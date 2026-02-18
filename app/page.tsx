@@ -2653,68 +2653,46 @@ export default function DosyaAtamaApp() {
                 <CardTitle>📊 Raporlar ve Arşiv</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant={["statistics", "weekly", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={["statistics", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}
+                      onClick={() => setReportMode(reportMode === "statistics" ? "statistics" : "statistics")}
+                    >
+                      📈 İstatistikler
+                    </Button>
+                    <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
+                      📅 Günlük Rapor
+                    </Button>
+                    <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
+                      📊 Aylık Rapor
+                    </Button>
+                    <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
+                      🗓️ Takvim
+                    </Button>
+                    <Button variant={reportMode === "archive" ? "default" : "outline"} onClick={() => setReportMode("archive")}>
+                      📋 Atanan Dosyalar
+                    </Button>
+                    <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
+                      🗄️ E-Arşiv
+                    </Button>
+                  </div>
+                  {["statistics", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) && (
+                    <div className="flex flex-wrap gap-2 pl-4 border-l-2 border-indigo-300">
+                      <Button variant={reportMode === "statistics" ? "default" : "outline"} size="sm" onClick={() => setReportMode("statistics")}>
                         📈 İstatistikler
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2" align="start">
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          variant={reportMode === "statistics" ? "default" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setReportMode("statistics")}
-                        >
-                          📈 İstatistikler
-                        </Button>
-                        <Button
-                          variant={reportMode === "weekly" ? "default" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setReportMode("weekly")}
-                        >
-                          📆 Haftalık Rapor
-                        </Button>
-                        <Button
-                          variant={reportMode === "yearly" ? "default" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setReportMode("yearly")}
-                        >
-                          📆 Yıllık Rapor
-                        </Button>
-                        <Button
-                          variant={reportMode === "teacher-performance" ? "default" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setReportMode("teacher-performance")}
-                        >
-                          👨‍🏫 Öğretmen Performansı
-                        </Button>
-                        <Button
-                          variant={reportMode === "file-type-analysis" ? "default" : "ghost"}
-                          className="w-full justify-start"
-                          onClick={() => setReportMode("file-type-analysis")}
-                        >
-                          📊 Dosya Türü Analizi
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
-                    📅 Günlük Rapor
-                  </Button>
-                  <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
-                    📊 Aylık Rapor
-                  </Button>
-                  <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
-                    🗓️ Takvim
-                  </Button>
-                  <Button variant={reportMode === "archive" ? "default" : "outline"} onClick={() => setReportMode("archive")}>
-                    📋 Atanan Dosyalar
-                  </Button>
-                  <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
-                    🗄️ E-Arşiv
-                  </Button>
+                      <Button variant={reportMode === "yearly" ? "default" : "outline"} size="sm" onClick={() => setReportMode("yearly")}>
+                        📆 Yıllık Rapor
+                      </Button>
+                      <Button variant={reportMode === "teacher-performance" ? "default" : "outline"} size="sm" onClick={() => setReportMode("teacher-performance")}>
+                        👨‍🏫 Öğretmen Performansı
+                      </Button>
+                      <Button variant={reportMode === "file-type-analysis" ? "default" : "outline"} size="sm" onClick={() => setReportMode("file-type-analysis")}>
+                        📊 Dosya Türü Analizi
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -3069,65 +3047,43 @@ export default function DosyaAtamaApp() {
 
                 {adminTab === "reports" && (
                   <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant={["statistics", "weekly", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant={["statistics", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) ? "default" : "outline"}
+                          onClick={() => setReportMode(reportMode === "statistics" ? "statistics" : "statistics")}
+                        >
+                          📈 İstatistikler
+                        </Button>
+                        <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
+                          📅 Günlük Rapor
+                        </Button>
+                        <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
+                          📊 Aylık Rapor
+                        </Button>
+                        <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
+                          🗓️ Takvim
+                        </Button>
+                        <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
+                          🗄️ E-Arşiv
+                        </Button>
+                      </div>
+                      {["statistics", "yearly", "teacher-performance", "file-type-analysis"].includes(reportMode) && (
+                        <div className="flex flex-wrap gap-2 pl-4 border-l-2 border-indigo-300">
+                          <Button variant={reportMode === "statistics" ? "default" : "outline"} size="sm" onClick={() => setReportMode("statistics")}>
                             📈 İstatistikler
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2" align="start">
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              variant={reportMode === "statistics" ? "default" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setReportMode("statistics")}
-                            >
-                              📈 İstatistikler
-                            </Button>
-                            <Button
-                              variant={reportMode === "weekly" ? "default" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setReportMode("weekly")}
-                            >
-                              📆 Haftalık Rapor
-                            </Button>
-                            <Button
-                              variant={reportMode === "yearly" ? "default" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setReportMode("yearly")}
-                            >
-                              📆 Yıllık Rapor
-                            </Button>
-                            <Button
-                              variant={reportMode === "teacher-performance" ? "default" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setReportMode("teacher-performance")}
-                            >
-                              👨‍🏫 Öğretmen Performansı
-                            </Button>
-                            <Button
-                              variant={reportMode === "file-type-analysis" ? "default" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setReportMode("file-type-analysis")}
-                            >
-                              📊 Dosya Türü Analizi
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <Button variant={reportMode === "daily" ? "default" : "outline"} onClick={() => setReportMode("daily")}>
-                        📅 Günlük Rapor
-                      </Button>
-                      <Button variant={reportMode === "monthly" ? "default" : "outline"} onClick={() => setReportMode("monthly")}>
-                        📊 Aylık Rapor
-                      </Button>
-                      <Button variant={reportMode === "calendar" ? "default" : "outline"} onClick={() => setReportMode("calendar")}>
-                        🗓️ Takvim
-                      </Button>
-                      <Button variant={reportMode === "e-archive" ? "default" : "outline"} onClick={() => setReportMode("e-archive")}>
-                        🗄️ E-Arşiv
-                      </Button>
+                          <Button variant={reportMode === "yearly" ? "default" : "outline"} size="sm" onClick={() => setReportMode("yearly")}>
+                            📆 Yıllık Rapor
+                          </Button>
+                          <Button variant={reportMode === "teacher-performance" ? "default" : "outline"} size="sm" onClick={() => setReportMode("teacher-performance")}>
+                            👨‍🏫 Öğretmen Performansı
+                          </Button>
+                          <Button variant={reportMode === "file-type-analysis" ? "default" : "outline"} size="sm" onClick={() => setReportMode("file-type-analysis")}>
+                            📊 Dosya Türü Analizi
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     <div className="border-t pt-4">
                       <div className="flex flex-wrap gap-2">

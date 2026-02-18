@@ -113,6 +113,14 @@ export default function PhysiotherapistList() {
         const updatedCases = cases.map(c => (c.assignedTo === tid ? { ...c, assignedTo: undefined } : c));
         setCases(updatedCases);
         addToast("Fizyoterapist silindi.");
+
+        // Sunucuya hemen senkronize et (silme işlemi diğer PC'lerde de yansısın)
+        setTimeout(() => {
+            const state = useAppStore.getState();
+            if (state.syncFunction) {
+                state.syncFunction();
+            }
+        }, 100);
     }
 
     async function testNotifyTeacher(t: Teacher) {

@@ -94,7 +94,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 if (!currentIds.has(oldT.id)) {
                     // This teacher was deleted locally
                     lastLocalDeleteRef.current[oldT.id] = Date.now();
-                    console.log(`[Sync] Local teacher delete detected: ${oldT.name}, blocking resurrection for 15s`);
+                    console.log(`[Sync] Local teacher delete detected: ${oldT.name}, permanently blocking resurrection`);
                 }
             });
         }
@@ -110,7 +110,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 if (!currentIds.has(oldCase.id)) {
                     // This case was deleted locally
                     lastLocalDeleteRef.current[oldCase.id] = Date.now();
-                    console.log(`[Sync] Local delete detected: ${oldCase.student}, blocking resurrection for 15s`);
+                    console.log(`[Sync] Local delete detected: ${oldCase.student}, permanently blocking resurrection`);
                 }
             });
         }
@@ -182,9 +182,9 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 const now = Date.now();
                 let mergedTeachers = supabaseTeachers.filter((remoteT: Teacher) => {
                     // ZOMBIE TEACHER PROTECTION
-                    // If we deleted this teacher locally in the last 15s, don't let it come back
+                    // If we deleted this teacher locally, NEVER let it come back
                     const deletedAt = lastLocalDeleteRef.current[remoteT.id];
-                    if (deletedAt && (now - deletedAt < 15000)) {
+                    if (deletedAt) {
                         console.log(`[Sync] 🧟 Zombie Teacher blocked: ${remoteT.name}`);
                         return false;
                     }
@@ -281,7 +281,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
             // 1. Filter out zombie cases (recently deleted locally)
             const incomingCases = rawIncomingCases.filter((c: CaseFile) => {
                 const deletedAt = lastLocalDeleteRef.current[c.id];
-                if (deletedAt && (Date.now() - deletedAt < 15000)) {
+                if (deletedAt) {
                     console.log(`[Sync] 🧟 Zombie blocked: ${c.student} (${c.id})`);
                     return false;
                 }

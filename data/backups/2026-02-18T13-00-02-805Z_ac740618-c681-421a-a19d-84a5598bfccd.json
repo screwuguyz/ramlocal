@@ -1,8 +1,8 @@
 {
-  "id": "f974dd60-0179-4e7a-9fa7-8685b76d88c2",
-  "created_at": "2026-02-18T10:50:10.182Z",
-  "backup_type": "manual",
-  "description": "Manuel yedek",
+  "id": "ac740618-c681-421a-a19d-84a5598bfccd",
+  "created_at": "2026-02-18T13:00:02.805Z",
+  "backup_type": "auto",
+  "description": "Otomatik Günlük Yedek - 2026-02-18 16:00",
   "state_snapshot": {
     "teachers": [
       {
@@ -7610,7 +7610,57 @@
       ],
       "2026-02-16": []
     },
-    "lastRollover": "2026-02-17",
+    "agendaNotes": {
+      "2026-02-16": [
+        {
+          "id": "mlosypa0rpn22",
+          "text": "AD SOYAD: DEVRİM YILDIRIM\nTC: 54268121458\nTEL: 5309591958",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ],
+      "2026-02-18": [
+        {
+          "id": "mlotofrw9qwpp",
+          "text": "AD SOYAD: IRMAK GÜRCAN\nTC: 6562\nTEL: 5368596729",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ],
+      "2026-02-20": [
+        {
+          "id": "mlotp6xoeoih9",
+          "text": "AD SOYAD: HATİCENUR YALIM\nTC: \nTEL: 5314277996",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ],
+      "2026-02-23": [
+        {
+          "id": "mlqjtfppi02ov",
+          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE",
+          "color": "#1e293b",
+          "type": "SERBEST"
+        }
+      ],
+      "2026-02-24": [
+        {
+          "id": "mlqle18ci437k",
+          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
+          "color": "#1e293b",
+          "type": "SERBEST"
+        }
+      ],
+      "2026-02-25": [
+        {
+          "id": "mlqle8wdivj5g",
+          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
+          "color": "#1e293b",
+          "type": "SERBEST"
+        }
+      ]
+    },
+    "lastRollover": "2026-02-18",
     "lastAbsencePenalty": "",
     "announcements": [],
     "settings": {
@@ -7628,6 +7678,10 @@
       "videoPlaying": false,
       "debugMode": false,
       "monthlySummaryMonth": ""
+    },
+    "themeSettings": {
+      "themeMode": "auto",
+      "colorScheme": "default"
     },
     "eArchive": [
       {
@@ -10380,31 +10434,8 @@
         "date": "2026-02-18"
       }
     ],
-    "agendaNotes": {
-      "2026-02-16": [
-        {
-          "id": "mlosypa0rpn22",
-          "text": "AD SOYAD: DEVRİM YILDIRIM\nTC: 54268121458\nTEL: 5309591958",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ],
-      "2026-02-18": [
-        {
-          "id": "mlotofrw9qwpp",
-          "text": "AD SOYAD: IRMAK GÜRCAN\nTC: 6562\nTEL: 5368596729",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ],
-      "2026-02-20": [
-        {
-          "id": "mlotp6xoeoih9",
-          "text": "AD SOYAD: HATİCENUR YALIM\nTC: \nTEL: 5314277996",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ]
-    }
+    "absenceRecords": [],
+    "queue": [],
+    "updatedAt": "2026-02-18T12:53:17.509Z"
   }
 }

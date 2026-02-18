@@ -11,8 +11,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MoreHorizontal, Bell, BellOff, UserCheck, UserX, Crown, FlaskConical, Archive, Trash2, Plus, Cake, KeyRound } from "lucide-react";
+
+import { MoreHorizontal, Bell, BellOff, UserCheck, UserX, Crown, FlaskConical, Archive, Trash2, Plus, Cake, KeyRound, ChevronDown, ChevronUp, X } from "lucide-react";
 
 import { uid } from "@/lib/utils";
 import { getTodayYmd } from "@/lib/date";
@@ -44,11 +44,14 @@ export default function TeacherList() {
     const [newTeacherBirthDate, setNewTeacherBirthDate] = useState("");
     const [newTeacherStartScore, setNewTeacherStartScore] = useState("");
 
-    // UI states for inline editing
+    // UI states
     const [editKeyOpen, setEditKeyOpen] = useState<Record<string, boolean>>({});
     const [editPushover, setEditPushover] = useState<Record<string, string>>({});
     const [editingLoadId, setEditingLoadId] = useState<string | null>(null);
     const [editLoadValue, setEditLoadValue] = useState<string>("");
+
+    // Expanded actions panel state - hangi öğretmenin ek aksiyonları açık
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     // Score Adjustment Modal State
     const [scoreAdjustTeacher, setScoreAdjustTeacher] = useState<Teacher | null>(null);
@@ -59,7 +62,6 @@ export default function TeacherList() {
         return cases.some(c => c.isTest && !c.absencePenalty && c.assignedTo === tid && c.createdAt.slice(0, 10) === today);
     }
 
-    // Ortalama puanı hesapla (placeholder için)
     const activeTeachersList = teachers.filter(t => t.active && !t.isPhysiotherapist);
     const calculatedAvgLoad = activeTeachersList.length > 0
         ? Math.round(activeTeachersList.reduce((sum, t) => sum + t.yearlyLoad, 0) / activeTeachersList.length)
@@ -71,9 +73,8 @@ export default function TeacherList() {
         const currentYearly = scoreAdjustTeacher.yearlyLoad;
         const newYearly = Math.max(0, currentYearly + delta);
 
-        // Update Monthly (Current Month)
         const today = getTodayYmd();
-        const currentMonthKey = today.slice(0, 7); // YYYY-MM
+        const currentMonthKey = today.slice(0, 7);
         const currentMonthly = scoreAdjustTeacher.monthly?.[currentMonthKey] || 0;
         const newMonthly = Math.max(0, currentMonthly + delta);
 
@@ -85,7 +86,6 @@ export default function TeacherList() {
             monthly: nextMonthly
         });
 
-        // Add "Adjustment Case" to 'cases' so it appears in Daily Report
         const adjustmentCase: any = {
             id: uid(),
             student: "Puan Denkleştirme",
@@ -100,11 +100,9 @@ export default function TeacherList() {
         };
 
         setCases([...cases, adjustmentCase]);
-
         addToast(`${scoreAdjustTeacher.name}: ${reason} (Yeni Puan: ${newYearly})`);
         setScoreAdjustTeacher(null);
     }
-
 
     // ---- Actions
     function handleAddTeacher() {
@@ -117,28 +115,23 @@ export default function TeacherList() {
             return;
         }
 
-        // Akıllı Puan Hesabı
         let initialLoad = calculatedAvgLoad;
         const scoreInput = newTeacherStartScore.trim();
         let calculationMsg = `Ortalama (${calculatedAvgLoad})`;
 
         if (scoreInput) {
-            // Eğer + veya - ile başlıyorsa ortalamaya ekle/çıkar
             if (scoreInput.startsWith("+") || scoreInput.startsWith("-")) {
                 const delta = parseInt(scoreInput);
                 initialLoad = calculatedAvgLoad + delta;
                 calculationMsg = `Ortalama (${calculatedAvgLoad}) ${delta > 0 ? '+' : ''}${delta}`;
             } else {
-                // Değilse direkt değeri al
                 initialLoad = parseInt(scoreInput);
                 calculationMsg = `Manuel (${initialLoad})`;
             }
         }
 
-        // Güvenlik: Eğer hesaplanan puan 0'ın altına düşerse 0 olsun
         initialLoad = Math.max(0, initialLoad);
 
-        // Kullanıcı Teyidi (Sorun çözülene kadar açık kalsın)
         if (!confirm(`EKLENİYOR:\n\nÖğretmen: ${name}\nDoğum Günü: ${birthDate}\nHesaplanan Puan: ${initialLoad} (${calculationMsg})\n\nOnaylıyor musunuz?`)) {
             return;
         }
@@ -152,16 +145,14 @@ export default function TeacherList() {
             active: true,
             isTester: false,
             birthDate,
-            startingLoad: initialLoad // Manuel başlangıç puanını kaydet
+            startingLoad: initialLoad
         };
 
         addTeacher(newTeacher);
 
-        // AUTO-SYNC: Hemen sunucuya gönder
         setTimeout(() => {
             const state = useAppStore.getState();
             if (state.syncFunction) {
-                console.log("Auto-syncing new teacher...");
                 state.syncFunction();
             }
         }, 100);
@@ -178,20 +169,14 @@ export default function TeacherList() {
         if (!currentTeacher) return;
 
         const newAbsent = !currentTeacher.isAbsent;
+        updateTeacher(tid, { isAbsent: newAbsent });
 
-        updateTeacher(tid, {
-            isAbsent: newAbsent
-        });
-
-        // Devamsızlık kaydını Supabase'de sakla/sil (Store update)
         let nextRecords = [...absenceRecords];
         if (newAbsent) {
-            // Ekle
             if (!nextRecords.find(r => r.teacherId === tid && r.date === today)) {
                 nextRecords.push({ teacherId: tid, date: today });
             }
         } else {
-            // Sil
             nextRecords = nextRecords.filter(r => !(r.teacherId === tid && r.date === today));
         }
         setAbsenceRecords(nextRecords);
@@ -207,7 +192,6 @@ export default function TeacherList() {
         if (t) updateTeacher(tid, { isTester: !t.isTester });
     }
 
-    // Optimistic UI state for backup toggle
     const [optimisticBackups, setOptimisticBackups] = useState<Record<string, string | undefined>>({});
 
     function handleToggleBackupToday(tid: string) {
@@ -218,12 +202,8 @@ export default function TeacherList() {
         const currentVal = optimisticBackups[tid] !== undefined ? optimisticBackups[tid] : t.backupDay;
         const nextBackup = currentVal === today ? undefined : today;
 
-        // Anında UI güncellemesi
         setOptimisticBackups(prev => ({ ...prev, [tid]: nextBackup }));
-
-        // Store güncellemesi
         updateTeacher(tid, { backupDay: nextBackup });
-
         addToast(nextBackup ? `${t.name} yedek yapıldı.` : `${t.name} yedeği iptal edildi.`);
     }
 
@@ -232,28 +212,26 @@ export default function TeacherList() {
         if (!t) return;
 
         const caseCount = cases.filter(c => c.assignedTo === tid).length;
-        // Sadece atanmış dosyaları (caseCount) kontrol et.
-        // Puanı olup dosyası olmayan öğretmen silinebilmeli (startingLoad yüzünden puanı olabilir)
-        if (caseCount > 0) {
-            alert("Bu öğretmenin geçmiş dosya kaydı var. Silmek raporları etkiler; öğretmen arşivlendi.");
-            updateTeacher(tid, { active: false });
-            return;
-        }
+        let confirmMsg = `${t.name} öğretmeni kalıcı olarak silmek istiyor musunuz?`;
 
-        // Eğer puanı varsa ama dosyası yoksa, uyarı ver ama silmeye izin ver
-        const hasLoad = t.yearlyLoad > 0 || Object.values(t.monthly || {}).some(v => v > 0);
-        let confirmMsg = "Bu öğretmeni kalıcı olarak silmek istiyor musunuz?";
-        if (hasLoad) {
-            confirmMsg = "Bu öğretmenin puanı var ama hiç dosyası yok. Yine de silinsin mi?";
+        if (caseCount > 0) {
+            confirmMsg = `${t.name} öğretmeninin ${caseCount} dosya kaydı var. Silmek raporları etkileyebilir.\n\nYine de KALICI olarak silmek istiyor musunuz?`;
         }
 
         if (!confirm(confirmMsg)) return;
 
         removeTeacher(tid);
-        // Atanmış dosyaların atamasını kaldır
         const updatedCases = cases.map(c => (c.assignedTo === tid ? { ...c, assignedTo: undefined } : c));
         setCases(updatedCases);
-        addToast("Öğretmen silindi.");
+        addToast(`${t.name} silindi.`);
+
+        // Sunucuya hemen senkronize et (silme işlemi diğer PC'lerde de yansısın)
+        setTimeout(() => {
+            const state = useAppStore.getState();
+            if (state.syncFunction) {
+                state.syncFunction();
+            }
+        }, 100);
     }
 
     async function testNotifyTeacher(t: Teacher) {
@@ -306,7 +284,6 @@ export default function TeacherList() {
         }
     }
 
-    // Öğretmenleri aktif/pasif olarak grupla
     const activeTeachers = teachers.filter(t => !t.isPhysiotherapist && t.active);
     const inactiveTeachers = teachers.filter(t => !t.isPhysiotherapist && !t.active);
 
@@ -320,7 +297,7 @@ export default function TeacherList() {
                 onConfirm={handleScoreConfirm}
             />
 
-            {/* Öğretmen Ekle - Premium Tasarım */}
+            {/* Öğretmen Ekle */}
             <div className="bg-gradient-to-r from-indigo-50 via-white to-purple-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                     <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
@@ -377,13 +354,13 @@ export default function TeacherList() {
                         <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                         Aktif Öğretmenler ({activeTeachers.length})
                     </h3>
-
                 </div>
                 <div className="grid gap-3">
                     {activeTeachers.map((t) => {
                         const locked = hasTestToday(t.id);
                         const backupDayVal = optimisticBackups[t.id] !== undefined ? optimisticBackups[t.id] : t.backupDay;
                         const isBackupToday = backupDayVal === getTodayYmd();
+                        const isExpanded = expandedId === t.id;
 
                         return (
                             <div
@@ -392,7 +369,9 @@ export default function TeacherList() {
                                     ? 'border-rose-200 bg-rose-50/50'
                                     : isBackupToday
                                         ? 'border-amber-200 bg-amber-50/50'
-                                        : 'border-slate-200 hover:border-slate-300'
+                                        : isExpanded
+                                            ? 'border-indigo-300 shadow-md'
+                                            : 'border-slate-200 hover:border-slate-300'
                                     }`}
                             >
                                 <div className="flex items-start justify-between gap-4">
@@ -400,8 +379,6 @@ export default function TeacherList() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-slate-800">{t.name}</span>
-
-                                            {/* Durum Badge'leri */}
                                             {t.isAbsent && (
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
                                                     <UserX className="w-3 h-3" /> Devamsız
@@ -425,54 +402,20 @@ export default function TeacherList() {
                                         </div>
 
                                         <div className="flex items-center gap-3 mt-2 text-sm text-slate-500">
-                                            {editingLoadId === t.id ? (
-                                                <span className="inline-flex items-center gap-1">
-                                                    📊 <input
-                                                        type="number"
-                                                        className="w-16 px-1 py-0.5 text-sm font-medium text-slate-700 border border-indigo-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                                                        value={editLoadValue}
-                                                        autoFocus
-                                                        onChange={(e) => setEditLoadValue(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter") {
-                                                                const newVal = Math.max(0, parseInt(editLoadValue) || 0);
-                                                                updateTeacher(t.id, { yearlyLoad: newVal });
-                                                                setEditingLoadId(null);
-                                                                addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
-                                                            } else if (e.key === "Escape") {
-                                                                setEditingLoadId(null);
-                                                            }
-                                                        }}
-                                                        onBlur={() => {
-                                                            const newVal = Math.max(0, parseInt(editLoadValue) || 0);
-                                                            updateTeacher(t.id, { yearlyLoad: newVal });
-                                                            setEditingLoadId(null);
-                                                            addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
-                                                        }}
-                                                    /> puan
-                                                </span>
-                                            ) : (
-                                                <span
-                                                    className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-100 rounded px-1 -mx-1 transition-colors"
-                                                    onClick={() => {
-                                                        // DEBUG: Password check removed for easier fixing
-                                                        // const pw = window.prompt("Puan düzenlemek için şifre girin:");
-                                                        // if (pw === "Tuna.280225") {
-                                                        const newValStr = window.prompt(`${t.name} için yeni puan girin:`, String(t.yearlyLoad || 0));
-                                                        if (newValStr !== null) {
-                                                            const newVal = Math.max(0, parseInt(newValStr) || 0);
-                                                            updateTeacher(t.id, { yearlyLoad: newVal });
-                                                            addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
-                                                        }
-                                                        // } else if (pw !== null) {
-                                                        //    alert("Yanlış şifre!");
-                                                        // }
-                                                    }}
-                                                    title="Puanı düzenlemek için tıklayın"
-                                                >
-                                                    📊 <span className="font-medium text-slate-700">{t.yearlyLoad}</span> puan ✏️
-                                                </span>
-                                            )}
+                                            <span
+                                                className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-100 rounded px-1 -mx-1 transition-colors"
+                                                onClick={() => {
+                                                    const newValStr = window.prompt(`${t.name} için yeni puan girin:`, String(t.yearlyLoad || 0));
+                                                    if (newValStr !== null) {
+                                                        const newVal = Math.max(0, parseInt(newValStr) || 0);
+                                                        updateTeacher(t.id, { yearlyLoad: newVal });
+                                                        addToast(`${t.name} puanı ${newVal} olarak güncellendi.`);
+                                                    }
+                                                }}
+                                                title="Puanı düzenlemek için tıklayın"
+                                            >
+                                                📊 <span className="font-medium text-slate-700">{t.yearlyLoad}</span> puan
+                                            </span>
                                             {t.birthDate && (
                                                 <span className="inline-flex items-center gap-1">
                                                     <Cake className="w-3.5 h-3.5 text-pink-400" /> {t.birthDate}
@@ -488,13 +431,11 @@ export default function TeacherList() {
 
                                     {/* Sağ: Aksiyon Butonları */}
                                     <div className="flex items-center gap-2">
-                                        {/* Hızlı Aksiyonlar */}
                                         <Button
                                             variant={t.isTester ? "default" : "outline"}
                                             size="sm"
                                             onClick={() => handleToggleTester(t.id)}
                                             className={`h-8 ${t.isTester ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
-                                            title="Test dosyalarını bu öğretmene atanabilir hale getirir"
                                         >
                                             <FlaskConical className="w-3.5 h-3.5 mr-1" />
                                             {t.isTester ? 'Testör ✓' : 'Testör'}
@@ -514,121 +455,116 @@ export default function TeacherList() {
                                             size="sm"
                                             onClick={() => handleToggleBackupToday(t.id)}
                                             className={`h-8 ${isBackupToday ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
-                                            title={`Bugün yedek: dosya almaz. Gün sonunda en yüksek puan +${settings.backupBonusAmount} ile başlar.`}
                                         >
                                             <Crown className="w-3.5 h-3.5 mr-1" />
                                             {isBackupToday ? 'Yedek ✓' : 'Yedek Yap'}
                                         </Button>
 
-                                        {/* Diğer Aksiyonlar - Popover */}
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-56 p-2" align="start" side="left">
-                                                <div className="space-y-1">
-
-                                                    {/* NEW: Score Adjustment Button */}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start h-9 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                                                        onClick={() => setScoreAdjustTeacher(t)}
-                                                    >
-                                                        <span className="w-4 h-4 mr-2 text-center font-bold">±</span>
-                                                        Puan Denkleştir
-                                                    </Button>
-
-                                                    <div className="h-px bg-slate-100 my-1" />
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start h-9"
-                                                        onClick={() => testWebPushNotify(t)}
-                                                    >
-                                                        <Bell className="w-4 h-4 mr-2" />
-                                                        Test Push Gönder
-                                                    </Button>
-
-                                                    {/* Pushover Key Yönetimi */}
-                                                    {!t.pushoverKey ? (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="w-full justify-start h-9"
-                                                            onClick={() => setEditKeyOpen(p => ({ ...p, [t.id]: true }))}
-                                                        >
-                                                            <KeyRound className="w-4 h-4 mr-2" />
-                                                            Pushover Key Ekle
-                                                        </Button>
-                                                    ) : (
-                                                        <>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="w-full justify-start h-9"
-                                                                onClick={() => testNotifyTeacher(t)}
-                                                            >
-                                                                <Bell className="w-4 h-4 mr-2" />
-                                                                Pushover Test
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="w-full justify-start h-9 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                                                                onClick={() => {
-                                                                    updateTeacher(t.id, { pushoverKey: undefined });
-                                                                }}
-                                                            >
-                                                                <BellOff className="w-4 h-4 mr-2" />
-                                                                Pushover Key Sil
-                                                            </Button>
-                                                        </>
-                                                    )}
-
-                                                    <div className="h-px bg-slate-100 my-1" />
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start h-9 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                                                        onClick={() => {
-                                                            if (confirm(`${t.name} fizyoterapist olarak işaretlenecek ve sıralamaya dahil olmayacak. Emin misiniz?`)) {
-                                                                updateTeacher(t.id, { isPhysiotherapist: true });
-                                                                addToast(`${t.name} fizyoterapiste taşındı.`);
-                                                            }
-                                                        }}
-                                                    >
-                                                        🏥 Fizyoterapiste Taşı
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start h-9"
-                                                        onClick={() => handleToggleActive(t.id)}
-                                                    >
-                                                        <Archive className="w-4 h-4 mr-2" />
-                                                        Arşivle
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-start h-9 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                                                        onClick={() => handleDeleteTeacher(t.id)}
-                                                    >
-                                                        <Trash2 className="w-4 h-4 mr-2" />
-                                                        Kalıcı Sil
-                                                    </Button>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
+                                        {/* 3 nokta butonu → kartı genişletir */}
+                                        <Button
+                                            variant={isExpanded ? "default" : "ghost"}
+                                            size="sm"
+                                            className={`h-8 w-8 p-0 transition-all ${isExpanded ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}`}
+                                            onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                                        >
+                                            {isExpanded ? <X className="w-4 h-4" /> : <MoreHorizontal className="w-4 h-4" />}
+                                        </Button>
                                     </div>
                                 </div>
+
+                                {/* Genişleyen Aksiyon Paneli - kartın içinde açılır */}
+                                {isExpanded && (
+                                    <div className="mt-3 pt-3 border-t border-indigo-100 animate-in slide-in-from-top-2 duration-200">
+                                        <div className="flex flex-wrap gap-2">
+                                            {/* Puan Denkleştir */}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                                                onClick={() => { setScoreAdjustTeacher(t); setExpandedId(null); }}
+                                            >
+                                                <span className="font-bold mr-1">±</span> Puan Denkleştir
+                                            </Button>
+
+                                            {/* Test Push */}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                onClick={() => { testWebPushNotify(t); setExpandedId(null); }}
+                                            >
+                                                <Bell className="w-3.5 h-3.5 mr-1" /> Test Push
+                                            </Button>
+
+                                            {/* Pushover */}
+                                            {!t.pushoverKey ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8"
+                                                    onClick={() => { setEditKeyOpen(p => ({ ...p, [t.id]: true })); setExpandedId(null); }}
+                                                >
+                                                    <KeyRound className="w-3.5 h-3.5 mr-1" /> Pushover Key Ekle
+                                                </Button>
+                                            ) : (
+                                                <>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8"
+                                                        onClick={() => { testNotifyTeacher(t); setExpandedId(null); }}
+                                                    >
+                                                        <Bell className="w-3.5 h-3.5 mr-1" /> Pushover Test
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 text-rose-600 border-rose-200 hover:bg-rose-50"
+                                                        onClick={() => { updateTeacher(t.id, { pushoverKey: undefined }); setExpandedId(null); }}
+                                                    >
+                                                        <BellOff className="w-3.5 h-3.5 mr-1" /> Pushover Key Sil
+                                                    </Button>
+                                                </>
+                                            )}
+
+                                            {/* Fizyoterapiste Taşı */}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 text-purple-600 border-purple-200 hover:bg-purple-50"
+                                                onClick={() => {
+                                                    setExpandedId(null);
+                                                    if (confirm(`${t.name} fizyoterapist olarak işaretlenecek ve sıralamaya dahil olmayacak. Emin misiniz?`)) {
+                                                        updateTeacher(t.id, { isPhysiotherapist: true });
+                                                        addToast(`${t.name} fizyoterapiste taşındı.`);
+                                                    }
+                                                }}
+                                            >
+                                                🏥 Fizyoterapiste Taşı
+                                            </Button>
+
+                                            {/* Arşivle */}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                onClick={() => { handleToggleActive(t.id); setExpandedId(null); }}
+                                            >
+                                                <Archive className="w-3.5 h-3.5 mr-1" /> Arşivle
+                                            </Button>
+
+                                            {/* Kalıcı Sil */}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 text-rose-600 border-rose-200 hover:bg-rose-50"
+                                                onClick={() => { handleDeleteTeacher(t.id); setExpandedId(null); }}
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Kalıcı Sil
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Pushover Key Input (Inline) */}
                                 {editKeyOpen[t.id] && (
@@ -702,4 +638,3 @@ export default function TeacherList() {
         </div>
     );
 }
-
