@@ -154,8 +154,8 @@ export async function createBackup(backup: LocalBackup): Promise<boolean> {
         const filePath = path.join(BACKUP_DIR, fileName);
         await fs.writeFile(filePath, JSON.stringify(backup, null, 2), "utf-8");
 
-        // Clean old backups (older than 30 days)
-        await cleanOldBackups(30);
+        // YENİ: Sadece son yedeği sakla, diğerlerini sil.
+        await cleanAllOtherBackups(backup.id);
 
         return true;
     } catch (err) {
@@ -195,22 +195,21 @@ export async function deleteBackupById(backupId: string): Promise<boolean> {
     }
 }
 
-async function cleanOldBackups(daysToKeep: number): Promise<void> {
+async function cleanAllOtherBackups(currentBackupId: string): Promise<void> {
     try {
         const files = await fs.readdir(BACKUP_DIR);
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - daysToKeep);
 
         for (const file of files.filter(f => f.endsWith(".json"))) {
-            try {
-                const filePath = path.join(BACKUP_DIR, file);
-                const data = await fs.readFile(filePath, "utf-8");
-                const backup = JSON.parse(data) as LocalBackup;
-                if (new Date(backup.created_at) < cutoff) {
+            // Eğer dosya ismi şu anki backup ID'sini içermiyorsa sil
+            if (!file.includes(currentBackupId)) {
+                try {
+                    const filePath = path.join(BACKUP_DIR, file);
                     await fs.unlink(filePath);
-                    console.log(`[localStorage] Cleaned old backup: ${file}`);
+                    console.log(`[localStorage] Old backup cleaned: ${file}`);
+                } catch (e) {
+                    console.error(`[localStorage] Failed to delete ${file}`, e);
                 }
-            } catch { }
+            }
         }
     } catch (err) {
         console.error("[localStorage] Clean backups error:", err);

@@ -11,52 +11,56 @@
       "active": false,
       "isTester": false,
       "pushoverKey": null,
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     },
     {
       "id": "axlady7",
       "name": "ARMAN GÖKDAĞ",
       "isAbsent": false,
-      "yearlyLoad": 185,
+      "yearlyLoad": 202,
       "monthly": {
         "2025-12": 135,
         "2026-01": 122,
-        "2026-02": 30
+        "2026-02": 47
       },
       "active": true,
       "isTester": false,
       "pushoverKey": "ud9q7zdssk51quzyeedck2khbj84ms",
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     },
     {
       "id": "45zvjwn",
       "name": "AYGÜN ÇELİK",
       "isAbsent": false,
-      "yearlyLoad": 188,
+      "yearlyLoad": 203,
       "monthly": {
         "2025-12": 133,
         "2026-01": 116,
-        "2026-02": 25
+        "2026-02": 40
       },
       "active": true,
       "isTester": false,
       "pushoverKey": "ujwyd1vbh9ek16twufiyos7s9yz9jf",
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     },
     {
       "id": "rnycdxd",
       "name": "ERAY AHMET TAŞKIN",
       "isAbsent": false,
-      "yearlyLoad": 193,
+      "yearlyLoad": 204,
       "monthly": {
         "2025-12": 123,
         "2026-01": 73,
-        "2026-02": 44
+        "2026-02": 55
       },
       "active": true,
-      "isTester": true,
+      "isTester": false,
       "pushoverKey": "u3x5sa56br6txsx9atfmh6kcm3o9ph",
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     },
     {
       "id": "1643h08",
@@ -70,37 +74,40 @@
       "isTester": false,
       "pushoverKey": null,
       "backupDay": null,
-      "isPhysiotherapist": true
+      "isPhysiotherapist": true,
+      "startingLoad": 0
     },
     {
       "id": "ji4xjb9",
       "name": "NESLİHAN ŞAHİNER",
       "isAbsent": false,
-      "yearlyLoad": 185,
+      "yearlyLoad": 202,
       "monthly": {
         "2025-12": 133,
         "2026-01": 85,
-        "2026-02": 26
+        "2026-02": 43
       },
       "active": true,
       "isTester": false,
       "pushoverKey": "u59av326zwkubqco6dnapswxfhdutg",
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     },
     {
       "id": "wttamdj",
       "name": "NURAY KIZILGÜNEŞ",
       "isAbsent": false,
-      "yearlyLoad": 186,
+      "yearlyLoad": 205,
       "monthly": {
         "2025-12": 128,
         "2026-01": 25,
-        "2026-02": 20
+        "2026-02": 39
       },
       "active": true,
-      "isTester": false,
+      "isTester": true,
       "pushoverKey": "ubfiyxo9ikt4ouotphhsc7uycmwdis",
-      "backupDay": null
+      "backupDay": null,
+      "startingLoad": 0
     }
   ],
   "cases": [
@@ -203,6 +210,406 @@
         "extra": "Özel Öğrenme Güçlüğü"
       },
       "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "adnllz6",
+      "student": "BÜLENT EFE ARSLAN",
+      "fileNo": "659",
+      "score": 4,
+      "createdAt": "2026-02-16T07:53:26.859Z",
+      "type": "DESTEK",
+      "grade": "10. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "d38cd0d3-bb5f-44cb-9154-7898630bbfa4",
+        "time": "11:00",
+        "name": "BÜLENT EFE ARSLAN",
+        "fileNo": "659",
+        "extra": "Ağır Düzeyde Zihinsel Yetersizlik"
+      },
+      "assignedTo": "ji4xjb9"
+    },
+    {
+      "id": "9jnydi0",
+      "student": "SILA ŞERAN",
+      "fileNo": "2402",
+      "score": 3,
+      "createdAt": "2026-02-16T10:36:31.043Z",
+      "type": "DESTEK",
+      "grade": "11. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "c0bc611b-1d0f-4cb0-b23f-fac18267f84e",
+        "time": "14:00",
+        "name": "SILA ŞERAN",
+        "fileNo": "2402",
+        "extra": "Hafif Düzeyde Zihinsel Yetersizlik 16/02/2026 Tarihli Randevu Listesi 16/02/2026 09:19:541https://ramdevu.meb.gov.tr"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "fec9yg6",
+      "student": "İLKER ERDEM ÇUBUKLU",
+      "fileNo": "6374",
+      "score": 4,
+      "createdAt": "2026-02-16T10:52:46.930Z",
+      "type": "IKISI",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "1c022251-2992-4843-99c5-c37aa764c0b6",
+        "time": "14:00",
+        "name": "İLKER ERDEM ÇUBUKLU",
+        "fileNo": "",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "wttamdj"
+    },
+    {
+      "id": "lpth04q",
+      "student": "DEVRİM OLCAY",
+      "fileNo": "6580",
+      "score": 3,
+      "createdAt": "2026-02-16T11:02:12.263Z",
+      "type": "DESTEK",
+      "grade": "Okul Öncesi",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "32d8388e-4fca-48c3-9462-29b238608dd9",
+        "time": "14:00",
+        "name": "DEVRİM OLCAY",
+        "fileNo": "6580",
+        "extra": "Dil ve Konuşma Güçlüğü"
+      },
+      "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "ytu6ssj",
+      "student": "BELİS TOPAK",
+      "fileNo": "4585",
+      "score": 3,
+      "createdAt": "2026-02-17T11:20:27.939Z",
+      "type": "DESTEK",
+      "grade": "6. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "e17d27f2-fb42-40f3-86c6-744be748d6ae",
+        "time": "09:30",
+        "name": "BELİS TOPAK",
+        "fileNo": "4585",
+        "extra": "Hafif Düzeyde Otizm Spektrum Bozukluğu"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "venpo3c",
+      "student": "DOĞAN KUZEY ECEREL",
+      "fileNo": "7575",
+      "score": 6,
+      "createdAt": "2026-02-17T11:21:31.379Z",
+      "type": "IKISI",
+      "grade": "2. Sınıf",
+      "isNew": true,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "52ce822e-09b4-4333-929a-3eea187f27bb",
+        "time": "09:30",
+        "name": "DOĞAN KUZEY ECEREL",
+        "fileNo": "",
+        "extra": "Dil ve Konuşma Güçlüğü"
+      },
+      "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "9oog0qs",
+      "student": "ZİLAN HAN",
+      "fileNo": "4695",
+      "score": 3,
+      "createdAt": "2026-02-17T11:22:17.468Z",
+      "type": "DESTEK",
+      "grade": "11. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "8a14fd0c-1316-46da-864b-c546d5f7d6c6",
+        "time": "09:30",
+        "name": "ZİLAN HAN",
+        "fileNo": "4695",
+        "extra": "Dikkat Eksikliği ve Hiperaktivite Bozukluğu"
+      },
+      "assignedTo": "ji4xjb9"
+    },
+    {
+      "id": "hgnfwa8",
+      "student": "ÜMMÜ GÜLSÜM KALENDER",
+      "fileNo": "5079",
+      "score": 2,
+      "createdAt": "2026-02-17T11:22:52.090Z",
+      "type": "YONLENDIRME",
+      "grade": "8. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "1e30548b-cc92-4e3b-8737-9f086df3cdc1",
+        "time": "10:00",
+        "name": "ÜMMÜ GÜLSÜM KALENDER",
+        "fileNo": "5079",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "wttamdj"
+    },
+    {
+      "id": "ioznye3",
+      "student": "YAKUP KAN",
+      "fileNo": "7576",
+      "score": 5,
+      "createdAt": "2026-02-17T11:23:17.757Z",
+      "type": "IKISI",
+      "grade": "2. Sınıf",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "65d66c0e-47a9-4e18-90d9-9af262bc4a74",
+        "time": "10:30",
+        "name": "YAKUP KAN",
+        "fileNo": "",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "wttamdj"
+    },
+    {
+      "id": "ys4jq33",
+      "student": "MİRAÇ UMUT YÖRDEM",
+      "fileNo": "6660",
+      "score": 5,
+      "createdAt": "2026-02-17T11:23:37.809Z",
+      "type": "IKISI",
+      "grade": "1. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "38bb4c17-1a01-406d-a812-3eae6b0d4a8f",
+        "time": "10:30",
+        "name": "MİRAÇ UMUT YÖRDEM",
+        "fileNo": "6660",
+        "extra": "Dil ve Konuşma Güçlüğü"
+      },
+      "assignedTo": "ji4xjb9"
+    },
+    {
+      "id": "33bwo0b",
+      "student": "İSA TUGAY ÇETİN",
+      "fileNo": "4703",
+      "score": 4,
+      "createdAt": "2026-02-17T11:25:03.460Z",
+      "type": "DESTEK",
+      "grade": "7. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "e8cfcb12-b87f-4f8b-9966-c86a185b75b7",
+        "time": "11:00",
+        "name": "İSA TUGAY ÇETİN",
+        "fileNo": "4703",
+        "extra": "Hafif Düzeyde Otizm Spektrum Bozukluğu"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "q7tja5m",
+      "student": "METE KEMAHLIOĞLU",
+      "fileNo": "3379",
+      "score": 3,
+      "createdAt": "2026-02-17T11:25:56.351Z",
+      "type": "DESTEK",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "0e2820c8-782e-4055-8955-78fae14743e0",
+        "time": "14:00",
+        "name": "METE KEMAHLIOĞLU",
+        "fileNo": "3379",
+        "extra": "Hafif Düzeyde Otizm Spektrum Bozukluğu"
+      },
+      "assignedTo": "rnycdxd"
+    },
+    {
+      "id": "152tojr",
+      "student": "YUSUF TUTCAN",
+      "fileNo": "5624",
+      "score": 4,
+      "createdAt": "2026-02-17T11:26:31.518Z",
+      "type": "DESTEK",
+      "grade": "Küçük (Okulu Yok)",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "fa5ee3f2-b018-4501-8c1c-3c5f79dbb495",
+        "time": "14:00",
+        "name": "YUSUF TUTCAN",
+        "fileNo": "",
+        "extra": "Dil ve Konuşma Güçlüğü 17/02/2026 Tarihli Randevu Listesi 16/02/2026 15:46:251https://ramdevu.meb.gov.tr"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "pk59jlc",
+      "student": "ASİL İBRAHİM BAYRAK",
+      "fileNo": "5624",
+      "score": 2,
+      "createdAt": "2026-02-17T11:44:22.447Z",
+      "type": "YONLENDIRME",
+      "grade": "5. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "27233a7c-bc04-41e9-8640-0704b17ac87e",
+        "time": "14:00",
+        "name": "ASİL İBRAHİM BAYRAK",
+        "fileNo": "5624",
+        "extra": "Hafif Düzeyde Zihinsel Yetersizlik"
+      },
+      "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "zf4vb1n",
+      "student": "IRMAK GÜRCAN",
+      "fileNo": "6562",
+      "score": 8,
+      "createdAt": "2026-02-18T06:35:46.991Z",
+      "type": "YONLENDIRME",
+      "grade": "3. Sınıf",
+      "isNew": false,
+      "diagCount": 0,
+      "isTest": true,
+      "sourcePdfEntry": {
+        "id": "f1b9733a-0cfc-416c-9043-ab01f3335142",
+        "time": "09:30",
+        "name": "IRMAK GÜRCAN",
+        "fileNo": "6562",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "wttamdj"
+    },
+    {
+      "id": "c83rx8e",
+      "student": "CANSU BERRA GÜN",
+      "fileNo": "7578",
+      "score": 3,
+      "createdAt": "2026-02-18T07:19:07.409Z",
+      "type": "YONLENDIRME",
+      "grade": "Okul Öncesi",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "3c782365-6db6-4b86-b391-f36f11c24dc8",
+        "time": "10:30",
+        "name": "CANSU BERRA GÜN",
+        "fileNo": "",
+        "extra": "Hafif Düzeyde Zihinsel Yetersizlik"
+      },
+      "assignedTo": "rnycdxd"
+    },
+    {
+      "id": "zbrrx4x",
+      "student": "HİRA ÖZEL",
+      "fileNo": "7579",
+      "score": 5,
+      "createdAt": "2026-02-18T08:02:23.804Z",
+      "type": "IKISI",
+      "grade": "1. Sınıf",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "76a96978-424c-498d-b0d4-8ae25adae182",
+        "time": "09:30",
+        "name": "HİRA ÖZEL",
+        "fileNo": "",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "ji4xjb9"
+    },
+    {
+      "id": "qkfh02c",
+      "student": "BATUHAN SINIK",
+      "fileNo": "3925",
+      "score": 4,
+      "createdAt": "2026-02-18T08:11:27.364Z",
+      "type": "DESTEK",
+      "grade": "4. Sınıf",
+      "isNew": false,
+      "diagCount": 2,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "65cb20a3-061e-4704-9096-dbb0d389e170",
+        "time": "11:00",
+        "name": "BATUHAN SINIK",
+        "fileNo": "3925",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "45zvjwn"
+    },
+    {
+      "id": "ccpgy0k",
+      "student": "EMRE CAN İÇME",
+      "fileNo": "5945",
+      "score": 3,
+      "createdAt": "2026-02-18T10:43:18.804Z",
+      "type": "DESTEK",
+      "grade": "5. Sınıf",
+      "isNew": false,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "fdce7f42-5459-46eb-ade8-2a69d4bc6da0",
+        "time": "14:00",
+        "name": "EMRE CAN İÇME",
+        "fileNo": "5945",
+        "extra": "Özel Öğrenme Güçlüğü"
+      },
+      "assignedTo": "axlady7"
+    },
+    {
+      "id": "dvsuruc",
+      "student": "TOPRAK SÜLEYMAN CAN",
+      "fileNo": "7580",
+      "score": 5,
+      "createdAt": "2026-02-18T10:47:37.436Z",
+      "type": "IKISI",
+      "grade": "Okul Öncesi",
+      "isNew": true,
+      "diagCount": 1,
+      "isTest": false,
+      "sourcePdfEntry": {
+        "id": "72614361-1b0c-4149-a503-2f4f98841c61",
+        "time": "14:00",
+        "name": "TOPRAK SÜLEYMAN CAN",
+        "fileNo": "",
+        "extra": "Dil ve Konuşma Güçlüğü 18/02/2026 Tarihli Randevu Listesi 17/02/2026 16:10:221https://ramdevu.meb.gov.tr"
+      },
+      "assignedTo": "rnycdxd"
     }
   ],
   "history": {
@@ -7222,10 +7629,34 @@
         "color": "#2563eb",
         "type": "WISCR"
       }
+    ],
+    "2026-02-23": [
+      {
+        "id": "mlqjtfppi02ov",
+        "text": "ERAY  HİZMET İÇİ  EĞİTİMDE",
+        "color": "#1e293b",
+        "type": "SERBEST"
+      }
+    ],
+    "2026-02-24": [
+      {
+        "id": "mlqle18ci437k",
+        "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
+        "color": "#1e293b",
+        "type": "SERBEST"
+      }
+    ],
+    "2026-02-25": [
+      {
+        "id": "mlqle8wdivj5g",
+        "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
+        "color": "#1e293b",
+        "type": "SERBEST"
+      }
     ]
   },
-  "lastRollover": "2026-02-16",
-  "lastAbsencePenalty": "2026-02-16",
+  "lastRollover": "2026-02-17",
+  "lastAbsencePenalty": "",
   "announcements": [],
   "settings": {
     "dailyLimit": 6,
@@ -9849,51 +10280,157 @@
       "fileNo": "7574",
       "teacherName": "AYGÜN ÇELİK",
       "date": "2026-02-16"
+    },
+    {
+      "id": "adnllz6",
+      "studentName": "BÜLENT EFE ARSLAN",
+      "fileNo": "659",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-16"
+    },
+    {
+      "id": "9jnydi0",
+      "studentName": "SILA ŞERAN",
+      "fileNo": "2402",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-16"
+    },
+    {
+      "id": "fec9yg6",
+      "studentName": "İLKER ERDEM ÇUBUKLU",
+      "fileNo": "6374",
+      "teacherName": "NURAY KIZILGÜNEŞ",
+      "date": "2026-02-16"
+    },
+    {
+      "id": "lpth04q",
+      "studentName": "DEVRİM OLCAY",
+      "fileNo": "6580",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-16"
+    },
+    {
+      "id": "ytu6ssj",
+      "studentName": "BELİS TOPAK",
+      "fileNo": "4585",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "venpo3c",
+      "studentName": "DOĞAN KUZEY ECEREL",
+      "fileNo": "7575",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "9oog0qs",
+      "studentName": "ZİLAN HAN",
+      "fileNo": "4695",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "hgnfwa8",
+      "studentName": "ÜMMÜ GÜLSÜM KALENDER",
+      "fileNo": "5079",
+      "teacherName": "NURAY KIZILGÜNEŞ",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "ioznye3",
+      "studentName": "YAKUP KAN",
+      "fileNo": "7576",
+      "teacherName": "NURAY KIZILGÜNEŞ",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "ys4jq33",
+      "studentName": "MİRAÇ UMUT YÖRDEM",
+      "fileNo": "6660",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "33bwo0b",
+      "studentName": "İSA TUGAY ÇETİN",
+      "fileNo": "4703",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "q7tja5m",
+      "studentName": "METE KEMAHLIOĞLU",
+      "fileNo": "3379",
+      "teacherName": "ERAY AHMET TAŞKIN",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "152tojr",
+      "studentName": "YUSUF TUTCAN",
+      "fileNo": "5624",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "8r8jn0u",
+      "studentName": "ASİL İBRAHİM BAYRAK",
+      "fileNo": "5624",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "pk59jlc",
+      "studentName": "ASİL İBRAHİM BAYRAK",
+      "fileNo": "5624",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-17"
+    },
+    {
+      "id": "zf4vb1n",
+      "studentName": "IRMAK GÜRCAN",
+      "fileNo": "6562",
+      "teacherName": "NURAY KIZILGÜNEŞ",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "c83rx8e",
+      "studentName": "CANSU BERRA GÜN",
+      "fileNo": "7578",
+      "teacherName": "ERAY AHMET TAŞKIN",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "zbrrx4x",
+      "studentName": "HİRA ÖZEL",
+      "fileNo": "7579",
+      "teacherName": "NESLİHAN ŞAHİNER",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "qkfh02c",
+      "studentName": "BATUHAN SINIK",
+      "fileNo": "3925",
+      "teacherName": "AYGÜN ÇELİK",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "ccpgy0k",
+      "studentName": "EMRE CAN İÇME",
+      "fileNo": "5945",
+      "teacherName": "ARMAN GÖKDAĞ",
+      "date": "2026-02-18"
+    },
+    {
+      "id": "dvsuruc",
+      "studentName": "TOPRAK SÜLEYMAN CAN",
+      "fileNo": "7580",
+      "teacherName": "ERAY AHMET TAŞKIN",
+      "date": "2026-02-18"
     }
   ],
-  "absenceRecords": [
-    {
-      "date": "2026-01-21",
-      "teacherId": "2ue5do4"
-    },
-    {
-      "date": "2026-01-21",
-      "teacherId": "ji4xjb9"
-    },
-    {
-      "date": "2026-01-22",
-      "teacherId": "ji4xjb9"
-    },
-    {
-      "date": "2026-01-23",
-      "teacherId": "ji4xjb9"
-    },
-    {
-      "date": "2026-01-26",
-      "teacherId": "45zvjwn"
-    },
-    {
-      "date": "2026-01-26",
-      "teacherId": "rnycdxd"
-    },
-    {
-      "teacherId": "rnycdxd",
-      "date": "2026-01-27"
-    },
-    {
-      "teacherId": "wttamdj",
-      "date": "2026-02-02"
-    },
-    {
-      "teacherId": "wttamdj",
-      "date": "2026-02-03"
-    },
-    {
-      "teacherId": "45zvjwn",
-      "date": "2026-02-05"
-    }
-  ],
+  "absenceRecords": [],
   "queue": [],
-  "updatedAt": "2026-02-16T07:42:10.233Z",
+  "updatedAt": "2026-02-18T10:47:38.470Z",
   "adminSessionId": "fvbbz14"
 }

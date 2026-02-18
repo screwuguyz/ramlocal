@@ -48,7 +48,7 @@ export default function MonthlyReport({ teachers, cases = [], history = {} }: Pr
       const total = monthCases.reduce((sum, c) => sum + c.score, 0);
       return total;
     });
-    const total = byMonth.reduce((a, b) => a + b, 0);
+    const total = byMonth.reduce((a, b) => a + b, 0) + (t.startingLoad || 0);
     return { id: t.id, name: t.name, byMonth, total };
   }), [teachers, months, year, allCases]);
 

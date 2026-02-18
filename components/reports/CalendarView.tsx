@@ -37,6 +37,7 @@ interface HistoryEntry {
 
 interface CalendarViewProps {
     history: Record<string, CaseFile[]>;
+    cases?: CaseFile[]; // Make optional to not break immediately
     teachers: Teacher[];
     onDayClick?: (date: string, cases: CaseFile[]) => void;
 }
@@ -49,7 +50,7 @@ const MONTHS_TR = [
 
 const DAYS_TR = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
-export default function CalendarView({ history, teachers, onDayClick }: CalendarViewProps) {
+export default function CalendarView({ history, cases = [], teachers, onDayClick }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -81,12 +82,21 @@ export default function CalendarView({ history, teachers, onDayClick }: Calendar
 
         return days;
     }, [startDayOfWeek, daysInMonth]);
-
-    // Bir gün için veri al
     const getDayData = (day: number) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const cases = history[dateStr] || [];
-        const realCases = cases.filter(c => !c.absencePenalty);
+
+        // History'den ve cases'den (bugün/aktif) verileri birleştir
+        const fromHistory = history[dateStr] || [];
+        const fromCases = cases.filter(c => c.createdAt.startsWith(dateStr));
+
+        const combined = [...fromHistory, ...fromCases];
+        // Dedupe
+        const uniqueCases = new Map<string, CaseFile>();
+        combined.forEach(c => {
+            if (c.id) uniqueCases.set(c.id, c);
+        });
+
+        const realCases = Array.from(uniqueCases.values()).filter(c => !c.absencePenalty);
 
         return {
             dateStr,

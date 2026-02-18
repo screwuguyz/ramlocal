@@ -70,8 +70,9 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
     const lastLocalEditRef = useRef<Record<string, number>>({});
     const lastLocalDeleteRef = useRef<Record<string, number>>({});
 
-    // Detect local teacher changes to set "protection lock"
+    // Detect local teacher changes (Edit/New/Delete) to set "protection lock"
     useEffect(() => {
+        // 1. Detect Edits & Adds
         if (teachers.length > 0) {
             teachers.forEach(t => {
                 const oldT = teachersRef.current.find(old => old.id === t.id);
@@ -85,6 +86,19 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                 }
             });
         }
+
+        // 2. Detect Deletions
+        if (teachersRef.current.length > 0) {
+            const currentIds = new Set(teachers.map(t => t.id));
+            teachersRef.current.forEach(oldT => {
+                if (!currentIds.has(oldT.id)) {
+                    // This teacher was deleted locally
+                    lastLocalDeleteRef.current[oldT.id] = Date.now();
+                    console.log(`[Sync] Local teacher delete detected: ${oldT.name}, blocking resurrection for 15s`);
+                }
+            });
+        }
+
         teachersRef.current = teachers;
     }, [teachers]);
 
@@ -110,6 +124,25 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
     // Fetch central state from API
     const fetchCentralState = useCallback(async () => {
         try {
+            // 1. Check version first (Lightweight)
+            const checkRes = await fetch(`${API_ENDPOINTS.STATE_CHECK || "/api/state-check"}?ts=${Date.now()}`, {
+                cache: "no-store",
+            });
+
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                const remoteTs = Date.parse(String(checkData.updatedAt || 0));
+                const localTs = Date.parse(String(lastAppliedAtRef.current || 0));
+
+                // If remote is not newer, skip full fetch
+                // (Allow 1s difference to avoid micro-sync issues)
+                if (!isNaN(remoteTs) && !isNaN(localTs) && remoteTs <= localTs) {
+                    // console.log("[Sync] Skipping fetch, data is up to date.");
+                    return;
+                }
+            }
+
+            // 2. Fetch Full State
             const res = await fetch(`${API_ENDPOINTS.STATE}?ts=${Date.now()}`, {
                 cache: "no-store",
             });
@@ -129,12 +162,7 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
             const supabaseTeacherCount = s.teachers?.length || 0;
             supabaseTeacherCountRef.current = supabaseTeacherCount;
 
-            const incomingTs = Date.parse(String(s.updatedAt || 0));
-            const currentTs = Date.parse(String(lastAppliedAtRef.current || 0));
-            // Relaxed timestamp check: if incoming is strictly older, ignore. 
-            // If equal, we still process to catch up on partial updates unless locked.
-            if (!isNaN(incomingTs) && incomingTs < currentTs) return;
-
+            // Update reference timestamp
             lastAppliedAtRef.current = s.updatedAt || new Date().toISOString();
 
             // Protection: Don't overwrite local teachers with empty Supabase data
@@ -152,7 +180,16 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
             } else if (supabaseTeachers.length > 0) {
                 // Intelligent Merge & Hard Lock Protection
                 const now = Date.now();
-                let mergedTeachers = supabaseTeachers.map((remoteT: Teacher) => {
+                let mergedTeachers = supabaseTeachers.filter((remoteT: Teacher) => {
+                    // ZOMBIE TEACHER PROTECTION
+                    // If we deleted this teacher locally in the last 15s, don't let it come back
+                    const deletedAt = lastLocalDeleteRef.current[remoteT.id];
+                    if (deletedAt && (now - deletedAt < 15000)) {
+                        console.log(`[Sync] 🧟 Zombie Teacher blocked: ${remoteT.name}`);
+                        return false;
+                    }
+                    return true;
+                }).map((remoteT: Teacher) => {
                     const localT = currentTeachers.find((t) => t.id === remoteT.id);
                     if (!localT) return remoteT;
 
@@ -162,29 +199,72 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
                         console.log(`[Sync] 🛡️ Protected ${localT.name} from server overwrite (edited ${Math.round((now - lastEdit) / 1000)}s ago)`);
                         return localT;
                     }
+                    // 2. AGGRESSIVE SCORE PROTECTION: 
+                    // If remote score is 0 OR significantly different from local (more than 5 points diff) 
+                    // AND local was recently edited (last 60 seconds), TRUST LOCAL.
+                    const timeSinceEdit = now - (lastLocalEditRef.current[remoteT.id] || 0);
 
-                    // 2. ZERO PROTECTION: If remote score is 0 but local is > 0, keep local score
-                    if ((remoteT.yearlyLoad === 0) && (localT.yearlyLoad > 0)) {
-                        console.warn(`[fetchCentralState] Protection: Ignoring 0 score from server for ${remoteT.name}, keeping local ${localT.yearlyLoad}`);
-                        // DEBUG: Kullanıcıya koruma kalkanının çalıştığını söyle
-                        // addToast(`🛡️ KORUMA: ${localT.name} için sunucudan gelen 0 puan engellendi.`);
+                    // Strict Zero Protection
+                    if (remoteT.yearlyLoad === 0 && localT.yearlyLoad > 0) {
+                        console.warn(`[Sync] 🛡️ Zero Protection: Keeping local ${localT.yearlyLoad} vs remote 0 for ${localT.name}`);
                         return { ...remoteT, yearlyLoad: localT.yearlyLoad };
                     }
+                    // Recent Edit Protection (Extended to 60s for safety)
+                    if (timeSinceEdit < 60000 && remoteT.yearlyLoad !== localT.yearlyLoad) {
+                        console.warn(`[Sync] 🛡️ Recent Edit Protection: Keeping local ${localT.yearlyLoad} vs remote ${remoteT.yearlyLoad} for ${localT.name} (edited ${Math.round(timeSinceEdit / 1000)}s ago)`);
+                        return { ...remoteT, yearlyLoad: localT.yearlyLoad, startingLoad: localT.startingLoad };
+                    }
+
+                    // Always preserve startingLoad from local if remote is missing it
+                    if (localT.startingLoad !== undefined && remoteT.startingLoad === undefined) {
+                        // Restore startingLoad
+                        const fixedT = { ...remoteT, startingLoad: localT.startingLoad };
+                        // RESTORE YEARLY LOAD from startingLoad if remote is 0
+                        if (fixedT.yearlyLoad === 0 && fixedT.startingLoad > 0) {
+                            fixedT.yearlyLoad = fixedT.startingLoad;
+                            console.warn(`[Sync] 🛡️ Restored yearlyLoad ${fixedT.yearlyLoad} from startingLoad for ${fixedT.name}`);
+                        }
+                        return fixedT;
+                    }
+
+                    // Enforce yearlyLoad >= startingLoad
+                    if (remoteT.startingLoad !== undefined && remoteT.yearlyLoad < remoteT.startingLoad) {
+                        console.warn(`[Sync] 🛡️ Correcting yearlyLoad ${remoteT.yearlyLoad} to min ${remoteT.startingLoad} for ${remoteT.name}`);
+                        return { ...remoteT, yearlyLoad: remoteT.startingLoad };
+                    }
+
                     return remoteT;
                 });
 
-                // 3. NEW TEACHER PROTECTION: If a teacher exists locally but not on remote, AND was recently edited/added, keep it!
+                // 3. NEW TEACHER PROTECTION
                 const remoteIds = new Set(supabaseTeachers.map((t: Teacher) => t.id));
                 const localOnlyTeachers = currentTeachers.filter(t => !remoteIds.has(t.id));
 
                 localOnlyTeachers.forEach(localT => {
                     const lastEdit = lastLocalEditRef.current[localT.id] || 0;
-                    // If added/edited in last 15 seconds, assume it's a new teacher waiting to sync
-                    if (now - lastEdit < 15000) {
-                        console.log(`[Sync] 🛡️ Keeping new/unsynced teacher ${localT.name} (added ${Math.round((now - lastEdit) / 1000)}s ago)`);
+                    const hasStartingLoad = localT.startingLoad !== undefined;
+
+                    // If added/edited recently OR has manual starting load, keep it!
+                    if ((now - lastEdit < 30000) || hasStartingLoad) {
+                        console.log(`[Sync] 🛡️ Keeping new/unsynced teacher ${localT.name} (Has StartingLoad: ${hasStartingLoad})`);
                         mergedTeachers.push(localT);
+
+                        // Force sync up if it's been a while? 
+                        // Actually if we add it to mergedTeachers, it will trigger isDiff, causing setTeachers, which triggers syncToSupabase!
                     } else {
-                        console.warn(`[Sync] Dropping orphan teacher ${localT.name} (not in server, no recent edits)`);
+                        // Check if it was explicitly deleted
+                        if (lastLocalDeleteRef.current[localT.id]) {
+                            // It was deleted, so let it go
+                        } else {
+                            // It's an old orphan. 
+                            // DANGEROUS: If state.json is corrupt/missing data, this deletes valid teachers.
+                            // SAFEGUARD: If we are in LOCAL_MODE, maybe we should trust local more?
+                            // For now, let's just log and keep it if we are unsure?
+                            // No, if real deletion happens on another client, we need to drop it.
+                            // But since we are single-user likely or small team...
+                            // Let's rely on hasStartingLoad which covers manual attempts.
+                            console.warn(`[Sync] Dropping orphan teacher ${localT.name} (not in server, no startingLoad, no recent edits)`);
+                        }
                     }
                 });
 

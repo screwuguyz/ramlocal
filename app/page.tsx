@@ -111,6 +111,7 @@ const ADMIN_TABS = [
 ] as const;
 
 const GRADES = [
+  "Küçük (Okulu Yok)",
   "Okul Öncesi",
   "1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf",
   "5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf",
@@ -550,7 +551,9 @@ export default function DosyaAtamaApp() {
           nextGrade = g; // Aynı yıl içindeyse değiştirme
         } else {
           // Yıl atlamış, sınıfı artır
-          if (g === "Okul Öncesi") {
+          if (g === "Küçük (Okulu Yok)") {
+            nextGrade = "Okul Öncesi";
+          } else if (g === "Okul Öncesi") {
             nextGrade = "1. Sınıf"; // Okul öncesi -> 1. Sınıf (Yıl atlayınca)
           } else if (g === "12. Sınıf") {
             nextGrade = "Mezun";
@@ -736,7 +739,98 @@ export default function DosyaAtamaApp() {
 
 
   // ---- Merkezi durum: açılışta Supabase'den oku (LS olsa bile override et)
-  // ---- ⌨️ KLAVYE KISAYOLLARI
+  // ---- ⌨️ KLAVYE KISAYOLLARI (NUMPAD ve SAYI TUŞLARI)
+  useEffect(() => {
+    let lastKeyTime = 0;
+    let lastKey = "";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Sadece admin ise ve "files" tabındaysak çalışsın
+      if (!isAdmin || adminTab !== "files") return;
+
+      // Eğer input veya textarea'daysak çalışmasın
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+      const key = e.code;
+      const now = Date.now();
+
+      // Tuş haritalama (Numpad veya Üst Sayı Tuşları)
+      const isKey1 = key === "Numpad1" || key === "Digit1";
+      const isKey0 = key === "Numpad0" || key === "Digit0";
+      const isKey2 = key === "Numpad2" || key === "Digit2";
+
+      // Debug için (geliştirme aşamasında açık kalsın, sorun çözülünce kaldırılır)
+      // if (key.startsWith("Numpad") || key.startsWith("Digit")) {
+      //   toast(`Tuş: ${key}`, { duration: 1000 });
+      // }
+
+      // 1. Sınıf (1) ve Ardışık Tuşlar (10, 11, 12)
+      if (isKey1) {
+        // Eğer son basılan 1 ise ve 500ms geçmediyse -> 11. Sınıf
+        if (lastKey === "1" && now - lastKeyTime < 750) {
+          setGrade("11. Sınıf");
+          toast("11. Sınıf Seçildi");
+          lastKey = "";
+          return;
+        }
+
+        // İlk 1'e basış
+        setGrade("1. Sınıf");
+        // toast("1. Sınıf (Bekliyor...)");
+        lastKey = "1";
+        lastKeyTime = now;
+      }
+      else if (isKey0) {
+        // Eğer son basılan 1 ise -> 10. Sınıf
+        if (lastKey === "1" && now - lastKeyTime < 750) {
+          setGrade("10. Sınıf");
+          toast("10. Sınıf Seçildi");
+          lastKey = "";
+          return;
+        }
+        setGrade("Okul Öncesi");
+        toast("Okul Öncesi Seçildi");
+        lastKey = "0";
+        lastKeyTime = now;
+      }
+      else if (isKey2) {
+        // Eğer son basılan 1 ise -> 12. Sınıf
+        if (lastKey === "1" && now - lastKeyTime < 750) {
+          setGrade("12. Sınıf");
+          toast("12. Sınıf Seçildi");
+          lastKey = "";
+          return;
+        }
+        setGrade("2. Sınıf");
+        toast("2. Sınıf Seçildi");
+        lastKey = "2";
+        lastKeyTime = now;
+      }
+      // Diğer Tuşlar
+      else if (key === "Numpad3" || key === "Digit3") { setGrade("3. Sınıf"); toast("3. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad4" || key === "Digit4") { setGrade("4. Sınıf"); toast("4. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad5" || key === "Digit5") { setGrade("5. Sınıf"); toast("5. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad6" || key === "Digit6") { setGrade("6. Sınıf"); toast("6. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad7" || key === "Digit7") { setGrade("7. Sınıf"); toast("7. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad8" || key === "Digit8") { setGrade("8. Sınıf"); toast("8. Sınıf"); lastKey = ""; }
+      else if (key === "Numpad9" || key === "Digit9") { setGrade("9. Sınıf"); toast("9. Sınıf"); lastKey = ""; }
+      else if (key === "NumpadDecimal" || key === "Period" || key === "Comma") {
+        setGrade("Küçük (Okulu Yok)");
+        toast("Küçük (Okulu Yok)");
+        lastKey = "";
+      }
+      else {
+        lastKey = "";
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [adminTab, isAdmin]);
+
+
+  const [escapeListenerAttached, setEscapeListenerAttached] = useState(false); // Refactor cleanup helper fallback
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -2640,10 +2734,14 @@ export default function DosyaAtamaApp() {
           </div>
         )}
 
+
         {/* Admin alanı - Tab Sistemi */}
         {isAdmin && (
           <>
             <DailyWelcomeModal />
+            {/* Numpad Kısayolları */}
+
+
             <Card className="border-2 overflow-hidden">
               {/* Tab Navigation - Modern Tasarım */}
               <div className="border-b bg-gradient-to-r from-slate-50 via-white to-slate-50">
@@ -3247,6 +3345,7 @@ export default function DosyaAtamaApp() {
             <CardContent>
               <CalendarView
                 history={history}
+                cases={cases}
                 teachers={teachers}
               />
             </CardContent>

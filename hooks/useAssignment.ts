@@ -21,7 +21,10 @@ export function useAssignment() {
     const getRealYearlyLoad = useCallback((tid: string): number => {
         const currentYear = new Date().getFullYear();
         const seenIds = new Set<string>();
-        let total = 0;
+
+        // Başlangıç Puanı (Manuel eklenen)
+        const teacher = teachers.find(t => t.id === tid);
+        let total = teacher?.startingLoad || 0;
 
         // History'den bu yılın puanlarını topla
         Object.entries(history).forEach(([date, dayCases]) => {
@@ -50,14 +53,58 @@ export function useAssignment() {
     useEffect(() => {
         const timer = setTimeout(() => {
             teachers.forEach(t => {
-                const real = getRealYearlyLoad(t.id);
+                // 1. Calculate Score based on History + Today Cases (ignoring current startingLoad for a moment)
+                // We need a version of getRealYearlyLoad that doesn't use t.startingLoad, but we can just subtract it if needed
+                // OR we can copy the logic here for clarity since we are doing a migration
+
+                const currentYear = new Date().getFullYear();
+                const seenIds = new Set<string>();
+                let casesScore = 0;
+
+                // History
+                Object.entries(history).forEach(([date, dayCases]) => {
+                    if (date.startsWith(String(currentYear))) {
+                        dayCases.forEach(c => {
+                            if (c.assignedTo === t.id && c.id && !seenIds.has(c.id)) {
+                                seenIds.add(c.id);
+                                casesScore += c.score;
+                            }
+                        });
+                    }
+                });
+
+                // Today
+                cases.forEach(c => {
+                    if (c.assignedTo === t.id && c.createdAt.startsWith(String(currentYear)) && c.id && !seenIds.has(c.id)) {
+                        seenIds.add(c.id);
+                        casesScore += c.score;
+                    }
+                });
+
+                // 2. SELF-HEALING: If startingLoad is missing but we have a valid yearlyLoad, infer startingLoad
+                if (t.startingLoad === undefined && t.yearlyLoad > 0) {
+                    // Assume the difference is the starting load
+                    const inferredStartingLoad = Math.max(0, t.yearlyLoad - casesScore);
+                    console.log(`[AutoAssign] 🩹 Backfilling startingLoad for ${t.name}: ${inferredStartingLoad} (Yearly: ${t.yearlyLoad}, Cases: ${casesScore})`);
+
+                    // Update with inferred startingLoad
+                    updateTeacher(t.id, { startingLoad: inferredStartingLoad, yearlyLoad: t.yearlyLoad });
+                    return; // Skip the standard update this cycle to let this save
+                }
+
+                // 3. Standard Sync
+                const real = (t.startingLoad || 0) + casesScore;
                 if (t.yearlyLoad !== real) {
+                    // Only update if difference is meaningful or we trust our calculation
+                    // Prevent zero-reset if we are unsure? No, logic above handles the 'undefined' case.
+                    // If startingLoad IS defined (e.g. 0), then we trust the calc.
+                    console.log(`[AutoAssign] Updating score for ${t.name}: ${t.yearlyLoad} -> ${real}`);
                     updateTeacher(t.id, { yearlyLoad: real });
                 }
             });
         }, 1000);
         return () => clearTimeout(timer);
-    }, [cases, history, teachers, getRealYearlyLoad, updateTeacher]);
+    }, [cases, history, teachers, updateTeacher]);
 
     const countCasesToday = useCallback((tid: string) => {
         const today = getTodayYmd();

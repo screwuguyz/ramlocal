@@ -25,8 +25,7 @@ export async function POST(request: Request) {
         const restartScript = path.join(projectPath, "restart-server.bat");
 
         // Restart script'i oluştur
-        const restartBatContent = `@echo off
-REM RAM Server Restart Script - Otomatik olusturuldu
+        const restartBatContent = `REM RAM Server Restart Script - Otomatik olusturuldu
 echo Sunucu yeniden baslatiliyor...
 
 REM 2 saniye bekle (mevcut istegin tamamlanmasi icin)
@@ -35,12 +34,15 @@ timeout /t 2 /nobreak >nul
 REM Node.js islemlerini sonlandir
 taskkill /F /IM node.exe >nul 2>nul
 
+REM Eski sunucu penceresini kapat (Basliktan bul)
+taskkill /FI "WINDOWTITLE eq RAM Server (KAPATMAYIN)" /F >nul 2>nul
+
 REM 1 saniye bekle
 timeout /t 1 /nobreak >nul
 
 REM Sunucuyu tekrar baslat
 cd /d "${projectPath.replace(/\\/g, "\\\\")}"
-start "" cmd /c "start-server.bat"
+start "" cmd /c "start-ram-server.bat"
 
 exit
 `;

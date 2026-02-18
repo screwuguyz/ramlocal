@@ -110,16 +110,38 @@ export default function TeacherList() {
     function handleAddTeacher() {
         const name = newTeacherName.trim();
         if (!name) return;
-        const birthDate = newTeacherBirthDate.trim() || undefined;
+        const birthDate = newTeacherBirthDate.trim();
 
-        // Kullanıcı bir puan girdiyse onu kullan, yoksa ortalamayı al
-        let initialLoad = newTeacherStartScore.trim() ? parseInt(newTeacherStartScore) : calculatedAvgLoad;
+        if (!birthDate) {
+            alert("Lütfen doğum günü girin (AA-GG). Bu alan zorunludur.");
+            return;
+        }
 
-        // Güvenlik: Eğer ortalama 0 veya çok düşükse ve kullanıcı girmediyse varsayılan kullan
-        if (initialLoad < 10 && !newTeacherStartScore.trim()) initialLoad = 75;
+        // Akıllı Puan Hesabı
+        let initialLoad = calculatedAvgLoad;
+        const scoreInput = newTeacherStartScore.trim();
+        let calculationMsg = `Ortalama (${calculatedAvgLoad})`;
 
-        // DEBUG: Puanı kontrol et
-        alert(`EKLENİYOR: ${name} (Ham: "${newTeacherStartScore}") -> Puan: ${initialLoad}`);
+        if (scoreInput) {
+            // Eğer + veya - ile başlıyorsa ortalamaya ekle/çıkar
+            if (scoreInput.startsWith("+") || scoreInput.startsWith("-")) {
+                const delta = parseInt(scoreInput);
+                initialLoad = calculatedAvgLoad + delta;
+                calculationMsg = `Ortalama (${calculatedAvgLoad}) ${delta > 0 ? '+' : ''}${delta}`;
+            } else {
+                // Değilse direkt değeri al
+                initialLoad = parseInt(scoreInput);
+                calculationMsg = `Manuel (${initialLoad})`;
+            }
+        }
+
+        // Güvenlik: Eğer hesaplanan puan 0'ın altına düşerse 0 olsun
+        initialLoad = Math.max(0, initialLoad);
+
+        // Kullanıcı Teyidi (Sorun çözülene kadar açık kalsın)
+        if (!confirm(`EKLENİYOR:\n\nÖğretmen: ${name}\nDoğum Günü: ${birthDate}\nHesaplanan Puan: ${initialLoad} (${calculationMsg})\n\nOnaylıyor musunuz?`)) {
+            return;
+        }
 
         const newTeacher: Teacher = {
             id: uid(),
@@ -129,7 +151,8 @@ export default function TeacherList() {
             monthly: {},
             active: true,
             isTester: false,
-            birthDate
+            birthDate,
+            startingLoad: initialLoad // Manuel başlangıç puanını kaydet
         };
 
         addTeacher(newTeacher);
@@ -209,15 +232,22 @@ export default function TeacherList() {
         if (!t) return;
 
         const caseCount = cases.filter(c => c.assignedTo === tid).length;
-        const hasLoad = t.yearlyLoad > 0 || Object.values(t.monthly || {}).some(v => v > 0);
-
-        if (caseCount > 0 || hasLoad) {
-            alert("Bu öğretmenin geçmiş kaydı var. Silmek raporları etkiler; öğretmen arşivlendi.");
+        // Sadece atanmış dosyaları (caseCount) kontrol et.
+        // Puanı olup dosyası olmayan öğretmen silinebilmeli (startingLoad yüzünden puanı olabilir)
+        if (caseCount > 0) {
+            alert("Bu öğretmenin geçmiş dosya kaydı var. Silmek raporları etkiler; öğretmen arşivlendi.");
             updateTeacher(tid, { active: false });
             return;
         }
 
-        if (!confirm("Bu öğretmeni kalıcı olarak silmek istiyor musunuz?")) return;
+        // Eğer puanı varsa ama dosyası yoksa, uyarı ver ama silmeye izin ver
+        const hasLoad = t.yearlyLoad > 0 || Object.values(t.monthly || {}).some(v => v > 0);
+        let confirmMsg = "Bu öğretmeni kalıcı olarak silmek istiyor musunuz?";
+        if (hasLoad) {
+            confirmMsg = "Bu öğretmenin puanı var ama hiç dosyası yok. Yine de silinsin mi?";
+        }
+
+        if (!confirm(confirmMsg)) return;
 
         removeTeacher(tid);
         // Atanmış dosyaların atamasını kaldır

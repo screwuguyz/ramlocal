@@ -228,11 +228,17 @@ export default function DailyReportView({
     !["Furkan Ata ADIYAMAN", "Furkan Ata"].includes(t.name)
   ).map((t) => {
     const perDay: DayAgg[] = dayKeys.map((d) => agg.get(`${t.id}|${d}`) || { points: 0, count: 0 });
-    const totalPoints = perDay.reduce((a, d) => a + d.points, 0);
+    let totalPoints = perDay.reduce((a, d) => a + d.points, 0);
     const totalCount = perDay.reduce((a, d) => a + d.count, 0);
 
+    // STARTING LOAD EKLEMESİ: Eğer raporlanan ay güncel aysa, başlangıç puanını da "Aylık Puan"a ekle
+    // Bu sayede "Aylık Puan" sütunu boş görünmez
+    if (isCurrentMonth) {
+      totalPoints += (t.startingLoad || 0);
+    }
+
     // Seçili yılın toplam puanını hesapla (Dinamik Yıllık Yük)
-    let calculatedYearlyLoad = 0;
+    let calculatedYearlyLoad = t.startingLoad || 0;
     const seenYearlyIds = new Set<string>(); // DEDUPE: Aynı case'i iki kez sayma
 
     // 1. History'den topla (tüm puanları dahil et: dosya atamaları + sistem puanları)

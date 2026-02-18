@@ -13,6 +13,7 @@ export type Teacher = {
     backupDay?: string;
     birthDate?: string;
     isPhysiotherapist?: boolean;
+    startingLoad?: number; // Manuel başlangıç puanı
 };
 
 export type CaseFile = {

@@ -117,11 +117,6 @@ export async function POST(req: NextRequest) {
 
     const client = createClient(SUPA_URL, SUPA_SERVICE_KEY);
 
-    // Clean old backups
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    await client.from(TABLE_NAME).delete().lt("created_at", thirtyDaysAgo.toISOString());
-
     const { data, error } = await client
       .from(TABLE_NAME)
       .insert({
@@ -131,6 +126,13 @@ export async function POST(req: NextRequest) {
       })
       .select("id, created_at")
       .single();
+
+    if (error) throw error;
+
+    // YENİ: Yeni yedek alındıktan sonra, bu yedek HARİÇ diğer hepsini sil.
+    if (data && data.id) {
+      await client.from(TABLE_NAME).delete().neq("id", data.id);
+    }
 
     if (error) throw error;
     return NextResponse.json({ ok: true, backup: data, message: "Yedek başarıyla oluşturuldu" });

@@ -69,6 +69,7 @@ export const CASE_TYPE_LABELS = {
 // ---- API Endpoints
 export const API_ENDPOINTS = {
     STATE: "/api/state",
+    STATE_CHECK: "/api/state-check",
     NOTIFY: "/api/notify",
     PDF_IMPORT: "/api/pdf-import",
     LOGIN: "/api/login",
