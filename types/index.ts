@@ -27,6 +27,7 @@ export type CaseFile = {
     grade?: string; // New field for Grade (Sınıf)
     isNew: boolean;
     diagCount: number;
+    diagnoses?: string[]; // Seçilen tanı türleri
     isTest: boolean;
     assignReason?: string;
     absencePenalty?: boolean;

@@ -39,7 +39,7 @@ export default function StudentDetailModal({
     // Helper: Get educational stage label based on grade
     const getStageLabel = (grade?: string): string => {
         if (!grade) return "";
-        if (grade === "Okul Öncesi") return "Okul Öncesi";
+        if (grade === "Okul Öncesi" || grade?.startsWith("Okul Öncesi")) return "Okul Öncesi";
         if (grade === "Halk Eğitim") return "Halk Eğitim";
         if (["1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf"].includes(grade)) return "İlkokul";
         if (["5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf"].includes(grade)) return "Ortaokul";

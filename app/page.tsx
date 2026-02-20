@@ -47,6 +47,7 @@ import RulesModal from "@/components/modals/RulesModal";
 import DailyWelcomeModal from "@/components/modals/DailyWelcomeModal";
 import PdfPanel from "@/components/modals/PdfPanel";
 import LoginModal from "@/components/modals/LoginModal";
+import BirthDateModal from "@/components/modals/BirthDateModal";
 import SettingsModal from "@/components/modals/SettingsModal";
 import FeedbackModal from "@/components/modals/FeedbackModal";
 import VersionPopup from "@/components/modals/VersionPopup";
@@ -112,12 +113,25 @@ const ADMIN_TABS = [
 
 const GRADES = [
   "Küçük (Okulu Yok)",
+  "Erken Çocukluk",
   "Okul Öncesi",
   "1. Sınıf", "2. Sınıf", "3. Sınıf", "4. Sınıf",
   "5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf",
   "9. Sınıf", "10. Sınıf", "11. Sınıf", "12. Sınıf",
   "Mezun",
   "Halk Eğitim"
+] as const;
+
+const DIAG_TYPES = [
+  "Zihinsel Yetersizlik",
+  "Görme Yetersizliği",
+  "İşitme Yetersizliği",
+  "Dil ve Konuşma Güçlüğü",
+  "Yaygın Gelişimsel Bozukluk",
+  "Özel Öğrenme Güçlüğü",
+  "Bedensel Yetersizlik",
+  "Normal",
+  "Süregelen"
 ] as const;
 
 export default function DosyaAtamaApp() {
@@ -232,12 +246,15 @@ export default function DosyaAtamaApp() {
   const [fileNo, setFileNo] = useState("");
   const [type, setType] = useState<"YONLENDIRME" | "DESTEK" | "IKISI">("YONLENDIRME");
   const [isNew, setIsNew] = useState(false);
-  const [diagCount, setDiagCount] = useState(0);
+  const [diagChecked, setDiagChecked] = useState<Record<string, boolean>>({});
+  const diagCount = Object.entries(diagChecked).filter(([k, v]) => v && k !== "Süregelen").length;
+  const selectedDiagnoses = Object.entries(diagChecked).filter(([, v]) => v).map(([k]) => k);
   const [isTestCase, setIsTestCase] = useState(false);
   const [customDate, setCustomDate] = useState("");
   const [newTeacherName, setNewTeacherName] = useState("");
   const [newTeacherBirthDate, setNewTeacherBirthDate] = useState("");
   const [grade, setGrade] = useState<string>(""); // Sınıf seçimi
+  const [birthDateModalOpen, setBirthDateModalOpen] = useState(false);
 
   // Validation Warning Modal State
   const [validationWarning, setValidationWarning] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
@@ -553,7 +570,7 @@ export default function DosyaAtamaApp() {
           // Yıl atlamış, sınıfı artır
           if (g === "Küçük (Okulu Yok)") {
             nextGrade = "Okul Öncesi";
-          } else if (g === "Okul Öncesi") {
+          } else if (g === "Okul Öncesi" || g.startsWith("Okul Öncesi")) {
             nextGrade = "1. Sınıf"; // Okul öncesi -> 1. Sınıf (Yıl atlayınca)
           } else if (g === "12. Sınıf") {
             nextGrade = "Mezun";
@@ -789,8 +806,8 @@ export default function DosyaAtamaApp() {
           lastKey = "";
           return;
         }
-        setGrade("Okul Öncesi");
-        toast("Okul Öncesi Seçildi");
+        setBirthDateModalOpen(true);
+        toast("Okul Öncesi - Doğum tarihi giriniz");
         lastKey = "0";
         lastKeyTime = now;
       }
@@ -973,7 +990,7 @@ export default function DosyaAtamaApp() {
     if (!hasAnyRecord) return null;
 
     // Rules
-    if (grade === "Okul Öncesi" || grade === "Halk Eğitim") {
+    if (grade === "Okul Öncesi" || grade.startsWith("Okul Öncesi") || grade === "Halk Eğitim") {
       const thisYear = getTodayYmd().slice(0, 4);
       const hasThisYear = allHistory.some(c =>
         c.student === student &&
@@ -1044,7 +1061,7 @@ export default function DosyaAtamaApp() {
     setStudent("");
     setFileNo("");
     setIsNew(false);
-    setDiagCount(0);
+    setDiagChecked({});
     setType("YONLENDIRME");
     setIsTestCase(false);
     setFilterYM(ymOf(pendingCase.createdAt));
@@ -1087,7 +1104,7 @@ export default function DosyaAtamaApp() {
       setStudent("");
       setFileNo("");
       setIsNew(false);
-      setDiagCount(0);
+      setDiagChecked({});
       setType("YONLENDIRME");
       setIsTestCase(false);
       setFilterYM(ymOf(pendingCase.createdAt));
@@ -1136,6 +1153,7 @@ export default function DosyaAtamaApp() {
       grade: grade || undefined, // Sınıf bilgisini kaydet
       isNew,
       diagCount,
+      diagnoses: selectedDiagnoses.length > 0 ? selectedDiagnoses : undefined,
       isTest: isTestCase,
     };
 
@@ -1179,7 +1197,7 @@ export default function DosyaAtamaApp() {
       setFileNo("");
       setGrade(""); // Sınıf seçimini sıfırla
       setIsNew(false);
-      setDiagCount(0);
+      setDiagChecked({});
       setType("YONLENDIRME");
       setIsTestCase(false);
       setFilterYM(ymOf(createdAt));
@@ -1232,7 +1250,7 @@ export default function DosyaAtamaApp() {
       setFileNo("");
       setGrade(""); // Sınıf seçimini sıfırla
       setIsNew(false);
-      setDiagCount(0);
+      setDiagChecked({});
       setType("YONLENDIRME");
       setIsTestCase(false);
       setFilterYM(ymOf(createdAt));
@@ -1271,7 +1289,8 @@ export default function DosyaAtamaApp() {
           studentName: c.student,
           fileNo: c.fileNo || undefined,
           teacherName: tName,
-          date: date
+          date: date,
+          type: c.type || undefined
         });
         changed = true;
       }
@@ -2897,9 +2916,24 @@ export default function DosyaAtamaApp() {
                         </div>
                       </div>
 
+                      {/* Yeni Başvuru - göze çarpan toggle */}
+                      <label htmlFor="isNew" className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isNew
+                        ? 'border-amber-400 bg-amber-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}>
+                        <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-6 w-6" />
+                        <span className="text-base font-semibold">{isNew ? '⭐' : '☆'} Yeni Başvuru (+{settings.scoreNewBonus})</span>
+                      </label>
+
                       <div className="space-y-2">
                         <Label>🏫 Sınıf / Kademe</Label>
-                        <Select value={grade} onValueChange={setGrade}>
+                        <Select value={grade.startsWith("Okul Öncesi") ? "Okul Öncesi" : grade} onValueChange={(val) => {
+                          if (val === "Okul Öncesi") {
+                            setBirthDateModalOpen(true);
+                          } else {
+                            setGrade(val);
+                          }
+                        }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Sınıf Seçiniz" />
                           </SelectTrigger>
@@ -2909,6 +2943,12 @@ export default function DosyaAtamaApp() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {/* Okul Öncesi alt sınıf bilgisi */}
+                        {grade.startsWith("Okul Öncesi (") && (
+                          <div className="text-xs p-2 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                            📋 {grade}
+                          </div>
+                        )}
 
                         {/* Guidance Warning */}
                         {guidanceStatus && type !== "DESTEK" && (
@@ -2940,27 +2980,22 @@ export default function DosyaAtamaApp() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 pt-2">
-                        <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-5 w-5" />
-                        <Label htmlFor="isNew" className="text-base">Yeni başvuru (+{settings.scoreNewBonus})</Label>
-                      </div>
 
                       <div className="space-y-2 pt-2">
-                        <Label className="text-base">Tanı sayısı (0-6) (+n)</Label>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.max(0, n - 1))}><UserMinus className="h-5 w-5" /></Button>
-                            <Input
-                              className="w-24 h-12 text-center text-xl font-bold"
-                              inputMode="numeric"
-                              value={diagCount}
-                              onChange={(e) => {
-                                const n = Number((e.target.value || "").replace(/[^\d]/g, ""));
-                                setDiagCount(Math.max(0, Math.min(6, Number.isFinite(n) ? n : 0)));
-                              }}
-                            />
-                            <Button type="button" variant="outline" size="lg" className="px-3" onClick={() => setDiagCount((n) => Math.min(6, n + 1))}><Plus className="h-5 w-5" /></Button>
-                          </div>
+                        <Label className="text-base">🩺 Tanı Seçimi (+{diagCount})</Label>
+                        <div className="grid grid-cols-2 gap-2 border rounded-lg p-3 bg-muted/30">
+                          {DIAG_TYPES.map((d) => (
+                            <label key={d} className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted/60 transition-colors ${diagChecked[d] ? 'bg-blue-50 dark:bg-blue-950 font-medium' : ''}`}>
+                              <Checkbox
+                                checked={!!diagChecked[d]}
+                                onCheckedChange={(v) => setDiagChecked(prev => ({ ...prev, [d]: Boolean(v) }))}
+                                className="h-5 w-5"
+                              />
+                              <span className="text-sm leading-tight">{d}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-end pt-1">
                           <Button
                             data-silent="true"
                             onClick={handleAddCase}
@@ -3338,6 +3373,18 @@ export default function DosyaAtamaApp() {
           onLogin={doLogin}
         />
         {/* Dosya Atama Bildirimi - Büyük Animasyonlu Popup */}
+        {/* Doğum Tarihi Modalı - Okul Öncesi sınıflandırma */}
+        <BirthDateModal
+          open={birthDateModalOpen}
+          onClose={() => setBirthDateModalOpen(false)}
+          onResult={(result) => {
+            if (result) {
+              setGrade(result.gradeLabel);
+              toast(`${result.gradeLabel} (${result.months} aylık)`);
+            }
+            setBirthDateModalOpen(false);
+          }}
+        />
         {assignmentPopup && (
           <div className="fixed inset-0 flex items-center justify-center z-[200] pointer-events-none">
             <div className="animate-assignment-popup bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white rounded-3xl shadow-2xl p-8 max-w-md mx-4 text-center transform">

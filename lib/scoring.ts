@@ -198,9 +198,18 @@ export function caseDescription(caseData: CaseFile): string {
     if (caseData.absencePenalty) {
         return caseData.assignReason || "Devamsızlık sonrası denge puanı (otomatik)";
     }
-    let s = `Tür: ${humanType(caseData.type)} • Yeni: ${caseData.isNew ? "Evet" : "Hayır"} • Tanı: ${caseData.diagCount ?? 0}`;
+    let diagLabel = `Tanı: ${caseData.diagCount ?? 0}`;
+    if (caseData.diagnoses && caseData.diagnoses.length > 0) {
+        diagLabel = `Tanı: ${caseData.diagnoses.join(", ")}`;
+    }
+    let s = `Tür: ${humanType(caseData.type)} • Yeni: ${caseData.isNew ? "Evet" : "Hayır"} • ${diagLabel}`;
     if (caseData.isTest) s += " • Test";
     if (caseData.assignReason) s += ` • Neden: ${caseData.assignReason}`;
+    // Okul Öncesi + Yönlendirme/İkisi ise yönlendirme bilgisini göster
+    if (caseData.grade && caseData.grade.startsWith("Okul Öncesi") && (caseData.type === "YONLENDIRME" || caseData.type === "IKISI")) {
+        const subLabel = caseData.grade.includes("(") ? caseData.grade : "";
+        s += ` • Yönlendirme: Evet${subLabel ? ` (${subLabel.replace("Okul Öncesi ", "")})` : ""}`;
+    }
     return s;
 }
 
