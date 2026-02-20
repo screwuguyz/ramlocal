@@ -37,3 +37,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# application data (MUST NOT be overwritten by git pull)
+/data/
