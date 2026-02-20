@@ -965,3 +965,7 @@ fatal: unable to access 'https://github.com/screwuguyz/ramlocal.git/': Could not
 [2026-02-13T07:03:24.900Z]    Remote: c3d045f
 [2026-02-13T07:03:24.900Z] 🚀 Deployment başlatılıyor...
 [2026-02-13T07:03:56.577Z] ✅ Deployment tamamlandı!
+[2026-02-20T06:39:56.141Z] 🎯 Git Polling başlatıldı
+[2026-02-20T06:39:56.144Z]    Kontrol aralığı: 60 saniye
+[2026-02-20T06:39:56.144Z]    Proje dizini: C:\Users\lenovo ram4\Desktop\ram-proje
+[2026-02-20T06:39:56.145Z]    Değişiklikleri bekliyor...

@@ -2918,13 +2918,24 @@ export default function DosyaAtamaApp() {
                       </div>
 
                       {/* Yeni Başvuru - göze çarpan toggle */}
-                      <label htmlFor="isNew" className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isNew
-                        ? 'border-amber-400 bg-amber-50 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}>
-                        <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-6 w-6" />
-                        <span className="text-base font-semibold">{isNew ? '⭐' : '☆'} Yeni Başvuru (+{settings.scoreNewBonus})</span>
-                      </label>
+                      {/* Yeni Başvuru ve Test Dosyası Toggle'ları */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <label htmlFor="isNew" className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isNew
+                          ? 'border-amber-400 bg-amber-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}>
+                          <Checkbox id="isNew" checked={isNew} onCheckedChange={(v) => setIsNew(Boolean(v))} className="h-6 w-6" />
+                          <span className="text-base font-semibold">{isNew ? '⭐' : '☆'} Yeni Başvuru</span>
+                        </label>
+
+                        <label htmlFor="isTest" className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isTestCase
+                          ? 'border-purple-400 bg-purple-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}>
+                          <Checkbox id="isTest" checked={isTestCase} onCheckedChange={(v) => setIsTestCase(Boolean(v))} className="h-6 w-6" />
+                          <span className="text-base font-semibold">{isTestCase ? '🧩' : '⬜'} Test Dosyası</span>
+                        </label>
+                      </div>
 
                       <div className="space-y-2">
                         <Label>🏫 Sınıf / Kademe</Label>
@@ -3007,10 +3018,7 @@ export default function DosyaAtamaApp() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Checkbox id="isTest" checked={isTestCase} onCheckedChange={(v) => setIsTestCase(Boolean(v))} />
-                        <Label htmlFor="isTest">Test dosyası (+{settings.scoreTest})</Label>
-                      </div>
+
                       {/* Manuel atama (opsiyonel) + Ekle butonu tek kapsayıcıda (click-away ref) */}
                       <div ref={manualAssignRef}>
                         <div className="space-y-2">
