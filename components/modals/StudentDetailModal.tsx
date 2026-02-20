@@ -89,6 +89,7 @@ export default function StudentDetailModal({
                                     <TableHead>İşlem</TableHead>
                                     <TableHead>Öğretmen</TableHead>
                                     <TableHead>Puan</TableHead>
+                                    <TableHead>Tanı</TableHead>
                                     <TableHead className="text-right">Durum</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -113,6 +114,17 @@ export default function StudentDetailModal({
                                             <span className="text-xs font-medium">{getTeacherName(item.assignedTo)}</span>
                                         </TableCell>
                                         <TableCell>{item.score}</TableCell>
+                                        <TableCell>
+                                            {item.diagnoses && item.diagnoses.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {item.diagnoses.map((d) => (
+                                                        <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">{item.diagCount > 0 ? `${item.diagCount} tanı` : "—"}</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             {item.isTest ? (
                                                 <Badge variant="secondary">Test</Badge>
