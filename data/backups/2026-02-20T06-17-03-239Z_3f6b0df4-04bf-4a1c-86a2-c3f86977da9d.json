@@ -1,8 +1,8 @@
 {
-  "id": "ac740618-c681-421a-a19d-84a5598bfccd",
-  "created_at": "2026-02-18T13:00:02.805Z",
-  "backup_type": "auto",
-  "description": "Otomatik Günlük Yedek - 2026-02-18 16:00",
+  "id": "3f6b0df4-04bf-4a1c-86a2-c3f86977da9d",
+  "created_at": "2026-02-20T06:17:03.239Z",
+  "backup_type": "manual",
+  "description": "Manuel yedek",
   "state_snapshot": {
     "teachers": [
       {
@@ -23,11 +23,11 @@
         "id": "axlady7",
         "name": "ARMAN GÖKDAĞ",
         "isAbsent": false,
-        "yearlyLoad": 202,
+        "yearlyLoad": 208,
         "monthly": {
           "2025-12": 135,
           "2026-01": 122,
-          "2026-02": 47
+          "2026-02": 33
         },
         "active": true,
         "isTester": false,
@@ -38,12 +38,12 @@
       {
         "id": "45zvjwn",
         "name": "AYGÜN ÇELİK",
-        "isAbsent": false,
-        "yearlyLoad": 203,
+        "isAbsent": true,
+        "yearlyLoad": 206,
         "monthly": {
           "2025-12": 133,
           "2026-01": 116,
-          "2026-02": 40
+          "2026-02": 23
         },
         "active": true,
         "isTester": false,
@@ -55,14 +55,14 @@
         "id": "rnycdxd",
         "name": "ERAY AHMET TAŞKIN",
         "isAbsent": false,
-        "yearlyLoad": 204,
+        "yearlyLoad": 208,
         "monthly": {
           "2025-12": 123,
           "2026-01": 73,
-          "2026-02": 55
+          "2026-02": 36
         },
         "active": true,
-        "isTester": false,
+        "isTester": true,
         "pushoverKey": "u3x5sa56br6txsx9atfmh6kcm3o9ph",
         "backupDay": null,
         "startingLoad": 0
@@ -85,12 +85,12 @@
       {
         "id": "ji4xjb9",
         "name": "NESLİHAN ŞAHİNER",
-        "isAbsent": false,
-        "yearlyLoad": 202,
+        "isAbsent": true,
+        "yearlyLoad": 205,
         "monthly": {
           "2025-12": 133,
           "2026-01": 85,
-          "2026-02": 43
+          "2026-02": 24
         },
         "active": true,
         "isTester": false,
@@ -102,14 +102,14 @@
         "id": "wttamdj",
         "name": "NURAY KIZILGÜNEŞ",
         "isAbsent": false,
-        "yearlyLoad": 205,
+        "yearlyLoad": 208,
         "monthly": {
           "2025-12": 128,
           "2026-01": 25,
-          "2026-02": 39
+          "2026-02": 19
         },
         "active": true,
-        "isTester": true,
+        "isTester": false,
         "pushoverKey": "ubfiyxo9ikt4ouotphhsc7uycmwdis",
         "backupDay": null,
         "startingLoad": 0
@@ -615,6 +615,126 @@
           "extra": "Dil ve Konuşma Güçlüğü 18/02/2026 Tarihli Randevu Listesi 17/02/2026 16:10:221https://ramdevu.meb.gov.tr"
         },
         "assignedTo": "rnycdxd"
+      },
+      {
+        "id": "a8lnw0j",
+        "student": "ALPER YAVUZ MADENCİ",
+        "fileNo": "7582",
+        "score": 3,
+        "createdAt": "2026-02-19T06:23:50.918Z",
+        "type": "YONLENDIRME",
+        "grade": "9. Sınıf",
+        "isNew": true,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "d18f3e49-1d55-4a07-bd1e-695449349c72",
+          "time": "09:30",
+          "name": "ALPER YAVUZ MADENCİ",
+          "fileNo": "",
+          "extra": "Özel Yetenekli Birey - Zihinsel"
+        },
+        "assignedTo": "ji4xjb9"
+      },
+      {
+        "id": "54uoa3r",
+        "student": "MASAL ŞAHİN",
+        "fileNo": "5425",
+        "score": 3,
+        "createdAt": "2026-02-19T06:24:37.810Z",
+        "type": "DESTEK",
+        "grade": "2. Sınıf",
+        "isNew": false,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "26eda32b-843e-4a7c-becd-b73a6395c8d1",
+          "time": "10:00",
+          "name": "MASAL ŞAHİN",
+          "fileNo": "5425",
+          "extra": "Dil ve Konuşma Güçlüğü"
+        },
+        "assignedTo": "45zvjwn"
+      },
+      {
+        "id": "ml8jljv",
+        "student": "EDA KARAPINAR",
+        "fileNo": "7583",
+        "score": 4,
+        "createdAt": "2026-02-19T06:51:54.377Z",
+        "type": "DESTEK",
+        "grade": "Mezun",
+        "isNew": true,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "7941cf05-d7de-401a-b4ae-0ffff757da9f",
+          "time": "09:30",
+          "name": "EDA KARAPINAR",
+          "fileNo": "***",
+          "extra": "Hafif Düzeyde Zihinsel Yetersizlik"
+        },
+        "assignedTo": "rnycdxd"
+      },
+      {
+        "id": "2vm3or0",
+        "student": "KADİR ÇİFTÇİ",
+        "fileNo": "4099",
+        "score": 3,
+        "createdAt": "2026-02-19T07:46:20.462Z",
+        "type": "DESTEK",
+        "grade": "10. Sınıf",
+        "isNew": false,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "881bfbc1-2e29-483a-bf09-0d062bbf87f8",
+          "time": "11:00",
+          "name": "KADİR ÇİFTÇİ",
+          "fileNo": "4099",
+          "extra": "Orta Düzeyde Zihinsel Yetersizlik 19/02/2026 Tarihli Randevu Listesi 18/02/2026 14:54:011https://ramdevu.meb.gov.tr"
+        },
+        "assignedTo": "wttamdj"
+      },
+      {
+        "id": "22czbp7",
+        "student": "MERT MADENCİ",
+        "fileNo": "7581",
+        "score": 3,
+        "createdAt": "2026-02-19T10:54:41.629Z",
+        "type": "YONLENDIRME",
+        "grade": "2. Sınıf",
+        "isNew": true,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "3076ed4e-d32d-4018-bc54-33e675db763d",
+          "time": "10:30",
+          "name": "MERT MADENCİ",
+          "fileNo": "",
+          "extra": "Özel Yetenekli Birey - Zihinsel"
+        },
+        "assignedTo": "axlady7"
+      },
+      {
+        "id": "yjdgp8m",
+        "student": "RECEP BERA KAZAN",
+        "fileNo": "7112",
+        "score": 3,
+        "createdAt": "2026-02-20T06:16:25.963Z",
+        "type": "DESTEK",
+        "grade": "3. Sınıf",
+        "isNew": false,
+        "diagCount": 1,
+        "isTest": false,
+        "sourcePdfEntry": {
+          "id": "f96d2a44-b96d-42fa-9c89-c43db971e6a3",
+          "time": "09:30",
+          "name": "RECEP BERA KAZAN",
+          "fileNo": "7112",
+          "extra": "Özel Öğrenme Güçlüğü"
+        },
+        "assignedTo": "axlady7"
       }
     ],
     "history": {
@@ -7610,57 +7730,7 @@
       ],
       "2026-02-16": []
     },
-    "agendaNotes": {
-      "2026-02-16": [
-        {
-          "id": "mlosypa0rpn22",
-          "text": "AD SOYAD: DEVRİM YILDIRIM\nTC: 54268121458\nTEL: 5309591958",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ],
-      "2026-02-18": [
-        {
-          "id": "mlotofrw9qwpp",
-          "text": "AD SOYAD: IRMAK GÜRCAN\nTC: 6562\nTEL: 5368596729",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ],
-      "2026-02-20": [
-        {
-          "id": "mlotp6xoeoih9",
-          "text": "AD SOYAD: HATİCENUR YALIM\nTC: \nTEL: 5314277996",
-          "color": "#2563eb",
-          "type": "WISCR"
-        }
-      ],
-      "2026-02-23": [
-        {
-          "id": "mlqjtfppi02ov",
-          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE",
-          "color": "#1e293b",
-          "type": "SERBEST"
-        }
-      ],
-      "2026-02-24": [
-        {
-          "id": "mlqle18ci437k",
-          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
-          "color": "#1e293b",
-          "type": "SERBEST"
-        }
-      ],
-      "2026-02-25": [
-        {
-          "id": "mlqle8wdivj5g",
-          "text": "ERAY  HİZMET İÇİ  EĞİTİMDE\n",
-          "color": "#1e293b",
-          "type": "SERBEST"
-        }
-      ]
-    },
-    "lastRollover": "2026-02-18",
+    "lastRollover": "2026-02-19",
     "lastAbsencePenalty": "",
     "announcements": [],
     "settings": {
@@ -7678,10 +7748,6 @@
       "videoPlaying": false,
       "debugMode": false,
       "monthlySummaryMonth": ""
-    },
-    "themeSettings": {
-      "themeMode": "auto",
-      "colorScheme": "default"
     },
     "eArchive": [
       {
@@ -10432,10 +10498,76 @@
         "fileNo": "7580",
         "teacherName": "ERAY AHMET TAŞKIN",
         "date": "2026-02-18"
+      },
+      {
+        "id": "a8lnw0j",
+        "studentName": "ALPER YAVUZ MADENCİ",
+        "fileNo": "7582",
+        "teacherName": "NESLİHAN ŞAHİNER",
+        "date": "2026-02-19"
+      },
+      {
+        "id": "54uoa3r",
+        "studentName": "MASAL ŞAHİN",
+        "fileNo": "5425",
+        "teacherName": "AYGÜN ÇELİK",
+        "date": "2026-02-19"
+      },
+      {
+        "id": "ml8jljv",
+        "studentName": "EDA KARAPINAR",
+        "fileNo": "7583",
+        "teacherName": "ERAY AHMET TAŞKIN",
+        "date": "2026-02-19"
+      },
+      {
+        "id": "2vm3or0",
+        "studentName": "KADİR ÇİFTÇİ",
+        "fileNo": "4099",
+        "teacherName": "NURAY KIZILGÜNEŞ",
+        "date": "2026-02-19"
+      },
+      {
+        "id": "22czbp7",
+        "studentName": "MERT MADENCİ",
+        "fileNo": "7581",
+        "teacherName": "ARMAN GÖKDAĞ",
+        "date": "2026-02-19"
+      },
+      {
+        "id": "yjdgp8m",
+        "studentName": "RECEP BERA KAZAN",
+        "fileNo": "7112",
+        "teacherName": "ARMAN GÖKDAĞ",
+        "date": "2026-02-20",
+        "type": "DESTEK"
       }
     ],
-    "absenceRecords": [],
-    "queue": [],
-    "updatedAt": "2026-02-18T12:53:17.509Z"
+    "agendaNotes": {
+      "2026-02-16": [
+        {
+          "id": "mlosypa0rpn22",
+          "text": "AD SOYAD: DEVRİM YILDIRIM\nTC: 54268121458\nTEL: 5309591958",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ],
+      "2026-02-18": [
+        {
+          "id": "mlotofrw9qwpp",
+          "text": "AD SOYAD: IRMAK GÜRCAN\nTC: 6562\nTEL: 5368596729",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ],
+      "2026-02-20": [
+        {
+          "id": "mlotp6xoeoih9",
+          "text": "AD SOYAD: HATİCENUR YALIM\nTC: \nTEL: 5314277996",
+          "color": "#2563eb",
+          "type": "WISCR"
+        }
+      ]
+    }
   }
 }
