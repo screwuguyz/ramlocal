@@ -585,6 +585,19 @@ export function useSupabaseSync(onRealtimeEvent?: (payload: any) => void): Supab
         }
     }, [syncToServer]);
 
+    // NEW: Periodic Polling (every 10s)
+    // Ensures all clients stay in sync even if realtime fails
+    useEffect(() => {
+        if (!hydrated) return;
+
+        // console.log("[useSupabaseSync] Starting periodic polling (10s)");
+        const interval = setInterval(() => {
+            fetchCentralState();
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [hydrated, fetchCentralState]);
+
     return {
         fetchCentralState,
         syncToServer,
