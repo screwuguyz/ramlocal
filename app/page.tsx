@@ -131,7 +131,8 @@ const DIAG_TYPES = [
   "Özel Öğrenme Güçlüğü",
   "Bedensel Yetersizlik",
   "Normal",
-  "Süregelen"
+  "Süregelen",
+  "Bilsem"
 ] as const;
 
 export default function DosyaAtamaApp() {
@@ -247,7 +248,7 @@ export default function DosyaAtamaApp() {
   const [type, setType] = useState<"YONLENDIRME" | "DESTEK" | "IKISI">("YONLENDIRME");
   const [isNew, setIsNew] = useState(false);
   const [diagChecked, setDiagChecked] = useState<Record<string, boolean>>({});
-  const diagCount = Object.entries(diagChecked).filter(([k, v]) => v && k !== "Süregelen").length;
+  const diagCount = Object.entries(diagChecked).filter(([k, v]) => v && k !== "Süregelen" && k !== "Bilsem").length;
   const selectedDiagnoses = Object.entries(diagChecked).filter(([, v]) => v).map(([k]) => k);
   const [isTestCase, setIsTestCase] = useState(false);
   const [customDate, setCustomDate] = useState("");
